@@ -141,30 +141,12 @@ pkg_setup() {
 }
 
 src_prepare() {
-	# remove unneeded linker directive for selinux, bug #41022
-	epatch "${FILESDIR}/${PN}-2.32.0-selinux-remove-attr.patch"
-
-	# daemonize so that the boot process can continue, bug #236701
-	epatch "${FILESDIR}/${PN}-2.32.0-fix-daemonize-regression.patch"
-
-	# GDM grabs VT2 instead of VT7, bug 261339, bug 284053, bug 288852
-	epatch "${FILESDIR}/${PN}-2.32.0-fix-vt-problems.patch"
 
 	# make custom session work, bug #216984
 	epatch "${FILESDIR}/${PN}-3.2.1.1-custom-session.patch"
 
 	# ssh-agent handling must be done at xinitrc.d, bug #220603
 	epatch "${FILESDIR}/${PN}-2.32.0-xinitrc-ssh-agent.patch"
-
-	# fix libxklavier automagic support
-	epatch "${FILESDIR}/${PN}-2.32.0-automagic-libxklavier-support.patch"
-
-	# plymouth support (in next release)
-	epatch "${FILESDIR}/${P}-save-root-window.patch"
-	epatch "${FILESDIR}/${P}-plymouth.patch"
-
-	# Starting of dconf-0.13.4 things don't work anymore :)
-	epatch "${FILESDIR}/${P}-dconf-compatibility.patch"
 
 	# don't load accessibility support at runtime when USE=-accessibility
 	use accessibility || epatch "${FILESDIR}/${PN}-3.3.92.1-disable-accessibility.patch"
