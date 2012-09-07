@@ -30,6 +30,7 @@ COMMON_DEPEND=">=dev-libs/glib-2.31.10:2
 	>=x11-libs/gtk+-3.3.8:3
 	>=x11-libs/vte-0.25.1:2.90
 	>=x11-misc/colord-0.1.12
+	x11-libs/colord-gtk
 
 	clutter? (
 		>=media-libs/clutter-1.9.11:1.0
