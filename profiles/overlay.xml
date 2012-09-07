@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE repositories SYSTEM "/dtd/repositories.dtd">
+<repositories xmlns="" version="1.0">
+  <repo quality="experimental" status="official">
+    <name><![CDATA[masterlay]]></name>
+    <description lang="en"><![CDATA[masterlay ebuilds]]></description>
+    <homepage>http://slie.ru/</homepage>
+    <owner type="person">
+      <email>me@slie.ru</email>
+      <name><![CDATA[Oboz Yury]]></name>
+    </owner>
+    <source type="git">https://github.com/thankjura/overlay.git</source>
+  </repo>
+</repositories>
