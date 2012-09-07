@@ -1,0 +1,245 @@
+# Copyright 2005-2011 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Id: $
+#
+# DOCUMENTATION
+# Following actions possible
+# * show		do_show()
+# * list		do_list()
+# * set			do_set()
+# * update		do_update()
+# * clean       do_clean()
+#
+# Behaviour:
+# do_show():
+#	Checks if /usr/bin/guile is a link and if the target exists,
+#	if yes, it outputs the currently linked Guile version.
+#	If it is no symlink, the user is told so, the same if there is
+#	no /usr/bin/guile or the target does not exist.
+# do_list(): List all available versions of GNU Guile
+# do_set(): Set a version to be target of the symlink.
+# do_update(): Set the target to the highest version available
+#	(optionally: only if not set)
+# do_clean(): Remove all set symlinks (for pkg_prerm)
+
+DESCRIPTION="Manage /usr/bin/guile* versions"
+MAINTAINER="scheme@gentoo.org"
+SVN_DATE='$Date: $'
+VERSION=$(svn_date_to_version "${SVN_DATE}")
+
+BINARYLIST="guile-snarf guile-config guile-tools guile"
+MANPAGELIST="guile"
+
+find_targets() {
+	# Return the list of available Guile binaries
+	local j
+	for j in "${EROOT}"/usr/bin/guile-[0-9]*; do
+		[[ -f ${j} ]] && basename ${j}
+	done
+}
+
+remove_envfile() {
+	# When cleaning symlinks this takes care of the info documentation settings
+	rm -f "${EROOT}/etc/env.d/50guile"
+}
+
+# Define GUILE_LOAD_PATH environment variable in env file
+set_envfile() {
+	echo "GUILE_LOAD_PATH=${EPREFIX}/usr/share/guile/$1" >"${EROOT}/etc/env.d/50guile"
+	[[ -d ${EROOT}/usr/share/info/guile-$1 ]] || return 1
+	echo "INFOPATH=${EPREFIX}/usr/share/info/guile-$1" >>"${EROOT}/etc/env.d/50guile"
+}
+
+remove_symlinks() {
+	# Remove existing symlinks to binaries, man pages,
+	# m4 file, and the env file (own function)
+	local f
+	for f in ${BINARYLIST}; do
+		rm -f "${EROOT}/usr/bin/${f}"
+	done
+	for f in ${MANPAGELIST}; do
+		rm -f "${EROOT}"/usr/share/man/man1/${f}.1*
+	done
+	rm -f "${EROOT}"/usr/share/aclocal/guile.m4
+	remove_envfile
+}
+
+set_bin_symlinks() {
+	# Set symlinks to binaries in /usr/bin/
+	local target=${1} f
+	for f in ${BINARYLIST}; do
+		# set symlink only if target binary actually exists
+		if [[ -f ${EROOT}/usr/bin/${f}-${target} ]]; then
+			ln -s "${f}-${target}" "${EROOT}/usr/bin/${f}" || die \
+				"Couldn't set ${f}-${target} ${EROOT}/usr/bin/${f} symlink"
+		fi
+	done
+}
+
+set_m4_symlinks() {
+	# Set symlink to guile.m4
+	local target=${1}
+	if [[ -f ${EROOT}/usr/share/aclocal/guile-${target}.m4 ]]; then
+		ln -s "guile-${target}.m4" "${EROOT}"/usr/share/aclocal/guile.m4 \
+			|| die "Couldn't set guile-${target}.m4 guile.m4 symlink"
+	fi
+}
+
+set_man_symlinks() {
+	# Set symlinks to man pages
+	local target=${1} extension f i
+	for f in ${MANPAGELIST}; do
+		for i in "${EROOT}"/usr/share/man/man1/${f}-${target}.1*; do
+			if [[ -f ${i} ]]; then
+				# target file exists; determine compress extension
+				extension=${i##*/${f}-${target}.1}
+				ln -s "${f}-${target}.1${extension}" \
+					"${EROOT}/usr/share/man/man1/${f}.1${extension}"
+			fi
+		done
+	done
+}
+
+set_symlinks() {
+	# Set symlinks to binaries and man pages, update info path
+	local target=$1 targets major
+	# target may be specified by its name or its index
+	if is_number "${target}"; then
+		# numeric index, find the target's name
+		targets=( $(find_targets) )
+		[[ ${target} -ge 1 && ${target} -le ${#targets[@]} ]] \
+			|| die -q "Number out of range: ${1}"
+		target=${targets[target-1]}
+	fi
+
+	# is the target valid, i.e. does a Guile binary with this name exist?
+	[[ -f ${EROOT}/usr/bin/${target} ]] \
+		|| die -q "Target \"${1}\" doesn't appear to be valid!"
+
+	echo "Switching guile to ${target} ..."
+	remove_symlinks || die -q "Couldn't remove existing symlink"
+
+	major=${target#guile-}
+	set_bin_symlinks "${major}"
+	set_m4_symlinks  "${major}"
+	set_man_symlinks "${major}"
+	set_envfile "${major}"
+
+	# update /etc/profile.env from /etc/env.d files
+	do_action env update noldconfig
+
+	return 0
+}
+
+test_for_root() {
+	# checks if the user has rights to modify /usr/bin/
+	[[ -w ${EROOT}/usr/bin ]] || die -q "You need root privileges!"
+}
+
+### show action ###
+
+describe_show() {
+	echo "Show the current target of the Guile symlink"
+}
+
+do_show() {
+	[[ $# -gt 0 ]] && die -q "Too many parameters"
+
+	write_list_start "Current target of Guile symlink:"
+	if [[ -L ${EROOT}/usr/bin/guile && -e ${EROOT}/usr/bin/guile ]]; then
+		write_kv_list_entry \
+			"$(basename "$(readlink "${EROOT}/usr/bin/guile")")" ""
+	elif [[ -e ${EROOT}/usr/bin/guile ]]; then
+		write_kv_list_entry \
+			"(not a symlink or target of symlink does not exist)" ""
+	else
+		write_kv_list_entry "(unset)" ""
+	fi
+}
+
+### list action ###
+
+describe_list() {
+	echo "List available Guile symlink targets"
+}
+
+do_list() {
+	[[ $# -gt 0 ]] && die -q "Too many parameters"
+
+	local i targets
+	targets=( $(find_targets) )
+
+	for (( i = 0; i < ${#targets[@]}; i++ )); do
+		# Highlight the currently chosen version
+		[[ ${targets[i]} = \
+			$(basename "$(readlink "${EROOT}/usr/bin/guile")") ]] \
+			&& targets[i]=$(highlight_marker "${targets[i]}")
+	done
+	write_list_start "Available Guile symlink targets:"
+	write_numbered_list -m "(none found)" "${targets[@]}"
+}
+
+### set action ###
+
+describe_set() {
+	echo "Set a new Guile symlink"
+}
+
+describe_set_options() {
+	echo "target : Target name or number (from 'list' action)"
+}
+
+describe_set_parameters() {
+	echo "<target>"
+}
+
+do_set() {
+	[[ -z $1 ]] && die -q "You didn't tell me what to set the symlink to"
+	[[ $# -gt 1 ]] && die -q "Too many parameters"
+	test_for_root
+
+	if [[ -e ${EROOT}/usr/bin/guile && ! -L ${EROOT}/usr/bin/guile ]]; then
+		die -q "${EROOT}/usr/bin/guile exists but is not a symlink"
+	fi
+
+	set_symlinks "${1}" || die -q "Couldn't set a new symlink"
+}
+
+### update action ###
+
+describe_update() {
+	echo "Automatically update the Guile symlink"
+}
+
+describe_update_options() {
+	echo "ifunset : Do not override currently set version"
+}
+
+do_update() {
+	[[ -z $1 || $1 = ifunset || $1 = --if-unset ]] || die -q "Usage error"
+	[[ $# -gt 1 ]] && die -q "Too many parameters"
+	test_for_root
+
+	if [[ -L ${EROOT}/usr/bin/guile ]]; then
+		# this is not redundant: "update" is called in pkg_postrm() of guile
+		# and should clean up any dead symlinks if no valid target exists
+		remove_symlinks || die -q "Couldn't remove existing symlink"
+	elif [[ -e ${EROOT}/usr/bin/guile ]]; then
+		die -q "${EROOT}/usr/bin/guile exists but is not a symlink"
+	fi
+
+	local targets=( $(find_targets) )
+	if [[ ${#targets[@]} -gt 0 ]]; then
+		set_symlinks "${targets[${#targets[@]}-1]}" \
+			|| die -q "Couldn't set a new symlink"
+	fi
+}
+
+### Clean action
+describe_clean() {
+	echo "Remove any existing symlinks"
+}
+
+do_clean() {
+	remove_symlinks
+}

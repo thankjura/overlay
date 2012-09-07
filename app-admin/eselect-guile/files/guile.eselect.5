@@ -1,0 +1,94 @@
+.\" Copyright 2007-2011 Gentoo Foundation
+.\" Distributed under the terms of the GNU General Public License v2
+.\" $Id: $
+.\"
+.TH guile.eselect 5 "August 2011" "Gentoo Linux" eselect
+.SH NAME
+guile.eselect \- The Guile management module for Gentoo's eselect
+.SH SYNOPSIS
+.B eselect guile
+.RB [ help | usage | version ]
+.br
+.B eselect guile list
+.br
+.B eselect guile set
+.I target
+.br
+.B eselect guile show
+.br
+.B eselect guile update
+.RB [ ifunset ]
+.SH DESCRIPTION
+.B eselect
+is Gentoo's configuration and management tool.  It features modules
+that care for the individual administrative tasks.
+.SH ACTION: LIST
+.B eselect guile list
+.br
+List all installed Guile versions
+
+# eselect guile list
+.br
+Available Guile symlink targets:
+.br
+  [1]   guile-1.8
+  [2]   guile-2.0 *
+.SH ACTION: SET
+.B eselect guile set
+.I target
+.br
+Activate the selected Guile version.
+.I target
+can be either an identification number given by
+.B eselect guile list
+or the name of one installed version.
+.\" To avoid runtime issues with
+.\" incompatible byte-code from the previously selected Emacs version, run
+.\" .B emacs-updater -a rebuild
+.\" to remerge all needed packages.
+
+# eselect guile set 1
+.br
+Switching guile to guile-1.8 ...
+.SH ACTION: SHOW
+.B eselect guile show
+.br
+Print the currently activated Guile version.
+
+# eselect guile show
+.br
+Current target of Guile symlink:
+.br
+  emacs-1.8
+.SH ACTION: UPDATE
+.B eselect guile update
+.RB [ ifunset ]
+.br
+Update the guile symlink to the last available version.  If option
+.B ifunset
+is given, an existing implementation is not overridden.
+
+The update process consists in creating symlinks for guile's binaries,
+man page and aclocal.m4. It also generates an environment file.
+The symlinks concerns: 
+.br
+* /usr/bin/guile and /usr/bin/guile-{config,snarf,tools} binaries;
+.br
+* /usr/share/aclocal/guile.m4;
+.br
+* guile(1) man page.
+.br
+The environment file (/etc/env.d/50guile) defines INFOPATH and
+GUILE_LOAD_PATH.
+
+# eselect guile update
+.br
+Switching guile to guile-2.0 ...
+.SH AUTHORS
+Christian Faulhammer <fauli@gentoo.org>
+.br
+Ulrich Mueller <ulm@gentoo.org>
+.SH SEE ALSO
+.BR eselect (1)
+.SH REVISION
+$Id: $

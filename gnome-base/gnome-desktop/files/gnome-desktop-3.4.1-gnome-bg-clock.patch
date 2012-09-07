@@ -1,0 +1,35 @@
+From 48793aa3329ce4a1cbd0ddbb4a06e2fb94c70f0c Mon Sep 17 00:00:00 2001
+From: Daniel Drake <dsd@laptop.org>
+Date: Wed, 11 Apr 2012 13:59:32 -0600
+Subject: [PATCH] gnome-bg: Fix crash when system clock is behind start date
+
+The 1-slide background included in Fedora 17 causes a crash
+in gnome-bg when the system clock is set behind the date specified
+in the slideshow xml file.
+
+This was due to slide->duration being set to UINT_MAX (to indicate a
+single-slide show) but show->total_duration not being updated to take
+account of this. The calculation in get_current_slide() was therefore
+confused, and triggered a g_assert_not_reached().
+
+https://bugzilla.gnome.org/show_bug.cgi?id=673551
+---
+ libgnome-desktop/gnome-bg.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/libgnome-desktop/gnome-bg.c b/libgnome-desktop/gnome-bg.c
+index c6e4e06..9a583a6 100644
+--- a/libgnome-desktop/gnome-bg.c
++++ b/libgnome-desktop/gnome-bg.c
+@@ -2953,7 +2953,7 @@ read_slideshow_file (const char *filename,
+ 		/* one slide, there's no transition */
+ 		} else if (len == 1) {
+ 			Slide *slide = show->slides->head->data;
+-			slide->duration = G_MAXUINT;
++			slide->duration = show->total_duration = G_MAXUINT;
+ 		}
+ 	}
+ 
+-- 
+1.7.8.6
+

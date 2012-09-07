@@ -1,0 +1,42 @@
+diff -ru src.orig/cmd/bind-driver.c src/cmd/bind-driver.c
+--- src.orig/cmd/bind-driver.c	2012-07-26 16:24:56.316892744 +0400
++++ src/cmd/bind-driver.c	2012-07-26 16:30:53.092882903 +0400
+@@ -27,7 +27,7 @@
+ 	{NULL,		0,			NULL,  0}
+ };
+ 
+-static const char match_busid_path[] = "/sys/bus/usb/drivers/usbip/match_busid";
++static const char match_busid_path[] = "/sys/bus/usb/drivers/usbip-host/match_busid";
+ 
+ 
+ static void show_help(void)
+@@ -190,7 +190,7 @@
+ 			continue; /* unbound interface */
+ 
+ #if 0
+-		if (!strncmp("usbip", driver, PATH_MAX))
++		if (!strncmp("usbip-host", driver, PATH_MAX))
+ 			continue; /* already bound to usbip */
+ #endif
+ 
+@@ -228,7 +228,7 @@
+  	for (i = 0; i < ninterface; i++) {
+ 		int ret;
+ 
+-		ret = bind_interface(busid, configvalue, i, "usbip");
++		ret = bind_interface(busid, configvalue, i, "usbip-host");
+ 		if (ret < 0) {
+ 			g_warning("bind usbip at %s:%d.%d, failed",
+ 					busid, configvalue, i);
+diff -ru src.orig/lib/stub_driver.c src/lib/stub_driver.c
+--- src.orig/lib/stub_driver.c	2012-07-26 16:25:15.620892212 +0400
++++ src/lib/stub_driver.c	2012-07-26 16:22:34.942896644 +0400
+@@ -4,7 +4,7 @@
+ 
+ #include "usbip.h"
+ 
+-static const char *usbip_stub_driver_name = "usbip";
++static const char *usbip_stub_driver_name = "usbip-host";
+ 
+ 
+ struct usbip_stub_driver *stub_driver;

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+<herd>games</herd>
+<use>
+    <flag name="jsbsim">Enable the JSBSim flight dynamics model</flag>
+    <flag name="larcsim">Enable the LaRCsim flight dynamics model</flag>
+    <flag name="subversion">Enable Flightgear's Terrasync to link against libsvn</flag>
+    <flag name="uiuc">Enable the UIUC flight dynamics model</flag>
+    <flag name="yasim">Enable the YASim flight dynamics model</flag>
+</use>
+<maintainer>
+<email>chris@ilovelinux.de</email>
+<name>Christian Schmitt</name>
+</maintainer>
+</pkgmetadata>
