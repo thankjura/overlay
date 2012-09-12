@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.132 2012/08/25 17:23:29 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.134 2012/09/12 11:44:02 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -42,10 +42,8 @@ RDEPEND="app-arch/bzip2
 	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
 	>=media-libs/libwebp-0.2.0_rc1
-	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
 	sys-fs/udev
-	sys-libs/zlib
 	virtual/libusb:1
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
@@ -54,7 +52,7 @@ RDEPEND="app-arch/bzip2
 	kerberos? ( virtual/krb5 )
 	selinux? ( sys-libs/libselinux )"
 DEPEND="${RDEPEND}
-	>=dev-lang/nacl-toolchain-newlib-0_p9093
+	!arm? ( >=dev-lang/nacl-toolchain-newlib-0_p9093 )
 	dev-lang/perl
 	dev-lang/yasm
 	dev-python/ply
@@ -64,9 +62,7 @@ DEPEND="${RDEPEND}
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
 	virtual/pkgconfig
-	test? (
-		dev-python/pyftpdlib
-	)"
+	test? ( dev-python/pyftpdlib )"
 RDEPEND+="
 	!=www-client/chromium-9999
 	x11-misc/xdg-utils
@@ -161,12 +157,14 @@ pkg_setup() {
 }
 
 src_prepare() {
-	ln -s /usr/$(get_libdir)/nacl-toolchain-newlib \
-		native_client/toolchain/linux_x86_newlib || die
+	if ! use arm; then
+		ln -s /usr/$(get_libdir)/nacl-toolchain-newlib \
+			native_client/toolchain/linux_x86_newlib || die
+	fi
 
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
-	sed -i '1i#define OF(x) x' \
-		third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.h || die
+	# sed -i '1i#define OF(x) x' \
+	#	third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.h || die
 
 	epatch_user
 
@@ -323,6 +321,11 @@ src_configure() {
 		myconf+=" -Dtarget_arch=x64"
 	elif [[ $myarch = x86 ]] ; then
 		myconf+=" -Dtarget_arch=ia32"
+	elif [[ $myarch = arm ]] ; then
+		# TODO: re-enable NaCl (NativeClient).
+		myconf+=" -Dtarget_arch=arm
+			-Darm_neon=0
+			-Ddisable_nacl=1"
 	else
 		die "Failed to determine target arch, got '$myarch'."
 	fi
@@ -431,10 +434,12 @@ src_install() {
 
 	doexe out/Release/chromedriver || die
 
-	doexe out/Release/nacl_helper{,_bootstrap} || die
-	insinto "${CHROMIUM_HOME}"
-	doins out/Release/nacl_irt_*.nexe || die
-	doins out/Release/libppGoogleNaClPluginChrome.so || die
+	if ! use arm; then
+		doexe out/Release/nacl_helper{,_bootstrap} || die
+		insinto "${CHROMIUM_HOME}"
+		doins out/Release/nacl_irt_*.nexe || die
+		doins out/Release/libppGoogleNaClPluginChrome.so || die
+	fi
 
 	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
 	if [[ "${CHROMIUM_SUFFIX}" != "" ]]; then
