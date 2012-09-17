@@ -108,7 +108,7 @@ src_unpack() {
 	gclient_sync
 
 	# Disabled so that we do not download nacl toolchain.
-	#gclient_runhooks
+	gclient_runhooks
 
 	# Remove any lingering nacl toolchain files.
 	rm -rf src/native_client/toolchain/linux_x86_newlib
