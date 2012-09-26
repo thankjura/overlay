@@ -15,8 +15,6 @@ KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~sh ~sparc ~x86 ~amd6
 IUSE=""
 
 src_prepare() {
-	epatch "${FILESDIR}/coverage-support.patch"
-	epatch "${FILESDIR}/coverage-support-fixes.patch"
 	eautoreconf
 	default
 }
