@@ -109,10 +109,10 @@ src_prepare() {
 	# people, so revert it if USE=short-touchpad-timeout.
 	# Revisit if/when upstream adds a setting for customizing the timeout.
 	use short-touchpad-timeout &&
-		epatch "${FILESDIR}/${PN}-3.5.91-short-touchpad-timeout.patch"
+		epatch "${FILESDIR}/${PN}-3.6.0-short-touchpad-timeout.patch"
 
 	# Make colord and wacom optional; requires eautoreconf
-	epatch "${FILESDIR}/${PN}-3.5.91-optional-color-wacom.patch"
+	epatch "${FILESDIR}/${PN}-3.6.0-optional-color-wacom.patch"
 
 	[[ ${PV} != 9999 ]] && eautoreconf
 
