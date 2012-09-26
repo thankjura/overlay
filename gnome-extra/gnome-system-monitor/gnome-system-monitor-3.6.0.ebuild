@@ -23,7 +23,7 @@ else
 fi
 
 RDEPEND=">=dev-libs/glib-2.28:2
-	>=x11-libs/libwnck-3.4:3
+	>=x11-libs/libwnck-3.4
 	>=gnome-base/libgtop-2.28.2:2
 	>=x11-libs/gtk+-3.0:3[X(+)]
 	>=x11-themes/gnome-icon-theme-2.31
