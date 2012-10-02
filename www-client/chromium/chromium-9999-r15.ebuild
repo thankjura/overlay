@@ -215,7 +215,7 @@ src_prepare() {
 		\! -path 'third_party/sfntly/*' \
 		\! -path 'third_party/skia/*' \
 		\! -path 'third_party/smhasher/*' \
-		\! -path 'third_party/speex/speex.h' \
+		\! -path 'third_party/speex/*' \
 		\! -path 'third_party/sqlite/*' \
 		\! -path 'third_party/tcmalloc/*' \
 		\! -path 'third_party/tlslite/*' \
