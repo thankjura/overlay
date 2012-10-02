@@ -262,7 +262,7 @@ src_configure() {
 	myconf+=" -Ddisable_glibc=1"
 
 	# TODO: also build with pnacl
-	myconf+=" -Ddisable_pnacl=1"
+	#myconf+=" -Ddisable_pnacl=1"
 
 	# Make it possible to remove third_party/adobe.
 	echo > "${T}/flapper_version.h" || die
