@@ -52,7 +52,6 @@ RDEPEND="app-arch/bzip2
 	kerberos? ( virtual/krb5 )
 	selinux? ( sys-libs/libselinux )"
 DEPEND="${RDEPEND}
-	>=dev-lang/nacl-toolchain-newlib-0_p9093
 	dev-lang/perl
 	dev-lang/yasm
 	dev-python/ply
@@ -157,16 +156,16 @@ pkg_setup() {
 }
 
 src_prepare() {
-	if ! use arm; then
-		ebegin "Preparing NaCl newlib toolchain"
-		pushd "${T}" >/dev/null || die
-		mkdir sdk || die
-		cp -a /usr/$(get_libdir)/nacl-toolchain-newlib sdk/nacl-sdk || die
-		mkdir -p "${S}"/native_client/toolchain/.tars || die
-		tar czf "${S}"/native_client/toolchain/.tars/naclsdk_linux_x86.tgz sdk || die
-		popd >/dev/null || die
-		eend $?
-	fi
+	#if ! use arm; then
+	#	ebegin "Preparing NaCl newlib toolchain"
+	#	pushd "${T}" >/dev/null || die
+	#	mkdir sdk || die
+	#	cp -a /usr/$(get_libdir)/nacl-toolchain-newlib sdk/nacl-sdk || die
+	#	mkdir -p "${S}"/native_client/toolchain/.tars || die
+	#	tar czf "${S}"/native_client/toolchain/.tars/naclsdk_linux_x86.tgz sdk || die
+	#	popd >/dev/null || die
+	#	eend $?
+	#fi
 
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
 	# sed -i '1i#define OF(x) x' \
