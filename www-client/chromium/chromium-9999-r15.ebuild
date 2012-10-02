@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.135 2012/09/23 12:37:33 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.138 2012/10/02 07:02:09 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -19,7 +19,7 @@ ESVN_REPO_URI="http://src.chromium.org/svn/trunk/src"
 LICENSE="BSD"
 SLOT="live"
 KEYWORDS=""
-IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux"
+IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux tcmalloc"
 
 RDEPEND="app-arch/bzip2
 	cups? (
@@ -27,7 +27,6 @@ RDEPEND="app-arch/bzip2
 		>=net-print/cups-1.3.11
 	)
 	>=dev-lang/v8-3.11.10.6
-	dev-libs/dbus-glib
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1
@@ -42,6 +41,7 @@ RDEPEND="app-arch/bzip2
 	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
 	>=media-libs/libwebp-0.2.0_rc1
+	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
 	sys-fs/udev
 	virtual/libusb:1
@@ -52,6 +52,7 @@ RDEPEND="app-arch/bzip2
 	kerberos? ( virtual/krb5 )
 	selinux? ( sys-libs/libselinux )"
 DEPEND="${RDEPEND}
+	>=dev-lang/nacl-toolchain-newlib-0_p9093
 	dev-lang/perl
 	dev-lang/yasm
 	dev-python/ply
@@ -156,10 +157,16 @@ pkg_setup() {
 }
 
 src_prepare() {
-	# if ! use arm; then
-	#	ln -s /usr/$(get_libdir)/nacl-toolchain-newlib \
-	#		native_client/toolchain/linux_x86_newlib || die
-	# fi
+	if ! use arm; then
+		ebegin "Preparing NaCl newlib toolchain"
+		pushd "${T}" >/dev/null || die
+		mkdir sdk || die
+		cp -a /usr/$(get_libdir)/nacl-toolchain-newlib sdk/nacl-sdk || die
+		mkdir -p "${S}"/native_client/toolchain/.tars || die
+		tar czf "${S}"/native_client/toolchain/.tars/naclsdk_linux_x86.tgz sdk || die
+		popd >/dev/null || die
+		eend $?
+	fi
 
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
 	# sed -i '1i#define OF(x) x' \
@@ -181,7 +188,6 @@ src_prepare() {
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/hyphen/*' \
 		\! -path 'third_party/iccjpeg/*' \
-		\! -path 'third_party/icu/*' \
 		\! -path 'third_party/jsoncpp/*' \
 		\! -path 'third_party/khronos/*' \
 		\! -path 'third_party/launchpad_translations/*' \
@@ -210,8 +216,9 @@ src_prepare() {
 		\! -path 'third_party/sfntly/*' \
 		\! -path 'third_party/skia/*' \
 		\! -path 'third_party/smhasher/*' \
-		\! -path 'third_party/speex/*' \
+		\! -path 'third_party/speex/speex.h' \
 		\! -path 'third_party/sqlite/*' \
+		\! -path 'third_party/tcmalloc/*' \
 		\! -path 'third_party/tlslite/*' \
 		\! -path 'third_party/trace-viewer/*' \
 		\! -path 'third_party/undoview/*' \
@@ -248,16 +255,15 @@ src_configure() {
 	# additions, bug #336871.
 	myconf+=" -Ddisable_sse2=1"
 
-	# Disable tcmalloc, it causes problems with e.g. NVIDIA
+	# Optional tcmalloc. Note it causes problems with e.g. NVIDIA
 	# drivers, bug #413637.
-	myconf+=" -Dlinux_use_tcmalloc=0"
-
-	# TODO: re-enable nacl after fixing build errors, see
-	# http://forums.gentoo.org/viewtopic-t-937222-highlight-chromium.html
-	myconf+=" -Ddisable_nacl=1"
+	myconf+=" $(gyp_use tcmalloc linux_use_tcmalloc)"
 
 	# Disable glibc Native Client toolchain, we don't need it (bug #417019).
 	myconf+=" -Ddisable_glibc=1"
+
+	# TODO: also build with pnacl
+	myconf+=" -Ddisable_pnacl=1"
 
 	# Make it possible to remove third_party/adobe.
 	echo > "${T}/flapper_version.h" || die
@@ -281,7 +287,7 @@ src_configure() {
 		-Duse_system_libusb=1
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
-		-Duse_system_speex=0
+		-Duse_system_speex=1
 		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
 		-Duse_system_yasm=1
@@ -441,12 +447,12 @@ src_install() {
 
 	doexe out/Release/chromedriver || die
 
-	# if ! use arm; then
-	#	doexe out/Release/nacl_helper{,_bootstrap} || die
-	#	insinto "${CHROMIUM_HOME}"
-	#	doins out/Release/nacl_irt_*.nexe || die
-	#	doins out/Release/libppGoogleNaClPluginChrome.so || die
-	# fi
+	if ! use arm; then
+		doexe out/Release/nacl_helper{,_bootstrap} || die
+		insinto "${CHROMIUM_HOME}"
+		doins out/Release/nacl_irt_*.nexe || die
+		doins out/Release/libppGoogleNaClPluginChrome.so || die
+	fi
 
 	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
 	if [[ "${CHROMIUM_SUFFIX}" != "" ]]; then
