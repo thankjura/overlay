@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.138 2012/10/02 07:02:09 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.140 2012/10/03 16:16:22 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -43,6 +43,7 @@ RDEPEND="app-arch/bzip2
 	>=media-libs/libwebp-0.2.0_rc1
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
+	sys-apps/dbus
 	sys-fs/udev
 	virtual/libusb:1
 	x11-libs/gtk+:2
@@ -156,7 +157,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	#if ! use arm; then
+	# if ! use arm; then
 	#	ebegin "Preparing NaCl newlib toolchain"
 	#	pushd "${T}" >/dev/null || die
 	#	mkdir sdk || die
@@ -165,7 +166,7 @@ src_prepare() {
 	#	tar czf "${S}"/native_client/toolchain/.tars/naclsdk_linux_x86.tgz sdk || die
 	#	popd >/dev/null || die
 	#	eend $?
-	#fi
+	# fi
 
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
 	# sed -i '1i#define OF(x) x' \
@@ -215,7 +216,7 @@ src_prepare() {
 		\! -path 'third_party/sfntly/*' \
 		\! -path 'third_party/skia/*' \
 		\! -path 'third_party/smhasher/*' \
-		\! -path 'third_party/speex/*' \
+		\! -path 'third_party/speex/speex.h' \
 		\! -path 'third_party/sqlite/*' \
 		\! -path 'third_party/tcmalloc/*' \
 		\! -path 'third_party/tlslite/*' \
@@ -258,11 +259,15 @@ src_configure() {
 	# drivers, bug #413637.
 	myconf+=" $(gyp_use tcmalloc linux_use_tcmalloc)"
 
+	# TODO: build with NaCl (pnacl is sort of required).
+	myconf+=" -Ddisable_nacl=1"
+
 	# Disable glibc Native Client toolchain, we don't need it (bug #417019).
-	myconf+=" -Ddisable_glibc=1"
+	# myconf+=" -Ddisable_glibc=1"
 
 	# TODO: also build with pnacl
-	#myconf+=" -Ddisable_pnacl=1"
+	# myconf+=" -Ddisable_pnacl=1
+	#	-Dbuild_pnacl_newlib=0"
 
 	# Make it possible to remove third_party/adobe.
 	echo > "${T}/flapper_version.h" || die
@@ -446,12 +451,12 @@ src_install() {
 
 	doexe out/Release/chromedriver || die
 
-	#if ! use arm; then
+	# if ! use arm; then
 	#	doexe out/Release/nacl_helper{,_bootstrap} || die
 	#	insinto "${CHROMIUM_HOME}"
 	#	doins out/Release/nacl_irt_*.nexe || die
 	#	doins out/Release/libppGoogleNaClPluginChrome.so || die
-	#fi
+	# fi
 
 	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
 	if [[ "${CHROMIUM_SUFFIX}" != "" ]]; then
