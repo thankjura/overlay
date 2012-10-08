@@ -7,7 +7,7 @@ inherit versionator games
 
 DESCRIPTION="3D real-time strategy game"
 HOMEPAGE="http://wz2100.net/"
-SRC_URI="http://downloads.sourceforge.net/project/warzone2100/releases/${PV}/warzone2100-${PV}.tar.gz"
+SRC_URI="http://downloads.sourceforge.net/project/warzone2100/releases/${PV}/warzone2100-${PV}.tar.xz"
 
 LICENSE="GPL-2 CCPL-Attribution-ShareAlike-3.0 public-domain"
 SLOT="0"
