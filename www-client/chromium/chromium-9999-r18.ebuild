@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.140 2012/10/03 16:16:22 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.141 2012/10/07 16:45:19 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -51,7 +51,10 @@ RDEPEND="app-arch/bzip2
 	x11-libs/libXScrnSaver
 	x11-libs/libXtst
 	kerberos? ( virtual/krb5 )
-	selinux? ( sys-libs/libselinux )"
+	selinux? (
+		sec-policy/selinux-chromium
+		sys-libs/libselinux
+	)"
 DEPEND="${RDEPEND}
 	dev-lang/perl
 	dev-lang/yasm
