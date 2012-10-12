@@ -229,6 +229,7 @@ src_prepare() {
 		\! -path 'third_party/webdriver/*' \
 		\! -path 'third_party/webgl_conformance/*' \
 		\! -path 'third_party/webrtc/*' \
+		\! -path 'third_party/widevine/*' \
 		\! -path 'third_party/zlib/*' \
 		-delete || die
 
