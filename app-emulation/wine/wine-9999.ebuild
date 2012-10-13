@@ -18,7 +18,7 @@ else
 	S=${WORKDIR}/${MY_P}
 fi
 
-GV="1.7"
+GV="1.8"
 MV="0.0.4"
 PULSE_PATCH="winepulse-2012.06.15.patch"
 DESCRIPTION="free implementation of Windows(tm) on Unix"
