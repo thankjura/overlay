@@ -22,10 +22,6 @@ pkg_setup() {
 	python_pkg_setup
 }
 
-src_prepare() {
-	epatch "${FILESDIR}"/${PN}-3.10.8.10-freebsd9.patch
-}
-
 src_compile() {
 	tc-export AR CC CXX RANLIB
 	export LINK=${CXX}
