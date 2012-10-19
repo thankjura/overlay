@@ -14,4 +14,3 @@
  	SET(POSTERAZOR_LINKLIBRARIES
  		fltk
  		fltk_images
-
