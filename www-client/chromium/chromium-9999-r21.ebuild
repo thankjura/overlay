@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.141 2012/10/07 16:45:19 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.143 2012/10/25 04:09:35 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -26,7 +26,7 @@ RDEPEND="app-arch/bzip2
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.11.10.6
+	>=dev-lang/v8-3.14.5
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1
@@ -40,10 +40,12 @@ RDEPEND="app-arch/bzip2
 	media-libs/flac
 	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
+	media-libs/libvpx
 	>=media-libs/libwebp-0.2.0_rc1
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
 	sys-apps/dbus
+	sys-libs/zlib[minizip]
 	sys-fs/udev
 	virtual/libusb:1
 	x11-libs/gtk+:2
@@ -195,14 +197,13 @@ src_prepare() {
 		\! -path 'third_party/iccjpeg/*' \
 		\! -path 'third_party/jsoncpp/*' \
 		\! -path 'third_party/khronos/*' \
-		\! -path 'third_party/launchpad_translations/*' \
 		\! -path 'third_party/leveldatabase/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
 		\! -path 'third_party/libsrtp/*' \
 		\! -path 'third_party/libusb/libusb.h' \
 		\! -path 'third_party/libva/*' \
-		\! -path 'third_party/libvpx/*' \
+		\! -path 'third_party/libvpx/libvpx.h' \
 		\! -path 'third_party/libxml/chromium/*' \
 		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
@@ -213,7 +214,6 @@ src_prepare() {
 		\! -path 'third_party/mt19937ar/*' \
 		\! -path 'third_party/npapi/*' \
 		\! -path 'third_party/openmax/*' \
-		\! -path 'third_party/opus/*' \
 		\! -path 'third_party/ots/*' \
 		\! -path 'third_party/protobuf/*' \
 		\! -path 'third_party/pywebsocket/*' \
@@ -234,7 +234,6 @@ src_prepare() {
 		\! -path 'third_party/webgl_conformance/*' \
 		\! -path 'third_party/webrtc/*' \
 		\! -path 'third_party/widevine/*' \
-		\! -path 'third_party/zlib/*' \
 		-delete || die
 
 	local v8_bundled="$(chromium_bundled_v8_version)"
@@ -250,10 +249,6 @@ src_prepare() {
 	# TODO: find a solution that can be upstreamed.
 	rmdir v8/include || die
 	ln -s /usr/include v8/include || die
-
-	# Make sure the build system will use the right python, bug #344367.
-	# Only convert directories that need it, to save time.
-	python_convert_shebangs -q -r 2 build tools
 }
 
 src_configure() {
@@ -284,11 +279,9 @@ src_configure() {
 	# Use system-provided libraries.
 	# TODO: use_system_ffmpeg
 	# TODO: use_system_hunspell (upstream changes needed).
-	# TODO: use_system_speex (needs additional shims, bug #432748).
+	# TODO: use_system_libsrtp (bug #348600).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
-	# TODO: use_system_vpx
-	# TODO: use_system_zlib (forked, bug #432746).
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
@@ -297,13 +290,15 @@ src_configure() {
 		-Duse_system_libjpeg=1
 		-Duse_system_libpng=1
 		-Duse_system_libusb=1
+		-Duse_system_libvpx=1
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
+		-Duse_system_minizip=1
 		-Duse_system_speex=1
 		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
 		-Duse_system_yasm=1
-		-Duse_system_zlib=0"
+		-Duse_system_zlib=1"
 
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
