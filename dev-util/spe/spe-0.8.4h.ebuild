@@ -30,7 +30,6 @@ S="${WORKDIR}/spe-${MY_PV}"
 PYTHON_MODNAME="_spe"
 
 src_install() {
-	python_version
 	local mypyconf
 	local site_pkgs=/usr/$(get_libdir)/python${PYVER}/site-packages
 	dodir ${site_pkgs}
@@ -41,11 +40,9 @@ src_install() {
 }
 
 pkg_postinst() {
-	python_version
 	python_mod_optimize /usr/$(get_libdir)/python${PYVER}/site-packages/
 }
 
 pkg_postrm() {
-	python_version
 	python_mod_cleanup /usr/$(get_libdir)/python${PYVER}/site-packages/
 }
