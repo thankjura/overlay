@@ -38,11 +38,3 @@ src_install() {
 	insinto /usr/share/applications
 	doins "${S}/spe.desktop"
 }
-
-pkg_postinst() {
-	python_mod_optimize /usr/$(get_libdir)/python${PYVER}/site-packages/
-}
-
-pkg_postrm() {
-	python_mod_cleanup /usr/$(get_libdir)/python${PYVER}/site-packages/
-}
