@@ -1,0 +1,12 @@
+diff --git a/src/trigger/door.cpp b/src/trigger/door.cpp
+index 85bf378..33093bf 100644
+--- a/src/trigger/door.cpp
++++ b/src/trigger/door.cpp
+@@ -22,6 +22,7 @@
+ #include "supertux/sector.hpp"
+ #include "trigger/door.hpp"
+ #include "util/reader.hpp"
++#include <sstream>
+ 
+ Door::Door(const Reader& reader) :
+   state(CLOSED),
