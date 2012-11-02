@@ -71,6 +71,8 @@ src_install() {
 
 		exeinto /usr/$(get_libdir)/sane/
 		doexe ${SARCH}/at_root/usr/${SLIBDIR}/sane/*
+
+		dosym /usr/$(get_libdir)/sane/libsane-smfp.so.1.0.1 /usr/$(get_libdir)/sane/libsane-smfp.so.1
 	fi
 
 	if use qt4; then
