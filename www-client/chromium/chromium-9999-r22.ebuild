@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.143 2012/10/25 04:09:35 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.145 2012/11/02 01:12:32 phajdan.jr Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -42,6 +42,7 @@ RDEPEND="app-arch/bzip2
 	media-libs/libpng
 	media-libs/libvpx
 	>=media-libs/libwebp-0.2.0_rc1
+	media-libs/opus
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
 	sys-apps/dbus
@@ -214,7 +215,7 @@ src_prepare() {
 		\! -path 'third_party/mt19937ar/*' \
 		\! -path 'third_party/npapi/*' \
 		\! -path 'third_party/openmax/*' \
-		\! -path 'third_party/opus/*' \
+		\! -path 'third_party/opus/opus.h*' \
 		\! -path 'third_party/ots/*' \
 		\! -path 'third_party/protobuf/*' \
 		\! -path 'third_party/pywebsocket/*' \
@@ -295,6 +296,7 @@ src_configure() {
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
 		-Duse_system_minizip=1
+		-Duse_system_opus=1
 		-Duse_system_speex=1
 		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
@@ -342,6 +344,7 @@ src_configure() {
 	elif [[ $myarch = arm ]] ; then
 		# TODO: re-enable NaCl (NativeClient).
 		myconf+=" -Dtarget_arch=arm
+			-Darmv7=0
 			-Darm_neon=0
 			-Ddisable_nacl=1"
 	else
@@ -426,19 +429,21 @@ src_test() {
 	runtest out/Release/crypto_unittests
 	runtest out/Release/googleurl_unittests
 	runtest out/Release/gpu_unittests
-	runtest out/Release/media_unittests
 
-	local excluded_net_unittests=(
-		"NetUtilTest.IDNToUnicode*" # bug 361885
-		"NetUtilTest.FormatUrl*" # see above
-		"DnsConfigServiceTest.GetSystemConfig" # bug #394883
-		"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
-		"URLFetcher*" # bug #425764
-		"HTTPSOCSPTest.*" # bug #426630
-		"HTTPSEVCRLSetTest.*" # see above
-		"HTTPSCRLSetTest.*" # see above
-	)
-	runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
+	# TODO: re-enable when we get the test data in a separate tarball.
+	# runtest out/Release/media_unittests
+
+	# local excluded_net_unittests=(
+	#	"NetUtilTest.IDNToUnicode*" # bug 361885
+	#	"NetUtilTest.FormatUrl*" # see above
+	#	"DnsConfigServiceTest.GetSystemConfig" # bug #394883
+	#	"CertDatabaseNSSTest.ImportServerCert_SelfSigned" # bug #399269
+	#	"URLFetcher*" # bug #425764
+	#	"HTTPSOCSPTest.*" # bug #426630
+	#	"HTTPSEVCRLSetTest.*" # see above
+	#	"HTTPSCRLSetTest.*" # see above
+	#)
+	# runtest out/Release/net_unittests "${excluded_net_unittests[@]}"
 
 	runtest out/Release/printing_unittests
 	runtest out/Release/sql_unittests
