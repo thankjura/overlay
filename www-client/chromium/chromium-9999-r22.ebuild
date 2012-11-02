@@ -42,7 +42,6 @@ RDEPEND="app-arch/bzip2
 	media-libs/libpng
 	media-libs/libvpx
 	>=media-libs/libwebp-0.2.0_rc1
-	media-libs/opus
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
 	sys-apps/dbus
@@ -215,7 +214,6 @@ src_prepare() {
 		\! -path 'third_party/mt19937ar/*' \
 		\! -path 'third_party/npapi/*' \
 		\! -path 'third_party/openmax/*' \
-		\! -path 'third_party/opus/opus.h*' \
 		\! -path 'third_party/ots/*' \
 		\! -path 'third_party/protobuf/*' \
 		\! -path 'third_party/pywebsocket/*' \
@@ -296,7 +294,6 @@ src_configure() {
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
 		-Duse_system_minizip=1
-		-Duse_system_opus=1
 		-Duse_system_speex=1
 		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
