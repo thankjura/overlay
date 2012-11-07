@@ -11,7 +11,7 @@ SRC_URI="http://media.steampowered.com/client/installer/${PN}.deb"
 
 LICENSE="custom"
 SLOT="0"
-KEYWORDS="~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 src_unpack() {
