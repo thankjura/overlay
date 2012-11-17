@@ -1,0 +1,13 @@
+--- media/filters/ffmpeg_glue.h.orig	2012-11-16 00:05:30.196358339 +0000
++++ media/filters/ffmpeg_glue.h	2012-11-16 00:05:50.604414879 +0000
+@@ -28,9 +28,9 @@
+ #include "base/basictypes.h"
+ #include "base/memory/scoped_ptr.h"
+ #include "media/base/media_export.h"
++#include "media/ffmpeg/ffmpeg_common.h"
+ 
+ struct AVFormatContext;
+-struct AVIOContext;
+ 
+ namespace media {
+ 
