@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.148 2012/11/26 01:59:36 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.149 2012/12/02 22:21:32 ssuominen Exp $
 
 EAPI="4"
 PYTHON_DEPEND="2:2.6"
@@ -49,7 +49,7 @@ RDEPEND="app-arch/bzip2
 	sys-apps/dbus
 	sys-apps/pciutils
 	sys-libs/zlib[minizip]
-	sys-fs/udev
+	virtual/udev
 	virtual/libusb:1
 	x11-libs/gtk+:2
 	x11-libs/libXinerama
