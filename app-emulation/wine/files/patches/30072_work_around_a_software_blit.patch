@@ -1,0 +1,27 @@
+From ca4e5246eeda2473139869ac9d6f6afe22dd73b2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Stefan=20D=C3=B6singer?= <stefan@codeweavers.com>
+Date: Sat, 7 Aug 2010 17:20:09 +0200
+Subject: [PATCH 11/12] wined3d: work around a software blit
+
+---
+ dlls/wined3d/surface.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/dlls/wined3d/surface.c b/dlls/wined3d/surface.c
+index 101c8c2..ec018bd 100644
+--- a/dlls/wined3d/surface.c
++++ b/dlls/wined3d/surface.c
+@@ -3391,8 +3391,8 @@ static HRESULT IWineD3DSurfaceImpl_BltOverride(IWineD3DSurfaceImpl *dst_surface,
+ 
+     /* Early sort out of cases where no render target is used */
+     if (!dstSwapchain && !srcSwapchain
+-            && src_surface != device->render_targets[0]
+-            && dst_surface != device->render_targets[0])
++            && !(src_surface->resource.usage & WINED3DUSAGE_RENDERTARGET)
++            && !(dst_surface->resource.usage & WINED3DUSAGE_RENDERTARGET))
+     {
+         TRACE("No surface is render target, not using hardware blit.\n");
+         return WINED3DERR_INVALIDCALL;
+-- 
+1.7.1
+

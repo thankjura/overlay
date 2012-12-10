@@ -147,6 +147,8 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
 	epatch "${FILESDIR}"/${PN}-1.5.17-osmesa-check.patch #429386
 	epatch "../${PULSE_PATCHES}"/*.patch #421365
+	# http://bugs.winehq.org/show_bug.cgi?id=23802
+	epatch "${FILESDIR}"/patches/*.patch # My patch set
 	epatch_user #282735
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
