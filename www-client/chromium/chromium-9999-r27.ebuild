@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.153 2012/12/10 04:26:50 floppym Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.154 2012/12/12 04:32:17 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_DEPEND="2:2.6"
@@ -68,6 +68,7 @@ DEPEND="${RDEPEND}
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
 	net-libs/webkit-gtk:2
+	sys-apps/hwids
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	>=sys-devel/make-3.81-r2
@@ -235,7 +236,6 @@ src_prepare() {
 		\! -path 'third_party/tlslite/*' \
 		\! -path 'third_party/trace-viewer/*' \
 		\! -path 'third_party/undoview/*' \
-		\! -path 'third_party/usb_ids/*' \
 		\! -path 'third_party/v8-i18n/*' \
 		\! -path 'third_party/webdriver/*' \
 		\! -path 'third_party/webgl_conformance/*' \
@@ -326,6 +326,10 @@ src_configure() {
 	myconf+="
 		-Dlinux_link_gsettings=1
 		-Dlinux_link_libpci=1"
+
+	# TODO: use the file at run time instead of effectively compiling it in.
+	myconf+="
+		-Dusb_ids_path=/usr/share/misc/usb.ids"
 
 	if ! use selinux; then
 		# Enable SUID sandbox.
