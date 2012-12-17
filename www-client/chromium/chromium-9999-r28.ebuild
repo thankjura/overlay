@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.154 2012/12/12 04:32:17 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.155 2012/12/15 23:37:48 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_DEPEND="2:2.6"
@@ -26,7 +26,7 @@ RDEPEND="app-arch/bzip2
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.15.7.2:=
+	>=dev-lang/v8-3.15.11.1:=
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1
@@ -39,6 +39,7 @@ RDEPEND="app-arch/bzip2
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
 	>=media-libs/alsa-lib-1.0.19
 	media-libs/flac
+	media-libs/harfbuzz
 	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
 	media-libs/libvpx
@@ -62,12 +63,14 @@ RDEPEND="app-arch/bzip2
 		sys-libs/libselinux
 	)"
 DEPEND="${RDEPEND}
+	!arm? (
+		>=dev-lang/nacl-toolchain-newlib-0_p9093
+		dev-lang/yasm
+	)
 	dev-lang/perl
-	dev-lang/yasm
 	dev-python/ply
 	dev-python/simplejson
 	>=dev-util/gperf-3.0.3
-	net-libs/webkit-gtk:2
 	sys-apps/hwids
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
@@ -169,20 +172,26 @@ pkg_setup() {
 }
 
 src_prepare() {
-	# if ! use arm; then
-	#	ebegin "Preparing NaCl newlib toolchain"
-	#	pushd "${T}" >/dev/null || die
-	#	mkdir sdk || die
-	#	cp -a /usr/$(get_libdir)/nacl-toolchain-newlib sdk/nacl-sdk || die
-	#	mkdir -p "${S}"/native_client/toolchain/.tars || die
-	#	tar czf "${S}"/native_client/toolchain/.tars/naclsdk_linux_x86.tgz sdk || die
-	#	popd >/dev/null || die
-	#	eend $?
-	# fi
+	if ! use arm; then
+		ebegin "Preparing NaCl newlib toolchain"
+		pushd "${T}" >/dev/null || die
+		mkdir sdk || die
+		cp -a /usr/$(get_libdir)/nacl-toolchain-newlib sdk/nacl-sdk || die
+		mkdir -p "${S}"/native_client/toolchain/.tars || die
+		tar czf "${S}"/native_client/toolchain/.tars/naclsdk_linux_x86.tgz sdk || die
+		popd >/dev/null || die
+		eend $?
+	fi
 
 	# zlib-1.2.5.1-r1 renames the OF macro in zconf.h, bug 383371.
 	# sed -i '1i#define OF(x) x' \
 	#	third_party/zlib/contrib/minizip/{ioapi,{,un}zip}.h || die
+
+	# Fix build without NaCl glibc toolchain.
+	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
+
+	# Fix build without NaCl pnacl toolchain.
+	epatch "${FILESDIR}/${PN}-no-pnacl-r0.patch"
 
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r0.patch"
 
@@ -199,8 +208,6 @@ src_prepare() {
 		\! -path 'third_party/flac/flac.h' \
 		\! -path 'third_party/flot/*' \
 		\! -path 'third_party/gpsd/*' \
-		\! -path 'third_party/harfbuzz/*' \
-		\! -path 'third_party/harfbuzz-ng/*' \
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/hyphen/*' \
 		\! -path 'third_party/iccjpeg/*' \
@@ -269,15 +276,11 @@ src_configure() {
 	# drivers, bug #413637.
 	myconf+=" $(gyp_use tcmalloc linux_use_tcmalloc)"
 
-	# TODO: build with NaCl (pnacl is sort of required).
-	myconf+=" -Ddisable_nacl=1"
-
 	# Disable glibc Native Client toolchain, we don't need it (bug #417019).
-	# myconf+=" -Ddisable_glibc=1"
+	myconf+=" -Ddisable_glibc=1"
 
 	# TODO: also build with pnacl
-	# myconf+=" -Ddisable_pnacl=1
-	#	-Dbuild_pnacl_newlib=0"
+	myconf+=" -Ddisable_pnacl=1"
 
 	# Make it possible to remove third_party/adobe.
 	echo > "${T}/flapper_version.h" || die
@@ -292,6 +295,7 @@ src_configure() {
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
+		-Duse_system_harfbuzz=1
 		-Duse_system_icu=1
 		-Duse_system_libevent=1
 		-Duse_system_libjpeg=1
@@ -480,12 +484,12 @@ src_install() {
 
 	doexe out/Release/chromedriver || die
 
-	# if ! use arm; then
-	#	doexe out/Release/nacl_helper{,_bootstrap} || die
-	#	insinto "${CHROMIUM_HOME}"
-	#	doins out/Release/nacl_irt_*.nexe || die
-	#	doins out/Release/libppGoogleNaClPluginChrome.so || die
-	# fi
+	if ! use arm; then
+		doexe out/Release/nacl_helper{,_bootstrap} || die
+		insinto "${CHROMIUM_HOME}"
+		doins out/Release/nacl_irt_*.nexe || die
+		doins out/Release/libppGoogleNaClPluginChrome.so || die
+	fi
 
 	newexe "${FILESDIR}"/chromium-launcher-r2.sh chromium-launcher.sh || die
 	if [[ "${CHROMIUM_SUFFIX}" != "" ]]; then
