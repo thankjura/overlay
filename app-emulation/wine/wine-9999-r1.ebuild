@@ -148,6 +148,7 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN}-1.5.17-osmesa-check.patch #429386
 	epatch "../${PULSE_PATCHES}"/*.patch #421365
 	# http://bugs.winehq.org/show_bug.cgi?id=23802
+	rm -rf "${FILESDIR}"/patches/0027-dsound-fix-format-handling-on-invalid-format-to-neve.patch
 	epatch "${FILESDIR}"/patches/*.patch # My patch set
 	epatch_user #282735
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
