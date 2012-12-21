@@ -8,7 +8,11 @@ inherit eutils unpacker
 
 DESCRIPTION="the All-In-One Solution for Remote Access and Support over the Internet"
 HOMEPAGE="http://www.teamviewer.com"
-SRC_URI="http://www.teamviewer.com/download/version_8x/teamviewer_linux_x64.deb -> ${P}.deb"
+
+SRC_URI="
+		x86? ( http://www.teamviewer.com/download/version_8x/teamviewer_linux.deb -> ${P}.deb )
+		amd64? ( http://www.teamviewer.com/download/version_8x/teamviewer_linux_x64.deb -> ${P}.deb )
+		"
 
 LICENSE="TeamViewer"
 SLOT="0"
