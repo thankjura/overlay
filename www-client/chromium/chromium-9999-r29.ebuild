@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.155 2012/12/15 23:37:48 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.156 2012/12/20 16:50:28 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_DEPEND="2:2.6"
@@ -21,7 +21,8 @@ SLOT="live"
 KEYWORDS=""
 IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux system-ffmpeg tcmalloc"
 
-RDEPEND="app-arch/bzip2
+RDEPEND="app-accessibility/speech-dispatcher
+	app-arch/bzip2
 	cups? (
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
@@ -329,7 +330,8 @@ src_configure() {
 	# This makes breakages easier to detect by revdep-rebuild.
 	myconf+="
 		-Dlinux_link_gsettings=1
-		-Dlinux_link_libpci=1"
+		-Dlinux_link_libpci=1
+		-Dlinux_link_libspeechd=1"
 
 	# TODO: use the file at run time instead of effectively compiling it in.
 	myconf+="
