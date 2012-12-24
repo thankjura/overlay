@@ -21,8 +21,7 @@ SLOT="live"
 KEYWORDS=""
 IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux system-ffmpeg tcmalloc"
 
-RDEPEND="app-accessibility/speech-dispatcher
-	app-arch/bzip2
+RDEPEND="app-arch/bzip2
 	cups? (
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
@@ -330,8 +329,7 @@ src_configure() {
 	# This makes breakages easier to detect by revdep-rebuild.
 	myconf+="
 		-Dlinux_link_gsettings=1
-		-Dlinux_link_libpci=1
-		-Dlinux_link_libspeechd=1"
+		-Dlinux_link_libpci=1"
 
 	# TODO: use the file at run time instead of effectively compiling it in.
 	myconf+="
