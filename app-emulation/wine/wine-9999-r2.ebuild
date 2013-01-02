@@ -1,6 +1,6 @@
 # Copyright 1999-2012 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/wine/wine-9999.ebuild,v 1.125 2012/12/22 06:22:23 tetromino Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/wine/wine-9999.ebuild,v 1.127 2012/12/31 07:38:44 tetromino Exp $
 
 EAPI="5"
 
@@ -35,18 +35,18 @@ SRC_URI="${SRC_URI}
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-IUSE="alsa capi cups custom-cflags elibc_glibc fontconfig +gecko gnutls gphoto2 gsm gstreamer hardened jpeg lcms ldap +mono mp3 ncurses nls odbc openal opencl +opengl osmesa +oss +perl png pulseaudio samba scanner selinux ssl test +threads +truetype udisks vanilla v4l +win32 +win64 +X xcomposite xinerama xml"
+IUSE="alsa capi cups custom-cflags elibc_glibc fontconfig +gecko gnutls gphoto2 gsm gstreamer jpeg lcms ldap +mono mp3 ncurses nls odbc openal opencl +opengl osmesa +oss +perl png +prelink samba scanner selinux ssl test +threads +truetype udisks v4l +win32 +win64 +X xcomposite xinerama xml"
+[[ ${PV} == "9999" ]] || IUSE="${IUSE} pulseaudio"
 REQUIRED_USE="elibc_glibc? ( threads )
 	mono? ( || ( win32 !win64 ) )
-	osmesa? ( opengl )
-	vanilla? ( !pulseaudio )" #286560
+	osmesa? ( opengl )" #286560
 RESTRICT="test" #72375
 
 MLIB_DEPS="amd64? (
 	truetype? ( >=app-emulation/emul-linux-x86-xlibs-2.1 )
 	X? (
 		>=app-emulation/emul-linux-x86-xlibs-2.1
-		>=app-emulation/emul-linux-x86-soundlibs-2.1[pulseaudio(+)?]
+		>=app-emulation/emul-linux-x86-soundlibs-2.1
 	)
 	mp3? ( app-emulation/emul-linux-x86-soundlibs )
 	odbc? ( app-emulation/emul-linux-x86-db )
@@ -95,10 +95,6 @@ RDEPEND="truetype? ( >=media-libs/freetype-2.0.0 media-fonts/corefonts )
 	nls? ( sys-devel/gettext )
 	odbc? ( dev-db/unixODBC:= )
 	osmesa? ( media-libs/mesa[osmesa] )
-	pulseaudio? (
-		media-sound/pulseaudio
-		sys-auth/rtkit
-	)
 	samba? ( >=net-fs/samba-3.0.25 )
 	selinux? ( sec-policy/selinux-wine )
 	xml? ( dev-libs/libxml2 dev-libs/libxslt )
@@ -109,6 +105,11 @@ RDEPEND="truetype? ( >=media-libs/freetype-2.0.0 media-fonts/corefonts )
 	!win64? ( ${MLIB_DEPS} )
 	win32? ( ${MLIB_DEPS} )
 	xcomposite? ( x11-libs/libXcomposite )"
+[[ ${PV} == "9999" ]] || RDEPEND="${RDEPEND}
+	pulseaudio? (
+		media-sound/pulseaudio
+		sys-auth/rtkit
+	)"
 DEPEND="${RDEPEND}
 	X? (
 		x11-proto/inputproto
@@ -116,7 +117,7 @@ DEPEND="${RDEPEND}
 		x11-proto/xf86vidmodeproto
 	)
 	xinerama? ( x11-proto/xineramaproto )
-	!hardened? ( sys-devel/prelink )
+	prelink? ( sys-devel/prelink )
 	virtual/pkgconfig
 	virtual/yacc
 	sys-devel/flex"
@@ -144,12 +145,12 @@ src_unpack() {
 
 src_prepare() {
 	local md5="$(md5sum server/protocol.def)"
-	# keep these even if USE=vanilla: they are needed to build
 	epatch "${FILESDIR}"/${PN}-1.1.15-winegcc.patch #260726
 	epatch "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
 	epatch "${FILESDIR}"/${PN}-1.5.17-osmesa-check.patch #429386
 	epatch "${FILESDIR}"/patches/*.patch # My patch set
-	use vanilla || epatch "../${PULSE_PATCHES}"/*.patch #421365
+	rm -f "../${PULSE_PATCHES}"/0025-dsound-Use-event-based-threads.patch
+	epatch "../${PULSE_PATCHES}"/*.patch #421365
 	epatch_user #282735
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
@@ -157,13 +158,16 @@ src_prepare() {
 	fi
 	eautoreconf
 	sed -i '/^UPDATE_DESKTOP_DATABASE/s:=.*:=true:' tools/Makefile.in || die
-	use vanilla || sed -i '/^MimeType/d' tools/wine.desktop || die #117785
+	sed -i '/^MimeType/d' tools/wine.desktop || die #117785
 }
 
 do_configure() {
 	local builddir="${WORKDIR}/wine$1"
 	mkdir -p "${builddir}"
 	pushd "${builddir}" >/dev/null
+
+	local usepulse
+	[[ ${PV} == "9999" ]] || usepulse=$(use_with pulseaudio pulse)
 
 	ECONF_SOURCE=${S} \
 	econf \
@@ -192,7 +196,7 @@ do_configure() {
 		$(use_with oss) \
 		$(use_with png) \
 		$(use_with threads pthread) \
-		$(usex vanilla "" $(use_with pulseaudio pulse)) \
+		${usepulse} \
 		$(use_with scanner sane) \
 		$(use_enable test tests) \
 		$(use_with truetype freetype) \
