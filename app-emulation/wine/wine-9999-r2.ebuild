@@ -150,6 +150,7 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN}-1.5.17-osmesa-check.patch #429386
 	epatch "${FILESDIR}"/patches/*.patch # My patch set
 	rm -f "../${PULSE_PATCHES}"/0025-dsound-Use-event-based-threads.patch
+	rm -f "../${PULSE_PATCHES}"/0026-dsound-rework-ugly-mixer-logic.patch
 	epatch "../${PULSE_PATCHES}"/*.patch #421365
 	epatch_user #282735
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
