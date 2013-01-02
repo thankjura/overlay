@@ -192,7 +192,7 @@ src_prepare() {
 	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
 
 	# Fix build without NaCl pnacl toolchain.
-	epatch "${FILESDIR}/${PN}-no-pnacl-r0.patch"
+	#epatch "${FILESDIR}/${PN}-no-pnacl-r0.patch"
 
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r0.patch"
 
