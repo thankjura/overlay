@@ -151,6 +151,9 @@ src_prepare() {
 	epatch "${FILESDIR}"/patches/*.patch # My patch set
 	rm -f "../${PULSE_PATCHES}"/0025-dsound-Use-event-based-threads.patch
 	rm -f "../${PULSE_PATCHES}"/0026-dsound-rework-ugly-mixer-logic.patch
+	rm -f "../${PULSE_PATCHES}"/0027-dsound-fix-format-handling-on-invalid-format-to-neve.patch
+	rm -f "../${PULSE_PATCHES}"/0028-dsound-fixup-DSOUND_WaveQueue-checks.patch
+	rm -f "../${PULSE_PATCHES}"/0029-dsound-remove-state-machine-from-render-buffer.patch
 	epatch "../${PULSE_PATCHES}"/*.patch #421365
 	epatch_user #282735
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
