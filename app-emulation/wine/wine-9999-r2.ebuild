@@ -20,7 +20,7 @@ fi
 
 GV="1.8"
 MV="0.0.8"
-PULSE_PATCHES="winepulse-patches-1.5.20_pre20121207"
+PULSE_PATCHES="winepulse-patches-1.5.21"
 WINE_GENTOO="wine-gentoo-2012.11.24"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
@@ -149,11 +149,6 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
 	epatch "${FILESDIR}"/${PN}-1.5.17-osmesa-check.patch #429386
 	epatch "${FILESDIR}"/patches/*.patch # My patch set
-	rm -f "../${PULSE_PATCHES}"/0025-dsound-Use-event-based-threads.patch
-	rm -f "../${PULSE_PATCHES}"/0026-dsound-rework-ugly-mixer-logic.patch
-	rm -f "../${PULSE_PATCHES}"/0027-dsound-fix-format-handling-on-invalid-format-to-neve.patch
-	rm -f "../${PULSE_PATCHES}"/0028-dsound-fixup-DSOUND_WaveQueue-checks.patch
-	rm -f "../${PULSE_PATCHES}"/0029-dsound-remove-state-machine-from-render-buffer.patch
 	epatch "../${PULSE_PATCHES}"/*.patch #421365
 	epatch_user #282735
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
