@@ -389,7 +389,6 @@ src_configure() {
 }
 
 src_compile() {
-	epatch "${FILESDIR}/${PN}-icu.patch"
 	local test_targets
 	for x in base cacheinvalidation crypto \
 		googleurl gpu media net printing sql; do
@@ -403,6 +402,8 @@ src_compile() {
 	if use test; then
 		make_targets+=$test_targets
 	fi
+
+	#	epatch "${FILESDIR}/${PN}-icu.patch"
 
 	# See bug #410883 for more info about the .host mess.
 	emake ${make_targets} BUILDTYPE=Release V=1 \
