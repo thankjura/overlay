@@ -1,0 +1,8 @@
+--- out/Release/obj/gen/shim_headers/system_icu/target/third_party/icu/public/common/unicode/uchar.h.old	2013-01-09 16:43:06.374859726 +0400
++++ out/Release/obj/gen/shim_headers/system_icu/target/third_party/icu/public/common/unicode/uchar.h	2013-01-09 16:43:19.001114958 +0400
+@@ -3,4 +3,4 @@
+ #error shim headers must not be used in official builds!
+ #endif
+ 
+-#include <common/unicode/uchar.h>
++#include <unicode/uchar.h>

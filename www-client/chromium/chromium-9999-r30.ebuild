@@ -389,6 +389,7 @@ src_configure() {
 }
 
 src_compile() {
+	epatch "${FILESDIR}/${PN}-icu.patch"
 	local test_targets
 	for x in base cacheinvalidation crypto \
 		googleurl gpu media net printing sql; do
