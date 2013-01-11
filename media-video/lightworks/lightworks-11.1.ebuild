@@ -23,7 +23,7 @@ RDEPEND="${DEPEND}"
 S=${WORKDIR}
 
 src_unpack() {
-▸···unpack_deb ${A}
+	unpack_deb ${A}
 }
 
 src_install() {
