@@ -18,7 +18,7 @@ else
 	S=${WORKDIR}/${MY_P}
 fi
 
-GV="1.8"
+GV="1.9"
 MV="0.0.8"
 PULSE_PATCHES="winepulse-patches-1.5.21"
 WINE_GENTOO="wine-gentoo-2012.11.24"
@@ -149,6 +149,8 @@ src_prepare() {
 	epatch "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
 	epatch "${FILESDIR}"/${PN}-1.5.17-osmesa-check.patch #429386
 	epatch "${FILESDIR}"/patches/*.patch # My patch set
+	rm -rf "../${PULSE_PATCHES}"/0030-dsound-fix-format-handling-on-invalid-format-to-neve.patch
+	rm -rf "../${PULSE_PATCHES}"/0032-dsound-remove-state-machine-from-render-buffer.patch
 	epatch "../${PULSE_PATCHES}"/*.patch #421365
 	epatch_user #282735
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
