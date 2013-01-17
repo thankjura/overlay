@@ -27,8 +27,6 @@ src_unpack() {
 }
 
 src_install() {
-	dobin "usr/bin/lightworks"
-
 	insinto "/usr/lib/"
 	doins -r usr/lib/lightworks
 
@@ -40,4 +38,6 @@ src_install() {
 	insinto /usr/share/
 	doins -r usr/share/fonts/
 	doins -r usr/share/lightworks/
+
+	dosym "/usr/lib/lightworks/spawn" /usr/bin/lightworks || die
 }
