@@ -20,7 +20,7 @@ fi
 
 GV="1.9"
 MV="0.0.8"
-PULSE_PATCHES="winepulse-patches-1.5.21"
+PULSE_PATCHES="winepulse-patches-1.5.22"
 WINE_GENTOO="wine-gentoo-2012.11.24"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
@@ -121,6 +121,13 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig
 	virtual/yacc
 	sys-devel/flex"
+
+# These use a non-standard "Wine" category, which is provided by
+# /etc/xdg/applications-merged/wine.menu
+QA_DESKTOP_FILE="usr/share/applications/wine-browsedrive.desktop
+usr/share/applications/wine-notepad.desktop
+usr/share/applications/wine-uninstaller.desktop
+usr/share/applications/wine-winecfg.desktop"
 
 src_unpack() {
 	if use win64 ; then
