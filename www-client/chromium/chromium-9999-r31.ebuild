@@ -50,7 +50,11 @@ RDEPEND="app-accessibility/speech-dispatcher
 	media-libs/opus
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
-	system-ffmpeg? ( || ( <media-video/ffmpeg-1.0 >=media-video/ffmpeg-1.0[opus] ) )
+	system-ffmpeg? ( || (
+		>=media-video/ffmpeg-1.0[opus]
+		<media-video/ffmpeg-1.0
+		media-video/libav
+	) )
 	>=net-libs/libsrtp-1.4.4_p20121108
 	sys-apps/dbus
 	sys-apps/pciutils
