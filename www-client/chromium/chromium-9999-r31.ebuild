@@ -30,7 +30,7 @@ RDEPEND="app-accessibility/speech-dispatcher
 	>=dev-lang/v8-3.15.11.1:=
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat
-	>=dev-libs/icu-49.1.1-r1
+	>=dev-libs/icu-49.1.1-r1:=
 	dev-libs/jsoncpp
 	>=dev-libs/libevent-1.4.13
 	dev-libs/libxml2[icu]
