@@ -206,6 +206,7 @@ src_prepare() {
 		\! -path 'third_party/cros_system_api/*' \
 		\! -path 'third_party/ffmpeg/*' \
 		\! -path 'third_party/flot/*' \
+		\! -path 'third_party/jstemplate/*' \
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/hyphen/*' \
 		\! -path 'third_party/iccjpeg/*' \
