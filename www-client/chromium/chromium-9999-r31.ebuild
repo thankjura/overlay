@@ -348,11 +348,11 @@ src_configure() {
 		-Dlinux_use_gold_flags=0"
 
 	# Always support proprietary codecs.
-	myconf+=" -Dproprietary_codecs=1"
+	#myconf+=" -Dproprietary_codecs=1"
 
 	if ! use bindist && ! use system-ffmpeg; then
 		# Enable H.624 support in bundled ffmpeg.
-		myconf+=" -Dffmpeg_branding=Chrome"
+		myconf+=" -Dproprietary_codecs=1 -Dffmpeg_branding=Chrome"
 	fi
 
 	# Set up Google API keys, see http://www.chromium.org/developers/how-tos/api-keys .
