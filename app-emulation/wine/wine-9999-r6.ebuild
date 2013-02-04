@@ -1,10 +1,10 @@
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/wine/wine-9999.ebuild,v 1.127 2012/12/31 07:38:44 tetromino Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/wine/wine-9999.ebuild,v 1.131 2013/02/04 02:38:40 tetromino Exp $
 
 EAPI="5"
 
-inherit autotools eutils flag-o-matic gnome2-utils multilib pax-utils
+inherit autotools eutils flag-o-matic gnome2-utils multilib pax-utils toolchain-funcs
 
 if [[ ${PV} == "9999" ]] ; then
 	EGIT_REPO_URI="git://source.winehq.org/git/wine.git"
@@ -20,7 +20,7 @@ fi
 
 GV="1.9"
 MV="0.0.8"
-PULSE_PATCHES="winepulse-patches-1.5.22"
+PULSE_PATCHES="winepulse-patches-1.5.23"
 WINE_GENTOO="wine-gentoo-2012.11.24"
 DESCRIPTION="Free implementation of Windows(tm) on Unix"
 HOMEPAGE="http://www.winehq.org/"
@@ -152,13 +152,12 @@ src_unpack() {
 
 src_prepare() {
 	local md5="$(md5sum server/protocol.def)"
+	epatch "${FILESDIR}"/patches/*.patch # My patch set
 	epatch "${FILESDIR}"/${PN}-1.1.15-winegcc.patch #260726
 	epatch "${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
 	epatch "${FILESDIR}"/${PN}-1.5.17-osmesa-check.patch #429386
-	epatch "${FILESDIR}"/patches/*.patch # My patch set
-	rm -rf "../${PULSE_PATCHES}"/0030-dsound-fix-format-handling-on-invalid-format-to-neve.patch
-	rm -rf "../${PULSE_PATCHES}"/0032-dsound-remove-state-machine-from-render-buffer.patch
-	epatch "../${PULSE_PATCHES}"/*.patch #421365
+	epatch "${FILESDIR}"/${PN}-1.5.23-winebuild-CCAS.patch #455308
+	[[ ${PV} == "9999" ]] || epatch "../${PULSE_PATCHES}"/*.patch #421365
 	epatch_user #282735
 	if [[ "$(md5sum server/protocol.def)" != "${md5}" ]]; then
 		einfo "server/protocol.def was patched; running tools/make_requests"
@@ -214,6 +213,7 @@ do_configure() {
 		$(use_with xinerama) \
 		$(use_with xml) \
 		$(use_with xml xslt) \
+		CCAS="$(tc-getAS)" \
 		$2
 
 	emake -j1 depend
