@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.163 2013/01/26 04:14:15 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.164 2013/02/05 10:31:43 phajdan.jr Exp $
 
 EAPI="5"
 PYTHON_DEPEND="2:2.6"
@@ -19,7 +19,7 @@ ESVN_REPO_URI="http://src.chromium.org/svn/trunk/src"
 LICENSE="BSD"
 SLOT="live"
 KEYWORDS=""
-IUSE="bindist cups gnome gnome-keyring kerberos pulseaudio selinux system-ffmpeg tcmalloc"
+IUSE="bindist cups gnome gnome-keyring gps kerberos pulseaudio selinux system-ffmpeg tcmalloc"
 
 RDEPEND="app-accessibility/speech-dispatcher
 	app-arch/bzip2
@@ -27,7 +27,7 @@ RDEPEND="app-accessibility/speech-dispatcher
 		dev-libs/libgcrypt
 		>=net-print/cups-1.3.11
 	)
-	>=dev-lang/v8-3.15.11.1:=
+	>=dev-lang/v8-3.16.11.1:=
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1:=
@@ -38,15 +38,17 @@ RDEPEND="app-accessibility/speech-dispatcher
 	dev-libs/nspr
 	>=dev-libs/nss-3.12.3
 	dev-libs/protobuf
+	dev-libs/re2
 	gnome? ( >=gnome-base/gconf-2.24.0 )
 	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
+	gps? ( >=sci-geosciences/gpsd-3.7[shm] )
 	>=media-libs/alsa-lib-1.0.19
 	media-libs/flac
 	media-libs/harfbuzz
 	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
-	media-libs/libvpx
 	>=media-libs/libwebp-0.2.0_rc1
+	media-libs/mesa[gles2]
 	media-libs/opus
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
@@ -206,15 +208,15 @@ src_prepare() {
 		\! -path 'third_party/hunspell/*' \
 		\! -path 'third_party/hyphen/*' \
 		\! -path 'third_party/iccjpeg/*' \
-		\! -path 'third_party/khronos/*' \
+		\! -path 'third_party/jstemplate/*' \
 		\! -path 'third_party/leveldatabase/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
+		\! -path 'third_party/libvpx/*' \
 		\! -path 'third_party/libxml/chromium/*' \
 		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
 		\! -path 'third_party/lss/*' \
-		\! -path 'third_party/mesa/*' \
 		\! -path 'third_party/modp_b64/*' \
 		\! -path 'third_party/mongoose/*' \
 		\! -path 'third_party/mt19937ar/*' \
@@ -223,7 +225,6 @@ src_prepare() {
 		\! -path 'third_party/ots/*' \
 		\! -path 'third_party/pywebsocket/*' \
 		\! -path 'third_party/qcms/*' \
-		\! -path 'third_party/re2/*' \
 		\! -path 'third_party/sfntly/*' \
 		\! -path 'third_party/skia/*' \
 		\! -path 'third_party/smhasher/*' \
@@ -244,13 +245,6 @@ src_prepare() {
 
 	# Remove bundled v8.
 	find v8 -type f \! -iname '*.gyp*' -delete || die
-
-	# The implementation files include v8 headers with full path,
-	# like #include "v8/include/v8.h". Make sure the system headers
-	# will be used.
-	# TODO: find a solution that can be upstreamed.
-	rmdir v8/include || die
-	ln -s /usr/include v8/include || die
 }
 
 src_configure() {
@@ -279,10 +273,10 @@ src_configure() {
 	myconf+=" -Dflapper_version_h_file=${T}/flapper_version.h"
 
 	# Use system-provided libraries.
-	# TODO: use_system_ffmpeg
 	# TODO: use_system_hunspell (upstream changes needed).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
+	# TODO: use_system_libvpx (http://crbug.com/174287).
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
@@ -294,13 +288,14 @@ src_configure() {
 		-Duse_system_libpng=1
 		-Duse_system_libsrtp=1
 		-Duse_system_libusb=1
-		-Duse_system_libvpx=1
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
+		-Duse_system_mesa=1
 		-Duse_system_minizip=1
 		-Duse_system_nspr=1
 		-Duse_system_opus=1
 		-Duse_system_protobuf=1
+		-Duse_system_re2=1
 		-Duse_system_speex=1
 		-Duse_system_v8=1
 		-Duse_system_xdg_utils=1
@@ -310,12 +305,13 @@ src_configure() {
 
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
-	# TODO: linux_use_libgps, linux_link_libgps.
 	myconf+="
 		$(gyp_use cups)
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
+		$(gyp_use gps linux_use_libgps)
+		$(gyp_use gps linux_link_libgps)
 		$(gyp_use kerberos)
 		$(gyp_use pulseaudio)
 		$(gyp_use selinux selinux)"
