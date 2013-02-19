@@ -48,7 +48,7 @@ RDEPEND="app-accessibility/speech-dispatcher
 	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
 	>=media-libs/libwebp-0.2.0_rc1
-	!x86? ( media-libs/mesa[gles2] )
+	x86? ( media-libs/mesa[gles2] )
 	media-libs/opus
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
@@ -303,7 +303,7 @@ src_configure() {
 		$(gyp_use system-ffmpeg use_system_ffmpeg)"
 
 	# TODO: Use system mesa on x86, bug #457130 .
-	if ! use x86; then
+	if use x86; then
 		myconf+="
 			-Duse_system_mesa=1"
 	fi
