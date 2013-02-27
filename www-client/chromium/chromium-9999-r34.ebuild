@@ -185,7 +185,7 @@ src_prepare() {
 	# Fix build without NaCl glibc toolchain.
 	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
 	epatch "${FILESDIR}/${PN}-system-v8-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-ffmpeg-r2.patch"
+	#epatch "${FILESDIR}/${PN}-system-ffmpeg-r2.patch"
 
 	epatch_user
 
