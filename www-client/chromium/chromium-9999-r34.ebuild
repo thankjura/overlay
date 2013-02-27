@@ -52,11 +52,7 @@ RDEPEND="app-accessibility/speech-dispatcher
 	media-libs/opus
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
-	system-ffmpeg? ( || (
-		>=media-video/ffmpeg-1.0[opus]
-		<media-video/ffmpeg-1.0
-		media-video/libav
-	) )
+	system-ffmpeg? ( >=media-video/ffmpeg-1.0[opus] )
 	>=net-libs/libsrtp-1.4.4_p20121108
 	sys-apps/dbus
 	sys-apps/pciutils
@@ -189,7 +185,7 @@ src_prepare() {
 	# Fix build without NaCl glibc toolchain.
 	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
 	epatch "${FILESDIR}/${PN}-system-v8-r0.patch"
-	#epatch "${FILESDIR}/${PN}-system-ffmpeg-r1.patch"
+	epatch "${FILESDIR}/${PN}-system-ffmpeg-r2.patch"
 
 	epatch_user
 
