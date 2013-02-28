@@ -21,6 +21,9 @@ SLOT="live"
 KEYWORDS=""
 IUSE="bindist cups gnome gnome-keyring gps kerberos pulseaudio selinux system-ffmpeg tcmalloc"
 
+# Native Client binaries are compiled with different set of flags, bug #452066.
+QA_FLAGS_IGNORED=".*\.nexe"
+
 RDEPEND="app-accessibility/speech-dispatcher
 	app-arch/bzip2
 	cups? (
@@ -185,7 +188,7 @@ src_prepare() {
 	# Fix build without NaCl glibc toolchain.
 	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
 	epatch "${FILESDIR}/${PN}-system-v8-r0.patch"
-	#epatch "${FILESDIR}/${PN}-system-ffmpeg-r2.patch"
+	epatch "${FILESDIR}/${PN}-system-ffmpeg-r3.patch"
 
 	epatch_user
 
