@@ -34,7 +34,7 @@ RDEPEND="app-accessibility/speech-dispatcher
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat
 	>=dev-libs/icu-49.1.1-r1:=
-	dev-libs/jsoncpp
+	>=dev-libs/jsoncpp-0.5.0-r1
 	>=dev-libs/libevent-1.4.13
 	dev-libs/libxml2[icu]
 	dev-libs/libxslt
@@ -50,6 +50,7 @@ RDEPEND="app-accessibility/speech-dispatcher
 	media-libs/harfbuzz
 	>=media-libs/libjpeg-turbo-1.2.0-r1
 	media-libs/libpng
+	media-libs/libvpx
 	>=media-libs/libwebp-0.2.0_rc1
 	!arm? ( !x86? ( media-libs/mesa[gles2] ) )
 	media-libs/opus
@@ -188,7 +189,7 @@ src_prepare() {
 	# Fix build without NaCl glibc toolchain.
 	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
 	epatch "${FILESDIR}/${PN}-system-v8-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-ffmpeg-r3.patch"
+	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
 
 	epatch_user
 
@@ -209,7 +210,6 @@ src_prepare() {
 		\! -path 'third_party/leveldatabase/*' \
 		\! -path 'third_party/libjingle/*' \
 		\! -path 'third_party/libphonenumber/*' \
-		\! -path 'third_party/libvpx/*' \
 		\! -path 'third_party/libxml/chromium/*' \
 		\! -path 'third_party/libXNVCtrl/*' \
 		\! -path 'third_party/libyuv/*' \
@@ -275,7 +275,6 @@ src_configure() {
 	# TODO: use_system_hunspell (upstream changes needed).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
-	# TODO: use_system_libvpx (http://crbug.com/174287).
 	myconf+="
 		-Duse_system_bzip2=1
 		-Duse_system_flac=1
@@ -287,6 +286,7 @@ src_configure() {
 		-Duse_system_libpng=1
 		-Duse_system_libsrtp=1
 		-Duse_system_libusb=1
+		-Duse_system_libvpx=1
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
 		-Duse_system_minizip=1
@@ -311,6 +311,10 @@ src_configure() {
 		myconf+="
 			-Duse_system_yasm=1"
 	fi
+
+	# TODO: re-enable on vp9 libvpx release (http://crbug.com/174287).
+	myconf+="
+		-Dmedia_use_libvpx=0"
 
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
@@ -403,7 +407,7 @@ src_configure() {
 src_compile() {
 	local test_targets
 	for x in base cacheinvalidation crypto \
-		googleurl gpu media net printing sql; do
+		googleurl gpu printing sql; do
 		test_targets+=" ${x}_unittests"
 	done
 
