@@ -52,7 +52,7 @@ RDEPEND="app-accessibility/speech-dispatcher
 	media-libs/libpng
 	media-libs/libvpx
 	>=media-libs/libwebp-0.2.0_rc1
-	!arm? ( !x86? ( media-libs/mesa[gles2] ) )
+	!arm? ( !x86? ( >=media-libs/mesa-9.1[gles2] ) )
 	media-libs/opus
 	media-libs/speex
 	pulseaudio? ( media-sound/pulseaudio )
