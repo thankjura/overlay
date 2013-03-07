@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.164 2013/02/05 10:31:43 phajdan.jr Exp $
+# $Header: /var/cvsroot/gentoo-x86/www-client/chromium/chromium-9999-r1.ebuild,v 1.177 2013/03/07 00:39:57 floppym Exp $
 
 EAPI="5"
 PYTHON_COMPAT=( python{2_6,2_7} )
@@ -24,53 +24,53 @@ IUSE="cups gnome gnome-keyring gps kerberos pulseaudio selinux tcmalloc"
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
 
-RDEPEND="app-accessibility/speech-dispatcher
-	app-arch/bzip2
+RDEPEND="app-accessibility/speech-dispatcher:=
+	app-arch/bzip2:=
 	cups? (
-		dev-libs/libgcrypt
-		>=net-print/cups-1.3.11
+		dev-libs/libgcrypt:=
+		>=net-print/cups-1.3.11:=
 	)
 	>=dev-lang/v8-3.16.11.1:=
 	>=dev-libs/elfutils-0.149
-	dev-libs/expat
+	dev-libs/expat:=
 	>=dev-libs/icu-49.1.1-r1:=
-	>=dev-libs/jsoncpp-0.5.0-r1
-	>=dev-libs/libevent-1.4.13
-	dev-libs/libxml2[icu]
-	dev-libs/libxslt
-	dev-libs/nspr
-	>=dev-libs/nss-3.12.3
-	dev-libs/protobuf
-	dev-libs/re2
-	gnome? ( >=gnome-base/gconf-2.24.0 )
-	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2 )
-	gps? ( >=sci-geosciences/gpsd-3.7[shm] )
+	>=dev-libs/jsoncpp-0.5.0-r1:=
+	>=dev-libs/libevent-1.4.13:=
+	dev-libs/libxml2:=[icu]
+	dev-libs/libxslt:=
+	dev-libs/nspr:=
+	>=dev-libs/nss-3.12.3:=
+	dev-libs/protobuf:=
+	dev-libs/re2:=
+	gnome? ( >=gnome-base/gconf-2.24.0:= )
+	gnome-keyring? ( >=gnome-base/gnome-keyring-2.28.2:= )
+	gps? ( >=sci-geosciences/gpsd-3.7:=[shm] )
 	>=media-libs/alsa-lib-1.0.19
-	media-libs/flac
-	media-libs/harfbuzz
-	>=media-libs/libjpeg-turbo-1.2.0-r1
-	media-libs/libpng
-	media-libs/libvpx
-	>=media-libs/libwebp-0.2.0_rc1
-	!arm? ( !x86? ( >=media-libs/mesa-9.1[gles2] ) )
-	media-libs/opus
-	media-libs/speex
-	pulseaudio? ( media-sound/pulseaudio )
-	>=media-video/ffmpeg-1.0[opus]
-	>=net-libs/libsrtp-1.4.4_p20121108
-	sys-apps/dbus
-	sys-apps/pciutils
-	sys-libs/zlib[minizip]
+	media-libs/flac:=
+	media-libs/harfbuzz:=
+	>=media-libs/libjpeg-turbo-1.2.0-r1:=
+	media-libs/libpng:=
+	media-libs/libvpx:=
+	>=media-libs/libwebp-0.2.0_rc1:=
+	!arm? ( !x86? ( >=media-libs/mesa-9.1:=[gles2] ) )
+	media-libs/opus:=
+	media-libs/speex:=
+	pulseaudio? ( media-sound/pulseaudio:= )
+	>=media-video/ffmpeg-1.0:=[opus]
+	>=net-libs/libsrtp-1.4.4_p20121108:=
+	sys-apps/dbus:=
+	sys-apps/pciutils:=
+	sys-libs/zlib:=[minizip]
 	virtual/udev
-	virtual/libusb:1
-	x11-libs/gtk+:2
-	x11-libs/libXinerama
-	x11-libs/libXScrnSaver
-	x11-libs/libXtst
+	virtual/libusb:1=
+	x11-libs/gtk+:2=
+	x11-libs/libXinerama:=
+	x11-libs/libXScrnSaver:=
+	x11-libs/libXtst:=
 	kerberos? ( virtual/krb5 )
 	selinux? (
 		sec-policy/selinux-chromium
-		sys-libs/libselinux
+		sys-libs/libselinux:=
 	)"
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
@@ -170,12 +170,12 @@ pkg_setup() {
 		chromium_suid_sandbox_check_kernel_config
 	fi
 
-	#if use bindist && ! use system-ffmpeg; then
+	# if use bindist && ! use system-ffmpeg; then
 	#	elog "bindist enabled: H.264 video support will be disabled."
-	#fi
-	#if ! use bindist; then
+	# fi
+	# if ! use bindist; then
 	#	elog "bindist disabled: Resulting binaries may not be legal to re-distribute."
-	#fi
+	# fi
 }
 
 src_prepare() {
@@ -188,7 +188,7 @@ src_prepare() {
 
 	# Fix build without NaCl glibc toolchain.
 	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
-	epatch "${FILESDIR}/${PN}-system-v8-r0.patch"
+
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
 
 	epatch_user
@@ -301,7 +301,7 @@ src_configure() {
 		-Duse_system_zlib=1"
 
 	# TODO: Use system mesa on x86, bug #457130 .
-	if ! use x86 && ! use arm && ! use amd64; then
+	if ! use x86 && ! use arm; then
 		myconf+="
 			-Duse_system_mesa=1"
 	fi
@@ -355,10 +355,10 @@ src_configure() {
 	# Always support proprietary codecs.
 	myconf+=" -Dproprietary_codecs=1"
 
-	#if ! use bindist && ! use system-ffmpeg; then
+	# if ! use bindist && ! use system-ffmpeg; then
 	#	# Enable H.624 support in bundled ffmpeg.
 	#	myconf+=" -Dffmpeg_branding=Chrome"
-	#fi
+	# fi
 
 	# Set up Google API keys, see http://www.chromium.org/developers/how-tos/api-keys .
 	# Note: these are for Gentoo use ONLY. For your own distribution,
@@ -540,9 +540,9 @@ src_install() {
 	newman out/Release/chrome.1 chromium${CHROMIUM_SUFFIX}.1 || die
 	newman out/Release/chrome.1 chromium-browser${CHROMIUM_SUFFIX}.1 || die
 
-	#if ! use system-ffmpeg; then
+	# if ! use system-ffmpeg; then
 	#	doexe out/Release/libffmpegsumo.so || die
-	#fi
+	# fi
 
 	# Install icons and desktop entry.
 	local branding size
