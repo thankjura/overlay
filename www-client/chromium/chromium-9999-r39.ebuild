@@ -187,9 +187,6 @@ src_prepare() {
 		touch out/Release/obj/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	fi
 
-	# Fix build without NaCl glibc toolchain.
-	epatch "${FILESDIR}/${PN}-ppapi-r0.patch"
-
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
 
 	epatch_user
