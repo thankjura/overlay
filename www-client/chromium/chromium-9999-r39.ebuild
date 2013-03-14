@@ -182,7 +182,8 @@ pkg_setup() {
 src_prepare() {
 	if ! use arm; then
 		mkdir -p out/Release/obj/gen/sdk/toolchain || die
-		cp -a /usr/$(get_libdir)/nacl-toolchain-newlib \
+		# Do not preserve SELinux context, bug #460892 .
+		cp -a --no-preserve=context /usr/$(get_libdir)/nacl-toolchain-newlib \
 			out/Release/obj/gen/sdk/toolchain/linux_x86_newlib || die
 		touch out/Release/obj/gen/sdk/toolchain/linux_x86_newlib/stamp.untar || die
 	fi
