@@ -29,7 +29,7 @@ RDEPEND="
     x11-libs/cairo
     x11-libs/pixman
     x11-libs/gtk+:3
-    x11-libs/qtgui
+    dev-qt/qtgui
     x11-libs/qtcore
     virtual/jpeg
     media-libs/libpng
