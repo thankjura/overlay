@@ -30,7 +30,7 @@ RDEPEND="
     x11-libs/pixman
     x11-libs/gtk+:3
     dev-qt/qtgui
-    x11-libs/qtcore
+    dev-qt/qtcore
     virtual/jpeg
     media-libs/libpng
     media-libs/tiff:3
