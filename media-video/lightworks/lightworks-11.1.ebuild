@@ -105,8 +105,7 @@ src_install() {
 	doexe usr/lib/${PN}/spawn || die "doins lib-exe failed"
 	doexe usr/lib/${PN}/ntcardvt || die "doins lib-exe failed"
 
-	insinto "/usr/bin/"
-	doins usr/bin/lightworks || die
+	newbin ${FILESDIR}/lightworks lightworks
 
 	fperms a+rw "usr/share/lightworks/Preferences"
 	fperms a+rw "usr/share/lightworks/Audio Mixes"
