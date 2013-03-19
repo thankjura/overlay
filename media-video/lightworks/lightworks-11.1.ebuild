@@ -9,7 +9,7 @@ inherit eutils unpacker
 DESCRIPTION="Lightworks NLE - Designed by editors, for editors"
 HOMEPAGE="http://www.lwks.com/"
 
-SRC_URI="lwks-${PV}.D-amd64.deb"
+SRC_URI="lwks-${PV}.F-amd64.deb"
 
 LICENSE="lwks"
 
@@ -30,6 +30,9 @@ src_install() {
 	insinto "/usr/lib/"
 	doins -r usr/lib/lightworks
 
+	insinto "/usr/bin/"
+	doins usr/bin/lightworks || die
+
 	dodoc usr/share/doc/lightworks/changelog.gz
 	dodoc usr/share/doc/lightworks/copyright
 
@@ -38,6 +41,4 @@ src_install() {
 	insinto /usr/share/
 	doins -r usr/share/fonts/
 	doins -r usr/share/lightworks/
-
-	dosym "/usr/lib/lightworks/spawn" /usr/bin/lightworks || die
 }
