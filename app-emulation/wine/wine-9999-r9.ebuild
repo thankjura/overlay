@@ -96,6 +96,7 @@ RDEPEND="truetype? ( >=media-libs/freetype-2.0.0 media-fonts/corefonts )
 	xcomposite? ( x11-libs/libXcomposite )
 	amd64? (
 		abi_x86_32? (
+			gstreamer? ( app-emulation/emul-linux-x86-gstplugins )
 			truetype? ( >=app-emulation/emul-linux-x86-xlibs-2.1[development] )
 			X? (
 				>=app-emulation/emul-linux-x86-xlibs-2.1[development]
@@ -161,7 +162,7 @@ src_prepare() {
 	local md5="$(md5sum server/protocol.def)"
 	epatch "${FILESDIR}"/patches/*.patch # My patch set
 	local PATCHES=(
-		"${FILESDIR}"/${PN}-1.1.15-winegcc.patch #260726
+		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
 		"${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
 		"${FILESDIR}"/${PN}-1.5.17-osmesa-check.patch #429386
 		"${FILESDIR}"/${PN}-1.5.23-winebuild-CCAS.patch #455308
