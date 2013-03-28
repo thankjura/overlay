@@ -189,6 +189,9 @@ src_prepare() {
 
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
 
+	# Fix build without pnacl, to be upstreamed.
+	epatch "${FILESDIR}/${PN}-pnacl-r0.patch"
+
 	epatch_user
 
 	# Remove most bundled libraries. Some are still needed.
