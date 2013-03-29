@@ -191,6 +191,9 @@ src_prepare() {
 
 	# Fix build without pnacl, to be upstreamed.
 	epatch "${FILESDIR}/${PN}-pnacl-r0.patch"
+	
+	# Fix speechd
+	epatch "${FILESDIR}/${PN}-speechd-0.8.patch"
 
 	epatch_user
 
