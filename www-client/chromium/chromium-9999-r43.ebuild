@@ -189,11 +189,8 @@ src_prepare() {
 
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
 
-	# Fix build without pnacl, to be upstreamed.
-	epatch "${FILESDIR}/${PN}-pnacl-r0.patch"
-	
 	# Fix speechd
-	#epatch "${FILESDIR}/${PN}-speechd-0.8.patch"
+	epatch "${FILESDIR}/${PN}-speech-dispatcher-0.8-r0.patch"
 
 	epatch_user
 
