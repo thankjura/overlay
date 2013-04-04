@@ -24,7 +24,7 @@ IUSE="cups gnome gnome-keyring gps kerberos pulseaudio selinux system-sqlite tcm
 # Native Client binaries are compiled with different set of flags, bug #452066.
 QA_FLAGS_IGNORED=".*\.nexe"
 
-RDEPEND="app-accessibility/speech-dispatcher:=
+RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 	app-arch/bzip2:=
 	system-sqlite? ( dev-db/sqlite:3 )
 	cups? (
