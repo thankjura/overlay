@@ -1,12 +1,12 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-accessibility/speech-dispatcher/speech-dispatcher-0.8-r1.ebuild,v 1.1 2013/03/28 12:34:56 jlec Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-accessibility/speech-dispatcher/speech-dispatcher-0.8-r2.ebuild,v 1.1 2013/04/04 16:09:31 williamh Exp $
 
 EAPI=5
 
 PYTHON_COMPAT=( python3_3 )
 
-inherit autotools-utils python-r1
+inherit eutils python-r1
 
 DESCRIPTION="Speech synthesis interface"
 HOMEPAGE="http://www.freebsoft.org/speechd"
@@ -33,20 +33,21 @@ DEPEND="${RDEPEND}
 src_configure() {
 	local myeconfargs=(
 		--disable-python
+		$(use_enable static-libs static)
 		$(use_with alsa)
 		$(use_with ao libao)
 		$(use_with espeak)
 		$(use_with flite)
 		$(use_with pulseaudio pulse)
 		$(use_with nas)
-		)
-	autotools-utils_src_configure
+	)
+	econf ${myeconfargs[@]}
 }
 
 src_compile() {
 	use python && python_copy_sources
 
-	autotools-utils_src_compile all
+	emake
 
 	if use python; then
 		building() {
@@ -60,7 +61,10 @@ src_compile() {
 }
 
 src_install() {
-	autotools-utils_src_install
+	emake DESTDIR="${D}" install
+	dodoc ANNOUNCE AUTHORS BUGS ChangeLog FAQ NEWS README*
+
+	prune_libtool_files --all
 
 	if use python; then
 		installation() {
