@@ -291,7 +291,7 @@ src_configure() {
 		-Duse_system_libvpx=1
 		-Duse_system_libwebp=1
 		-Duse_system_libxml=1
-		-Duse_system_minizip=1
+		-Duse_system_minizip=0
 		-Duse_system_nspr=1
 		-Duse_system_opus=1
 		-Duse_system_protobuf=1
