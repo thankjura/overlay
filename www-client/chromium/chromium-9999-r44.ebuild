@@ -238,7 +238,7 @@ src_prepare() {
 		\! -path 'third_party/webrtc/*' \
 		\! -path 'third_party/widevine/*' \
 		\! -path 'third_party/x86inc/*' \
-		\! -path 'third_party/zlib/contrib/minizip/*' \
+		\! -path 'third_party/zlib/contrib/*' \
 		-delete || die
 
 	local v8_bundled="$(chromium_bundled_v8_version)"
