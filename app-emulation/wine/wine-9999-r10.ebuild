@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-emulation/wine/wine-9999.ebuild,v 1.137 2013/03/04 15:44:18 tetromino Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-emulation/wine/wine-9999.ebuild,v 1.138 2013/03/18 03:28:57 tetromino Exp $
 
 EAPI="5"
 
@@ -160,7 +160,6 @@ src_unpack() {
 
 src_prepare() {
 	local md5="$(md5sum server/protocol.def)"
-	# epatch "${FILESDIR}"/patches/*.patch # My patch set
 	local PATCHES=(
 		"${FILESDIR}"/${PN}-1.5.26-winegcc.patch #260726
 		"${FILESDIR}"/${PN}-1.4_rc2-multilib-portage.patch #395615
