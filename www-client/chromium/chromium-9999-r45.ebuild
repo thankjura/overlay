@@ -32,6 +32,7 @@ RDEPEND=">=app-accessibility/speech-dispatcher-0.8:=
 		>=net-print/cups-1.3.11:=
 	)
 	>=dev-lang/v8-3.17.6:=
+	=dev-lang/v8-3.18*
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
 	>=dev-libs/icu-49.1.1-r1:=
@@ -188,9 +189,6 @@ src_prepare() {
 	fi
 
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
-
-	# Fix speechd
-	epatch "${FILESDIR}/${PN}-speech-dispatcher-0.8-r0.patch"
 
 	# Fix build with system minizip, to be upstreamed.
 	epatch "${FILESDIR}/${PN}-system-minizip-r0.patch"
@@ -352,7 +350,8 @@ src_configure() {
 	myconf+="
 		-Dlinux_link_gsettings=1
 		-Dlinux_link_libpci=1
-		-Dlinux_link_libspeechd=1"
+		-Dlinux_link_libspeechd=1
+		-Dlibspeechd_h_prefix=speech-dispatcher/"
 
 	# TODO: use the file at run time instead of effectively compiling it in.
 	myconf+="
