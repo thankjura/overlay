@@ -194,7 +194,7 @@ src_prepare() {
 	#epatch "${FILESDIR}/${PN}-system-minizip-r0.patch"
 
 	# Fix build with system minizip, to be upstreamed.
-	epatch "${FILESDIR}/webpmess-r2.patch"
+	#epatch "${FILESDIR}/webpmess-r2.patch"
 
 	epatch_user
 
