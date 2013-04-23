@@ -191,7 +191,7 @@ src_prepare() {
 	epatch "${FILESDIR}/${PN}-system-ffmpeg-r4.patch"
 
 	# Fix build with system minizip, to be upstreamed.
-	epatch "${FILESDIR}/${PN}-system-minizip-r0.patch"
+	#epatch "${FILESDIR}/${PN}-system-minizip-r0.patch"
 
 	# Fix build with system minizip, to be upstreamed.
 	epatch "${FILESDIR}/webpmess-r2.patch"
