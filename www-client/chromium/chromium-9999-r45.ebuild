@@ -230,7 +230,6 @@ src_prepare() {
 		\! -path 'third_party/pywebsocket/*' \
 		\! -path 'third_party/qcms/*' \
 		\! -path 'third_party/sfntly/*' \
-		\! -path 'third_party/skia/*' \
 		\! -path 'third_party/smhasher/*' \
 		\! -path 'third_party/sqlite/*' \
 		\! -path 'third_party/tcmalloc/*' \
@@ -245,6 +244,7 @@ src_prepare() {
 		\! -path 'third_party/zlib/*' \
 		-delete || die
 
+#		\! -path 'third_party/skia/*' \
 	local v8_bundled="$(chromium_bundled_v8_version)"
 	local v8_installed="$(chromium_installed_v8_version)"
 	einfo "V8 version: bundled - ${v8_bundled}; installed - ${v8_installed}"
