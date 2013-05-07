@@ -4,7 +4,7 @@
 
 EAPI=5
 
-PYTHON_COMPAT=( python3_3 )
+PYTHON_COMPAT=( python3_2 python3_3 )
 
 inherit eutils python-r1
 
