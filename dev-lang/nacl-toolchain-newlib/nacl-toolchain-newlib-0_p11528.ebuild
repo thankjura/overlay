@@ -84,6 +84,8 @@ src_prepare() {
 
 	# Parallel build failure, bug #437048.
 	epatch "${FILESDIR}/gcc-parallel-build-r0.patch"
+	cd "${S}/SRC/binutils" || die
+	epatch "${FILESDIR}/binutils-texinfo-r0.patch"
 }
 
 src_compile() {
