@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-editors/gedit-plugins/gedit-plugins-3.8.0.ebuild,v 1.1 2013/03/28 16:37:09 pacho Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-editors/gedit-plugins/gedit-plugins-3.8.3.ebuild,v 1.1 2013/06/18 18:55:26 pacho Exp $
 
 EAPI="5"
 GCONF_DEBUG="no"
@@ -10,18 +10,23 @@ PYTHON_REQ_USE="xml"
 
 inherit eutils gnome2 multilib python-r1
 
-DESCRIPTION="Offical plugins for gedit"
+DESCRIPTION="Official plugins for gedit"
 HOMEPAGE="http://live.gnome.org/GeditPlugins"
 
 LICENSE="GPL-2+"
 KEYWORDS="~amd64 ~x86"
 SLOT="0"
 
-IUSE_plugins="charmap terminal"
+IUSE_plugins="charmap git terminal"
 IUSE="+python ${IUSE_plugins}"
-REQUIRED_USE="charmap? ( python ) terminal? ( python )"
+REQUIRED_USE="
+	charmap? ( python )
+	git? ( python )
+	terminal? ( python )
+"
 
-RDEPEND=">=app-editors/gedit-3.7.1[python?]
+RDEPEND="
+	>=app-editors/gedit-3.7.1[python?]
 	>=dev-libs/glib-2.32:2
 	>=dev-libs/libpeas-1.7.0[gtk,python?]
 	>=x11-libs/gtk+-3.4:3
@@ -39,6 +44,7 @@ RDEPEND=">=app-editors/gedit-3.7.1[python?]
 		x11-libs/gdk-pixbuf:2[introspection]
 	)
 	charmap? ( >=gnome-extra/gucharmap-3:2.90[introspection] )
+	git? ( >=dev-libs/libgit2-glib-0.0.2 )
 	terminal? ( x11-libs/vte:2.90[introspection] )
 "
 DEPEND="${RDEPEND}
@@ -47,21 +53,19 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig
 "
 
-src_prepare() {
+src_configure() {
 	# DEFAULT_PLUGINS from configure.ac
 	local myplugins="bookmarks,drawspaces,wordcompletion"
 
 	# python plugins with no extra dependencies beyond what USE=python brings
-	use python && myplugins="${myplugins},bracketcompletion,codecomment,colorpicker,commander,dashboard,joinlines,multiedit,textsize,smartspaces,synctex"
+	use python && myplugins="${myplugins},bracketcompletion,codecomment,colorpicker,colorschemer,commander,dashboard,joinlines,multiedit,textsize,smartspaces,synctex"
 
 	# python plugins with extra dependencies
 	for plugin in ${IUSE_plugins/+}; do
 		use ${plugin} && myplugins="${myplugins},${plugin}"
 	done
 
-	G2CONF="${G2CONF}
-		--with-plugins=${myplugins}
-		$(use_enable python)"
-
-	gnome2_src_prepare
+	gnome2_src_configure \
+		--with-plugins=${myplugins} \
+		$(use_enable python)
 }

@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/app-editors/gedit/gedit-3.8.0.ebuild,v 1.1 2013/03/28 16:33:54 pacho Exp $
+# $Header: /var/cvsroot/gentoo-x86/app-editors/gedit/gedit-3.8.3.ebuild,v 1.1 2013/06/25 17:16:43 pacho Exp $
 
 EAPI="5"
 GCONF_DEBUG="no"
@@ -14,7 +14,10 @@ HOMEPAGE="http://live.gnome.org/Gedit"
 
 LICENSE="GPL-2+ CC-BY-SA-3.0"
 SLOT="0"
+
 IUSE="+introspection +python spell zeitgeist"
+REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
+
 KEYWORDS="~alpha ~amd64 ~arm ~ia64 ~mips ~ppc ~ppc64 ~sh ~sparc ~x86 ~x86-fbsd ~x86-freebsd ~x86-interix ~amd64-linux ~ia64-linux ~x86-linux"
 
 # X libs are not needed for OSX (aqua)
@@ -46,9 +49,11 @@ COMMON_DEPEND="
 	spell? (
 		>=app-text/enchant-1.2:=
 		>=app-text/iso-codes-0.35 )
-	zeitgeist? ( dev-libs/libzeitgeist )"
+	zeitgeist? ( >=gnome-extra/zeitgeist-0.9.12 )
+"
 RDEPEND="${COMMON_DEPEND}
-	x11-themes/gnome-icon-theme-symbolic"
+	x11-themes/gnome-icon-theme-symbolic
+"
 DEPEND="${COMMON_DEPEND}
 	app-text/docbook-xml-dtd:4.1.2
 	>=app-text/scrollkeeper-0.3.11
@@ -60,19 +65,17 @@ DEPEND="${COMMON_DEPEND}
 "
 # yelp-tools, gnome-common needed to eautoreconf
 
-src_prepare() {
+src_configure() {
 	DOCS="AUTHORS BUGS ChangeLog MAINTAINERS NEWS README"
-	G2CONF="${G2CONF}
-		--disable-deprecations
-		--enable-updater
-		--enable-gvfs-metadata
-		$(use_enable introspection)
-		$(use_enable python)
-		$(use_enable spell)
-		$(use_enable zeitgeist)
-		ITSTOOL=$(type -P true)"
-
-	gnome2_src_prepare
+	gnome2_src_configure \
+		--disable-deprecations \
+		--enable-updater \
+		--enable-gvfs-metadata \
+		$(use_enable introspection) \
+		$(use_enable python) \
+		$(use_enable spell) \
+		$(use_enable zeitgeist) \
+		ITSTOOL=$(type -P true)
 }
 
 src_test() {
