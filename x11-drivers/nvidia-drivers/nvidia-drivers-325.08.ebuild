@@ -158,6 +158,9 @@ src_unpack() {
 }
 
 src_prepare() {
+	#https://devtalk.nvidia.com/default/topic/549208/linux/patch-for-325-08-on-linux-3-10/2/
+	epatch "${FILESDIR}"/kernel-3.10.patch.patch
+
 	# Please add a brief description for every added patch
 
 	if use kernel_linux; then
