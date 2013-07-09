@@ -1,7 +1,7 @@
-diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-i2c.c NVIDIA-Linux-x86_64-325.08/kernel/nv-i2c.c
---- NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-i2c.c	2013-06-27 02:31:03.000000000 +0200
-+++ NVIDIA-Linux-x86_64-325.08/kernel/nv-i2c.c	2013-07-06 13:34:28.774811063 +0200
-@@ -243,21 +243,14 @@ void* NV_API_CALL nv_i2c_add_adapter(nv_
+diff -U 3 -H -d -r -N -- nv-i2c.c.orig nv-i2c.c
+--- kernel/nv-i2c.c.orig	2013-07-01 21:45:45.241886356 -0400
++++ kernel/nv-i2c.c	2013-07-01 21:38:49.532484245 -0400
+@@ -243,21 +243,14 @@
  BOOL NV_API_CALL nv_i2c_del_adapter(nv_state_t *nv, void *data)
  {
      struct i2c_adapter *pI2cAdapter = (struct i2c_adapter *)data;
@@ -12,39 +12,24 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-i2c.c NVIDIA-Linux-x86_64-3
  
      // attempt release with the OS
 -    osstatus = i2c_del_adapter(pI2cAdapter);
-+    i2c_del_adapter(pI2cAdapter);
-+    os_free_mem(pI2cAdapter);
- 
+-
 -    if (!osstatus)
 -    {
 -        os_free_mem(pI2cAdapter);
 -        wasReleased = TRUE;
 -    }
--
++    i2c_del_adapter(pI2cAdapter);
++    os_free_mem(pI2cAdapter);
+ 
 -    return wasReleased;
 +    return TRUE;
  }
  
  #else // (defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE))
-diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-linux.h NVIDIA-Linux-x86_64-325.08/kernel/nv-linux.h
---- NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-linux.h	2013-06-27 02:31:03.000000000 +0200
-+++ NVIDIA-Linux-x86_64-325.08/kernel/nv-linux.h	2013-07-06 14:04:06.835627990 +0200
-@@ -957,7 +957,11 @@ static inline int nv_execute_on_all_cpus
- #endif
- 
- #if !defined(NV_VMWARE)
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
-+#define NV_NUM_PHYSPAGES                get_num_physpages()
-+#else
- #define NV_NUM_PHYSPAGES                num_physpages
-+#endif
- #define NV_GET_CURRENT_PROCESS()        current->tgid
- #define NV_IN_ATOMIC()                  in_atomic()
- #define NV_LOCAL_BH_DISABLE()           local_bh_disable()
-diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_64-325.08/kernel/nv-procfs.c
---- NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c	2013-06-27 02:31:03.000000000 +0200
-+++ NVIDIA-Linux-x86_64-325.08/kernel/nv-procfs.c	2013-07-06 13:34:28.774811063 +0200
-@@ -60,60 +60,41 @@ static char nv_registry_keys[NV_MAX_REGI
+diff -U 3 -H -d -r -N -- nv-procfs.c.orig nv-procfs.c
+--- kernel/nv-procfs.c.orig	2013-07-01 21:45:41.035242479 -0400
++++ kernel/nv-procfs.c	2013-07-01 21:38:49.532484245 -0400
+@@ -60,60 +60,41 @@
          __entry;                                          \
      })
  
@@ -119,7 +104,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
      NV_KMEM_CACHE_ALLOC_STACK(sp);
      if (sp == NULL)
      {
-@@ -134,31 +115,31 @@ nv_procfs_read_gpu_info(
+@@ -134,31 +115,31 @@
          if (rm_get_device_name(sp, nv, dev->device, dev->subsystem_vendor,
                      dev->subsystem_device, NV_DEVICE_NAME_LENGTH,
                      tmpstr) != RM_OK)
@@ -157,7 +142,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
              os_free_mem(uuid);
          }
  
-@@ -166,12 +147,12 @@ nv_procfs_read_gpu_info(
+@@ -166,12 +147,12 @@
                      &vbios_rev3, &vbios_rev4,
                      &vbios_rev5) != RM_OK)
          {
@@ -172,7 +157,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
                             vbios_rev4, vbios_rev5);
          }
      }
-@@ -180,12 +161,12 @@ nv_procfs_read_gpu_info(
+@@ -180,12 +161,12 @@
          type = "PCIe";
      else
          type = "PCI";
@@ -189,7 +174,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
                     nv->domain, nv->bus, nv->slot, PCI_FUNC(dev->devfn));
  #if defined(DEBUG)
      do
-@@ -193,7 +174,7 @@ nv_procfs_read_gpu_info(
+@@ -193,7 +174,7 @@
          int j;
          for (j = 0; j < NV_GPU_NUM_BARS; j++)
          {
@@ -198,7 +183,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
                             j, nv->bars[j].address, (nv->bars[j].size >> 20));
          }
      } while (0);
-@@ -201,26 +182,120 @@ nv_procfs_read_gpu_info(
+@@ -201,26 +182,120 @@
  
      NV_KMEM_CACHE_FREE_STACK(sp);
  
@@ -217,11 +202,15 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
 +nv_procfs_open_gpu_info(
 +    struct inode *inode,
 +    struct file *file
-+)
-+{
+ )
+ {
+-    int len = 0;
+-    *eof = 1;
 +    return single_open(file, nv_procfs_show_gpu_info, PDE_DATA(inode));
 +}
-+
+ 
+-    len += sprintf(page+len, "NVRM version: %s\n", pNVRM_ID);
+-    len += sprintf(page+len, "GCC version:  %s\n", NV_COMPILER);
 +static const struct file_operations nv_procfs_gpu_info_fops = {
 +    .owner   = THIS_MODULE,
 +    .open    = nv_procfs_open_gpu_info,
@@ -229,7 +218,8 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
 +    .llseek  = seq_lseek,
 +    .release = single_release,
 +};
-+
+ 
+-    return len;
 +static int
 +nv_procfs_show_version(
 +    struct seq_file *m,
@@ -285,10 +275,8 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
 +    const char __user *buffer,
 +    size_t             count,
 +    loff_t            *pos
- )
- {
--    int len = 0;
--    *eof = 1;
++)
++{
 +    int status = 0;
 +    nv_file_private_t *nvfp = NV_GET_FILE_PRIVATE(file);
 +    char *proc_buffer;
@@ -321,18 +309,15 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
 +        nvfp->proc_data = PDE_DATA(file->f_inode);
 +        nvfp->off += count;
 +    }
- 
--    len += sprintf(page+len, "NVRM version: %s\n", pNVRM_ID);
--    len += sprintf(page+len, "GCC version:  %s\n", NV_COMPILER);
++
 +done:
 +    up(&nvfp->fops_sp_lock[NV_FOPS_STACK_INDEX_PROCFS]);
- 
--    return len;
++
 +    return ((status < 0) ? status : count);
  }
  
  static int
-@@ -233,7 +308,7 @@ nv_procfs_open_registry(
+@@ -233,7 +308,7 @@
      nv_stack_t *sp = NULL;
  
      if (0 == (file->f_mode & FMODE_WRITE))
@@ -341,7 +326,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
  
      nvfp = nv_alloc_file_private();
      if (nvfp == NULL)
-@@ -282,6 +357,9 @@ nv_procfs_close_registry(
+@@ -282,6 +357,9 @@
      RM_STATUS rm_status;
      int rc = 0;
  
@@ -351,7 +336,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
      nvfp = NV_GET_FILE_PRIVATE(file);
      if (nvfp == NULL)
          return 0;
-@@ -346,121 +424,80 @@ done:
+@@ -346,121 +424,80 @@
      return rc;
  }
  
@@ -452,8 +437,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
 -    down(&nvfp->fops_sp_lock[NV_FOPS_STACK_INDEX_PROCFS]);
 -
 -    bytes_left = (NV_PROC_WRITE_BUFFER_SIZE - nvfp->off - 1);
-+    seq_printf(m, "%s", (char *)m->private);
- 
+-
 -    if (count == 0)
 -    {
 -        status = -EINVAL;
@@ -480,7 +464,8 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
 -
 -done:
 -    up(&nvfp->fops_sp_lock[NV_FOPS_STACK_INDEX_PROCFS]);
--
++    seq_printf(m, "%s", (char *)m->private);
+ 
 -    return ((status < 0) ? status : (int)count);
 +    return 0;
  }
@@ -514,7 +499,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
  static void
  nv_procfs_add_text_file(
      struct proc_dir_entry *parent,
-@@ -468,22 +505,7 @@ nv_procfs_add_text_file(
+@@ -468,22 +505,7 @@
      const char *text
  )
  {
@@ -538,7 +523,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
  }
  #endif
  
-@@ -512,26 +534,11 @@ int nv_register_procfs(void)
+@@ -512,26 +534,11 @@
      if (!proc_nvidia)
          goto failed;
  
@@ -567,7 +552,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
      if (!entry)
          goto failed;
  
-@@ -552,8 +559,7 @@ int nv_register_procfs(void)
+@@ -552,8 +559,7 @@
  
      nv_procfs_add_text_file(proc_nvidia_patches, "README", __README_patches);
  
@@ -577,7 +562,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
      if (!entry)
          goto failed;
  
-@@ -570,15 +576,11 @@ int nv_register_procfs(void)
+@@ -570,15 +576,11 @@
          if (!proc_nvidia_gpu)
              goto failed;
  
@@ -595,7 +580,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
          if (!entry)
              goto failed;
      }
-@@ -586,7 +588,7 @@ int nv_register_procfs(void)
+@@ -586,7 +588,7 @@
      return 0;
  #if defined(CONFIG_PROC_FS)
  failed:
@@ -604,7 +589,7 @@ diff -rupN NVIDIA-Linux-x86_64-325.08.orig/kernel/nv-procfs.c NVIDIA-Linux-x86_6
      return -1;
  #endif
  }
-@@ -594,6 +596,6 @@ failed:
+@@ -594,6 +596,6 @@
  void nv_unregister_procfs(void)
  {
  #if defined(CONFIG_PROC_FS)
