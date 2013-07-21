@@ -37,7 +37,7 @@ src_prepare() {
 multilib_src_configure() {
 	ECONF_SOURCE="${S}" econf \
 		$(use_enable static-libs static) \
-		--enable-arm-neon=$(usex neon on off)
+		--enable-arm-neon=$(usex neon)
 }
 
 multilib_src_install() {
