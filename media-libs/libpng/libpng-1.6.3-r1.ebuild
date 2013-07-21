@@ -24,8 +24,6 @@ DEPEND="${RDEPEND}
 	app-arch/xz-utils"
 
 src_prepare() {
-	epatch "${FILESDIR}"/${P}-noexecstack.patch #465010#c39
-
 	if use apng; then
 		epatch "${WORKDIR}"/${PN}-*-apng.patch
 		# Don't execute symbols check with apng patch wrt #378111
