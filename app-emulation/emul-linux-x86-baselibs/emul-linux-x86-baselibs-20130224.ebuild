@@ -27,7 +27,7 @@ src_prepare() {
 		rm lib32/libbz2.so{.1,.1.0,.1.0.6} || die
 		rm usr/lib32/libbz2.so || die
 	fi
-	# libpng-1.6.2-r1
+	# libpng-1.6.3-r1
 	if use filter-libpng; then
 		rm usr/lib32/libpng.so || die
 		rm usr/lib32/pkgconfig/libpng.pc || die
