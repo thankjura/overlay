@@ -26,7 +26,7 @@ src_prepare() {
 	sed -i \
 		-e '/^export GITFLOW_DIR=/s|$(dirname "$0")|/usr/libexec/git-flow|' \
 		-e "s|\$GITFLOW_DIR/gitflow-common|/usr/$(get_libdir)/gitflow-common|" \
-		-e "s|\$GITFLOW_DIR/gitflow-shFlags|/usr/$(get_libdir)/shflags|" \
+		-e "s|\$GITFLOW_DIR/gitflow-shFlags|/usr/share/misc/shflags|" \
 		git-flow || die "sed failed"
 
 }
