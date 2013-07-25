@@ -17,7 +17,7 @@ KEYWORDS="~amd64 ~x86"
 IUSE="+completion"
 
 RDEPEND="completion? ( dev-vcs/git-flow-completion )
-	>=dev-libs/shflags-1.0.3"
+	>=dev-util/shflags-1.0.3"
 
 src_prepare() {
 	cd "${WORKDIR}"/${GITHUB_USER}-${PN}-*
