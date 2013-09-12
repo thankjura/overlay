@@ -1,0 +1,17 @@
+--- kernel/nv-linux.h    2013-09-06 05:16:30.000000000 +0100
++++ kernel-new/nv-linux.h        2013-09-06 05:25:06.000000000 +0100
+@@ -958,7 +958,13 @@
+ #endif
+
+ #if !defined(NV_VMWARE)
+-#define NV_NUM_PHYSPAGES                num_physpages
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0)
++#define NV_NUM_PHYSPAGES get_num_physpages
++#else
++#define NV_NUM_PHYSPAGES num_physpages
++#endif
++
+ #define NV_GET_CURRENT_PROCESS()        current->tgid
+ #define NV_IN_ATOMIC()                  in_atomic()
+ #define NV_LOCAL_BH_DISABLE()           local_bh_disable()

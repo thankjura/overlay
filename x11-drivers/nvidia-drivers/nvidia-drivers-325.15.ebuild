@@ -1,6 +1,6 @@
 # Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/x11-drivers/nvidia-drivers/nvidia-drivers-325.08.ebuild,v 1.1 2013/07/03 15:57:06 jer Exp $
+# $Header: /var/cvsroot/gentoo-x86/x11-drivers/nvidia-drivers/nvidia-drivers-325.15.ebuild,v 1.2 2013/08/06 17:05:27 jer Exp $
 
 EAPI=5
 
@@ -82,11 +82,11 @@ pkg_pretend() {
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
 	fi
 
-	if use kernel_linux && kernel_is ge 3 10 ; then
+	if use kernel_linux && kernel_is ge 3 11 ; then
 		ewarn "Gentoo supports kernels which are supported by NVIDIA"
 		ewarn "which are limited to the following kernels:"
-		ewarn "<sys-kernel/gentoo-sources-3.10"
-		ewarn "<sys-kernel/vanilla-sources-3.10"
+		ewarn "<sys-kernel/gentoo-sources-3.11"
+		ewarn "<sys-kernel/vanilla-sources-3.11"
 		ewarn ""
 		ewarn "You are free to utilize epatch_user to provide whatever"
 		ewarn "support you feel is appropriate, but will not receive"
@@ -158,9 +158,6 @@ src_unpack() {
 }
 
 src_prepare() {
-	#https://devtalk.nvidia.com/default/topic/549208/linux/patch-for-325-08-on-linux-3-10/2/
-	epatch "${FILESDIR}"/kernel-3.10.patch
-
 	# Please add a brief description for every added patch
 
 	if use kernel_linux; then
@@ -176,8 +173,8 @@ src_prepare() {
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
 		ewarn "need support with these patches, contact the PaX team."
-		epatch "${FILESDIR}"/nvidia-drivers-pax-const.patch
-		epatch "${FILESDIR}"/nvidia-drivers-pax-usercopy.patch
+		epatch "${FILESDIR}"/${PN}-pax-usercopy.patch
+		epatch "${FILESDIR}"/linux-3.11.compatibility.patch
 	fi
 
 	# Allow user patches so they can support RC kernels and whatever else
@@ -439,7 +436,7 @@ pkg_postinst() {
 	elog "To use the NVIDIA CUDA/OpenCL, run \"eselect opencl set nvidia\""
 	elog
 	elog "NVIDIA has requested that any bug reports submitted have the"
-	elog "output of /opt/bin/nvidia-bug-report.sh included."
+	elog "output of nvidia-bug-report.sh included."
 	elog
 	if ! use X; then
 		elog "You have elected to not install the X.org driver. Along with"
