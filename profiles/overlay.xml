@@ -12,7 +12,7 @@
     <source type="git">https://github.com/thankjura/overlay.git</source>
   </repo>
   <repo quality="experimental" status="official">
-    <name><![CDATA[masterlay]]></name>
+    <name><![CDATA[gnomelay]]></name>
     <description lang="en"><![CDATA[gnome-3.10 ebuilds]]></description>
     <homepage>http://slie.ru/</homepage>
     <owner type="person">
