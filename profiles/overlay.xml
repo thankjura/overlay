@@ -11,4 +11,14 @@
     </owner>
     <source type="git">https://github.com/thankjura/overlay.git</source>
   </repo>
+  <repo quality="experimental" status="official">
+    <name><![CDATA[masterlay]]></name>
+    <description lang="en"><![CDATA[gnome-3.10 ebuilds]]></description>
+    <homepage>http://slie.ru/</homepage>
+    <owner type="person">
+      <email>me@slie.ru</email>
+      <name><![CDATA[Oboz Yury]]></name>
+    </owner>
+    <source type="git">https://github.com/thankjura/gentoo-gnome.git</source>
+  </repo>
 </repositories>
