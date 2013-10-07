@@ -1,0 +1,17 @@
+--- nvidia-331.13/nv-linux.h    2013-09-30 03:47:18.000000000 +0000
++++ nvidia-331.13-new/nv-linux.h    2013-10-04 20:10:26.000000000 +0000
+@@ -956,7 +956,13 @@
+ #endif
+ 
+ #if !defined(NV_VMWARE)
+-#define NV_NUM_PHYSPAGES                num_physpages
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0)
++#define NV_NUM_PHYSPAGES get_num_physpages
++#else
++#define NV_NUM_PHYSPAGES num_physpages
++#endif
++
+ #define NV_GET_CURRENT_PROCESS()        current->tgid
+ #define NV_IN_ATOMIC()                  in_atomic()
+ #define NV_LOCAL_BH_DISABLE()           local_bh_disable()
