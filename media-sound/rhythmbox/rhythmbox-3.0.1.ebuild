@@ -106,13 +106,6 @@ src_prepare() {
 	DOCS="AUTHORS ChangeLog DOCUMENTERS INTERNALS \
 		MAINTAINERS MAINTAINERS.old NEWS README THANKS"
 
-	# https://bugzilla.gnome.org/show_bug.cgi?id=706470
-	# In git, remove for bump
-	epatch "${FILESDIR}/${P}-gdbus-return-value.patch"
-
-	# https://bugzilla.gnome.org/show_bug.cgi?id=708044
-	epatch "${FILESDIR}/${P}-rbzeitgeist-python3.patch"
-
 	rm -v lib/rb-marshal.{c,h} || die
 	gnome2_src_prepare
 }
