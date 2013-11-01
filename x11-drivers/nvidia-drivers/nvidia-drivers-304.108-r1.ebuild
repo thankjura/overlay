@@ -168,7 +168,8 @@ src_prepare() {
 		convert_to_m "${NV_SRC}"/Makefile.kbuild
 	fi
 
-	epatch "${FILESDIR}"/linux-3.11.compatibility.patch
+	epatch "${FILESDIR}"/get_num_physpages_304.patch
+
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
 		ewarn "use a standard kernel should you have issues. Should you"
