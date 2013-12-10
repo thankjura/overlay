@@ -1,0 +1,29 @@
+*** bin/idea.sh.orig	Thu Dec 15 15:01:44 2011
+--- bin/idea.sh	Thu Dec 15 15:00:24 2011
+***************
+*** 5,10 ****
+--- 5,28 ----
+  # ------------------------------------------------------
+  #
+  
++ # ------------------------------------------------------
++ # set vm options from /etc ode user home
++ 
++ if [ -z "$IDEA_VM_OPTIONS" ]
++ then
++   if [ -r "$HOME/.idea.vmoptions" ]
++   then
++     IDEA_VM_OPTIONS="$HOME/.idea.vmoptions"
++     export IDEA_VM_OPTIONS
++   else
++     if [ -r "/etc/intellij-idea/idea.vmoptions" ]
++     then
++       IDEA_VM_OPTIONS="/etc/intellij-idea/idea.vmoptions"
++       export IDEA_VM_OPTIONS
++     fi
++   fi
++ fi
++ 
+  # ---------------------------------------------------------------------
+  #   Before you run IntelliJ IDEA specify the location of the
+  #   JDK 1.6 installation directory which will be used for running it.
