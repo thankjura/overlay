@@ -4,7 +4,7 @@ PVERSION=${PV}
 #PVERSION="2.7.3"
 DESCRIPTION="PyCharm"
 HOMEPAGE="www.jetbrains.com/pycharm/"
-SRC_URI="http://download.jetbrains.com/python/${P}.tar.gz"
+SRC_URI="http://download-ln.jetbrains.com/python/${P}.tar.gz"
 KEYWORDS="~x86 ~amd64"
 DEPEND=">=virtual/jre-1.6"
 RDEPEND="${DEPEND}"
@@ -22,8 +22,8 @@ src_install() {
 	fperms a+x /opt/${PN}/bin/fsnotifier64 || die "fperms failed"
 	fperms a+x /opt/${PN}/bin/inspect.sh || die "fperms failed"
 	dosym /opt/${PN}/bin/pycharm.sh /usr/bin/${PN}
-
-	doicon "bin/pycharm.png"
+	cp -a bin/pycharm.png pycharm-professional.png
+	doicon "pycharm-professional.png"
 	make_desktop_entry ${PN} "${PN}" "${PN}"
 }
 pkg_postinst() {
