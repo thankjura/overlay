@@ -71,7 +71,6 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	media-libs/freetype
 	>=media-libs/glew-1.5.6
 	media-libs/jasper
-	media-libs/jbigkit
 	>=media-libs/libass-0.9.7
 	bluray? ( media-libs/libbluray )
 	css? ( media-libs/libdvdcss )
@@ -90,7 +89,6 @@ COMMON_DEPEND="${PYTHON_DEPS}
 		media-libs/sdl-gfx
 		>=media-libs/sdl-image-1.2.10[gif,jpeg,png]
 		media-libs/sdl-mixer
-		media-libs/sdl-sound
 	)
 	media-libs/tiff
 	pulseaudio? ( media-sound/pulseaudio )
