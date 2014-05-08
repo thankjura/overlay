@@ -147,7 +147,7 @@ src_unpack() {
 
 src_prepare() {
 	epatch "${FILESDIR}"/${P}-nomythtv.patch
-	epatch "${FILESDIR}"/${PN}-9999-no-arm-flags.patch #400617
+	epatch "${FILESDIR}"/${P}-no-arm-flags.patch #400617
 	# The mythtv patch touches configure.ac, so force a regen
 	rm -f configure
 

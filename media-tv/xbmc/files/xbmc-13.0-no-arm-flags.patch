@@ -1,11 +1,7 @@
-http://bugs.gentoo.org/400617
-
-do not force any particular ABI or FPU or SIMD compiler flags for arm
-targets.  let the toolchain and user CFLAGS control that.
-
---- a/configure.in
-+++ b/configure.in
-@@ -571,7 +571,7 @@
+diff -ur xbmc-13.0-Gotham_r2.old/configure.in xbmc-13.0-Gotham_r2/configure.in
+--- xbmc-13.0-Gotham_r2.old/configure.in    2014-05-08 13:46:50.200954365 +0400
++++ xbmc-13.0-Gotham_r2/configure.in    2014-05-08 13:50:27.382567812 +0400
+@@ -855,7 +855,7 @@
  elif test "$target_platform" = "target_raspberry_pi"; then
    ARCH="arm"
    use_arch="arm"
