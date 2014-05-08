@@ -22,12 +22,14 @@ case ${PV} in
 	;;
 *_alpha*|*_beta*|*_rc*)
 	MY_PV="13.0-Gotham_${PV#*_}"
+	MY_P="${PN}-${MY_PV}"
 	SRC_URI="https://github.com/xbmc/xbmc/archive/${MY_PV}.tar.gz -> ${P}.tar.gz
 		!java? ( https://bugs.gentoo.org/attachment.cgi?id=374328 -> ${P}-generated-addons.tar.xz )"
 	KEYWORDS="~amd64 ~x86"
 	;;
 *)
 	MY_PV="13.0-Gotham_${PR}"
+	MY_P="${PN}-${MY_PV}"
 	SRC_URI="https://github.com/xbmc/xbmc/archive/${MY_PV}.tar.gz -> ${P}.tar.gz
 		!java? ( https://bugs.gentoo.org/attachment.cgi?id=374328 -> ${P}-generated-addons.tar.xz )"
 	#SRC_URI="http://mirrors.xbmc.org/releases/source/${MY_P}.tar.gz"
@@ -150,7 +152,7 @@ src_prepare() {
 	epatch "${FILESDIR}"/${P}-no-arm-flags.patch #400617
 	# The mythtv patch touches configure.ac, so force a regen
 	rm -f configure
-
+	
 	# some dirs ship generated autotools, some dont
 	multijob_init
 	local d
