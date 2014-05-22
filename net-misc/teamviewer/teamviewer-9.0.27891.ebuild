@@ -69,15 +69,17 @@ EOF
 }
 
 src_prepare() {
-#	epatch "${FILESDIR}"/${P}-gentoo.patch
+	pushd ../../../
+	epatch "${FILESDIR}"/${PN}9.patch
+	popd
 
 	sed \
 		-e "s/@TVV@/${MV}/g" \
 		"${FILESDIR}"/${PN}d.init > "${T}"/${PN}d${MV} || die
 
-	sed -i \
+	sed \
 		-e "s#/opt/teamviewer9/tv_bin/teamviewerd#/opt/${MY_PN}/teamviewerd#" \
-		script/${PN}d.service || die
+		script/${PN}d.service > "${T}"/${PN}d${MV}.service || die
 }
 
 src_install () {
@@ -87,28 +89,24 @@ src_install () {
 		doexe wine/drive_c/TeamViewer/*
 	else
 		# install scripts and .reg
-		insinto /opt/${MY_PN}/script
-		doins script/*.reg
-		exeinto /opt/${MY_PN}/script
-		doexe script/teamviewer{,_desktop} script/tvw_{aux,config,exec,extra,main,profile}
+		insinto /opt/${MY_PN}/tv_bin
+		doins -r *
 
-		# install internal wine
-		insinto /opt/${MY_PN}
-		doins -r wine
-		dosym /opt/${MY_PN}/script/${PN} /opt/bin/${MY_PN}
+		exeinto /opt/${MY_PN}/tv_bin
+		doexe TeamViewer_Desktop
+		exeinto /opt/${MY_PN}/tv_bin/script
+		doexe script/teamviewer script/tvw_{aux,config,exec,extra,main,profile}
+
+		dosym /opt/${MY_PN}/tv_bin/script/${PN} /opt/bin/${MY_PN}
 
 		# fix permissions
-		fperms 755 /opt/${MY_PN}/wine/bin/wine{,-preloader,server}
-		fperms 755 /opt/${MY_PN}/wine/drive_c/TeamViewer/TeamViewer.exe
+		fperms 755 /opt/${MY_PN}/tv_bin/wine/bin/wine{,-preloader,server}
+		fperms 755 /opt/${MY_PN}/tv_bin/wine/drive_c/TeamViewer/TeamViewer.exe
 		find "${D}"/opt/${MY_PN} -type f -name "*.so*" -execdir chmod 755 '{}' \;
 	fi
 
-	# necessary symlinks
-	dosym ./script/teamviewer /opt/${MY_PN}/TeamViewer
-	dosym ./script/teamviewer_desktop /opt/${MY_PN}/TeamViewer_Desktop
-
 	# install daemon binary
-	exeinto /opt/${MY_PN}
+	exeinto /opt/${MY_PN}/tv_bin
 	doexe ${PN}d
 
 	# set up logdir
@@ -120,7 +118,7 @@ src_install () {
 	dosym /etc/${MY_PN} /opt/${MY_PN}/config
 
 	doinitd "${T}"/${PN}d${MV}
-	systemd_dounit script/${PN}d.service
+	systemd_dounit "${T}"/${PN}d${MV}.service
 
 	newicon -s 48 desktop/${PN}.png ${MY_PN}.png
 	dodoc ../doc/linux_FAQ_{EN,DE}.txt
