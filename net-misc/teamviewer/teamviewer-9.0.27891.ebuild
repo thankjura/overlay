@@ -115,7 +115,7 @@ src_install () {
 	dosym /etc/${MY_PN} /opt/${MY_PN}/config
 
 	doinitd "${T}"/${PN}d${MV}
-	systemd_dounit script/${PN}d.service "${T}"/${PN}d${MV}.service
+	systemd_dounit script/${PN}d.service
 
 	newicon -s 48 desktop/${PN}.png ${MY_PN}.png
 	dodoc ../doc/linux_FAQ_{EN,DE}.txt
