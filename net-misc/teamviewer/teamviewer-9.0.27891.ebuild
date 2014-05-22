@@ -77,9 +77,6 @@ src_prepare() {
 		-e "s/@TVV@/${MV}/g" \
 		"${FILESDIR}"/${PN}d.init > "${T}"/${PN}d${MV} || die
 
-	sed \
-		-e "s#/opt/teamviewer9/tv_bin/teamviewerd#/opt/${MY_PN}/teamviewerd#" \
-		script/${PN}d.service > "${T}"/${PN}d${MV}.service || die
 }
 
 src_install () {
@@ -118,7 +115,7 @@ src_install () {
 	dosym /etc/${MY_PN} /opt/${MY_PN}/config
 
 	doinitd "${T}"/${PN}d${MV}
-	systemd_dounit "${T}"/${PN}d${MV}.service
+	systemd_dounit script/${PN}d.service "${T}"/${PN}d${MV}.service
 
 	newicon -s 48 desktop/${PN}.png ${MY_PN}.png
 	dodoc ../doc/linux_FAQ_{EN,DE}.txt
