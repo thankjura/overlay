@@ -22,6 +22,8 @@ RDEPEND="x11-libs/vte:2.90
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
+S=${WORKDIR}"/"${PN}-${P}
+
 src_configure() {
 	eautoreconf || die
 	econf || die
