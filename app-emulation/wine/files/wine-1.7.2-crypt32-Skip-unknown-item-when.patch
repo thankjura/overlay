@@ -1,0 +1,27 @@
+From 24a36ed47bfbddf83da5aaf9df1cfbe3fac59d80 Mon Sep 17 00:00:00 2001
+From: Charles Davis <cdavis5x@gmail.com>
+Date: Sun, 1 Sep 2013 23:39:41 -0600
+Subject: [PATCH] crypt32: Skip unknown item when decoding a CMS certificate.
+Reply-To: Wine Developer's List <wine-devel@winehq.org>
+
+I ran into this while trying to run Star Citizen under Wine.
+---
+ dlls/crypt32/decode.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/dlls/crypt32/decode.c b/dlls/crypt32/decode.c
+index e5f8baf..3561700 100644
+--- a/dlls/crypt32/decode.c
++++ b/dlls/crypt32/decode.c
+@@ -5502,6 +5502,8 @@ static BOOL CRYPT_AsnDecodeCMSSignerInfoInternal(const BYTE *pbEncoded,
+        offsetof(CMSG_CMS_SIGNER_INFO, AuthAttrs),
+        CRYPT_AsnDecodePKCSAttributesInternal, sizeof(CRYPT_ATTRIBUTES),
+        TRUE, TRUE, offsetof(CMSG_CMS_SIGNER_INFO, AuthAttrs.rgAttr), 0 },
++     /* Unknown item */
++     { ASN_CONSTRUCTOR | ASN_UNIVERSAL | 0x11, 0, NULL, 0, TRUE, FALSE, 0, 0 },
+      { ASN_SEQUENCEOF, offsetof(CMSG_CMS_SIGNER_INFO, HashEncryptionAlgorithm),
+        CRYPT_AsnDecodeAlgorithmId, sizeof(CRYPT_ALGORITHM_IDENTIFIER),
+        FALSE, TRUE, offsetof(CMSG_CMS_SIGNER_INFO,
+-- 
+1.7.12.4
+
