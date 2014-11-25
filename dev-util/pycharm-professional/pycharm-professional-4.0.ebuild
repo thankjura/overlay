@@ -17,22 +17,22 @@ S="${WORKDIR}/pycharm-${PV}"
 
 src_install()
 {	
+	mv "bin/pycharm.png" "bin/${PN}.png"
 	# copy files
-  dodir /opt/${PN}
+	dodir /opt/${PN}
 	insinto /opt/${PN}
 	doins -r *
 	
-  # fix perms
-  fperms a+x /opt/${PN}/bin/pycharm.sh || die "fperms failed"
+	# fix perms
+	fperms a+x /opt/${PN}/bin/pycharm.sh || die "fperms failed"
 	fperms a+x /opt/${PN}/bin/fsnotifier || die "fperms failed"
 	fperms a+x /opt/${PN}/bin/fsnotifier64 || die "fperms failed"
 	fperms a+x /opt/${PN}/bin/inspect.sh || die "fperms failed"
 	
-  # symlink
-  dosym /opt/${PN}/bin/pycharm.sh /usr/bin/${PN}
+	# symlink
+	dosym /opt/${PN}/bin/pycharm.sh /usr/bin/${PN}
 
-  # desktop entry
-	mv "bin/pycharm.png" "bin/${PN}.png"
-  doicon "bin/${PN}.png"
+	# desktop entry
+	doicon "bin/${PN}.png"
 	make_desktop_entry ${PN} "PyCharm (Professional)" /opt/${PN}/bin/${PN}.png
 }
