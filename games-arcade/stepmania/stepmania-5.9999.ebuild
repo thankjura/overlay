@@ -15,7 +15,7 @@ EGIT_REPO_URI="git://github.com/stepmania/stepmania.git"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="debug X gtk +jpeg +mad +vorbis +network +ffmpeg sse2 bundled-libs"
+IUSE="debug X gtk +jpeg +mad +vorbis +network +ffmpeg sse2 bundled-libs +system-pcre"
 
 DEPEND="gtk? ( x11-libs/gtk+:2 )
 	media-libs/alsa-lib
@@ -28,7 +28,8 @@ DEPEND="gtk? ( x11-libs/gtk+:2 )
 	x11-libs/libXrandr
 	media-libs/glew
 	virtual/opengl
-	!bundled-libs? ( dev-libs/libpcre dev-libs/jsoncpp )"
+	!bundled-libs? ( dev-libs/libpcre dev-libs/jsoncpp )
+	system-pcre? ( dev-libs/libpcre )"
 
 remove_bundled_lib() {
 	local blib_prefix
@@ -54,11 +55,14 @@ src_prepare() {
 		#remove_bundled_lib "libtomcrypt"
 		#remove_bundled_lib "libtommath"
 		remove_bundled_lib "mad-0.15.1b"
-		remove_bundled_lib "pcre"
 		remove_bundled_lib "vorbis"
 		remove_bundled_lib "zlib"
 	fi
 	
+	if use system-pcre; then		
+		remove_bundled_lib "pcre"
+	fi
+
 	# Remove dev themes
 	remove_dev_theme "default-dev-midi"
 	remove_dev_theme "HelloWorld"
@@ -81,8 +85,13 @@ src_configure() {
 	myconf=""
 	if ! use bundled-libs; then
 		einfo "Disabling bundled libraries.."
-		myconf="${myconf} --with-system-pcre --with-system-ffmpeg"
+		myconf="${myconf} --with-system-ffmpeg"
 	fi
+
+	if use system-pcre; then
+		myconf="${myconf} --with-system-pcre"
+	fi
+
 	egamesconf \
 	--disable-dependency-tracking \
 	--enable-lua-binaries \
