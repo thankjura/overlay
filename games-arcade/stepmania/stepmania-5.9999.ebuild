@@ -15,7 +15,7 @@ EGIT_REPO_URI="git://github.com/stepmania/stepmania.git"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="debug X gtk +jpeg +mad +vorbis +network +ffmpeg sse2 bundled-libs +system-pcre"
+IUSE="debug X gtk +jpeg +mad +vorbis +network +ffmpeg sse2 bundled-libs"
 
 DEPEND="gtk? ( x11-libs/gtk+:2 )
 	media-libs/alsa-lib
@@ -28,8 +28,7 @@ DEPEND="gtk? ( x11-libs/gtk+:2 )
 	x11-libs/libXrandr
 	media-libs/glew
 	virtual/opengl
-	!bundled-libs? ( dev-libs/libpcre dev-libs/jsoncpp )
-	system-pcre? ( dev-libs/libpcre )"
+	!bundled-libs? ( dev-libs/libpcre dev-libs/jsoncpp )"
 
 remove_bundled_lib() {
 	local blib_prefix
@@ -50,6 +49,7 @@ src_prepare() {
 	# Remove bundled libs, to know if they become forked as lua already is.
 	if ! use bundled-libs; then
 		remove_bundled_lib "ffmpeg"
+		remove_bundled_lib "pcre"
 		remove_bundled_lib "libjpeg"
 		remove_bundled_lib "libpng"
 		#remove_bundled_lib "libtomcrypt"
@@ -59,10 +59,6 @@ src_prepare() {
 		remove_bundled_lib "zlib"
 	fi
 	
-	if use system-pcre; then		
-		remove_bundled_lib "pcre"
-	fi
-
 	# Remove dev themes
 	remove_dev_theme "default-dev-midi"
 	remove_dev_theme "HelloWorld"
@@ -85,11 +81,7 @@ src_configure() {
 	myconf=""
 	if ! use bundled-libs; then
 		einfo "Disabling bundled libraries.."
-		myconf="${myconf} --with-system-ffmpeg"
-	fi
-
-	if use system-pcre; then
-		myconf="${myconf} --with-system-pcre"
+		myconf="${myconf} --with-system-pcre --with-system-ffmpeg"
 	fi
 
 	egamesconf \
