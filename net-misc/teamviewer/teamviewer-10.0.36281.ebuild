@@ -6,13 +6,12 @@ inherit eutils gnome2-utils systemd unpacker
 
 # Major version
 MV=${PV/\.*}
-MY_PN=${PN}${MV}
 DESCRIPTION="All-In-One Solution for Remote Access and Support over the Internet"
 HOMEPAGE="http://www.teamviewer.com"
 SRC_URI="http://www.teamviewer.com/download/version_${MV}x/teamviewer_linux.deb -> ${P}.deb"
 
 LICENSE="TeamViewer !system-wine? ( LGPL-2.1 )"
-SLOT=${MV}
+SLOT=0
 KEYWORDS="~*"
 IUSE="system-wine"
 
@@ -51,19 +50,19 @@ RDEPEND="
 	)
 	system-wine? ( app-emulation/wine )"
 
-QA_PREBUILT="opt/teamviewer${MV}/*"
+QA_PREBUILT="opt/${PN}/*"
 
-S=${WORKDIR}/opt/teamviewer${MV}/tv_bin
+S=${WORKDIR}/opt/${PN}/tv_bin
 
 make_winewrapper() {
-	cat << EOF > "${T}/${MY_PN}"
+	cat << EOF > "${T}/${PN}"
 #!/bin/sh
-export WINEDLLPATH=/opt/${MY_PN}
-exec wine "/opt/${MY_PN}/TeamViewer.exe" "\$@"
+export WINEDLLPATH=/opt/${PN}
+exec wine "/opt/${PN}/TeamViewer.exe" "\$@"
 EOF
-	chmod go+rx "${T}/${MY_PN}"
+	chmod go+rx "${T}/${PN}"
 	exeinto /opt/bin
-	doexe "${T}/${MY_PN}"
+	doexe "${T}/${PN}"
 }
 
 src_prepare() {
@@ -76,45 +75,46 @@ src_prepare() {
 
 src_install () {
 	if use system-wine ; then
+		echo ${PN}
 		make_winewrapper
-		exeinto /opt/${MY_PN}
+		exeinto /opt/${PN}
 		doexe wine/drive_c/TeamViewer/*
 	else
 		# install scripts and .reg
-		insinto /opt/${MY_PN}/tv_bin
+		insinto /opt/${PN}/tv_bin
 		doins -r *
 
-		exeinto /opt/${MY_PN}/tv_bin
+		exeinto /opt/${PN}/tv_bin
 		doexe TeamViewer_Desktop
-		exeinto /opt/${MY_PN}/tv_bin/script
+		exeinto /opt/${PN}/tv_bin/script
 		doexe script/teamviewer script/tvw_{aux,config,exec,extra,main,profile}
 
-		dosym /opt/${MY_PN}/tv_bin/script/${PN} /opt/bin/${MY_PN}
+		dosym /opt/${PN}/tv_bin/script/${PN} /opt/bin/${PN}
 
 		# fix permissions
-		fperms 755 /opt/${MY_PN}/tv_bin/wine/bin/wine{,-preloader,server}
-		fperms 755 /opt/${MY_PN}/tv_bin/wine/drive_c/TeamViewer/TeamViewer.exe
-		find "${D}"/opt/${MY_PN} -type f -name "*.so*" -execdir chmod 755 '{}' \;
+		fperms 755 /opt/${PN}/tv_bin/wine/bin/wine{,-preloader,server}
+		fperms 755 /opt/${PN}/tv_bin/wine/drive_c/TeamViewer/TeamViewer.exe
+		find "${D}"/opt/${PN} -type f -name "*.so*" -execdir chmod 755 '{}' \;
 	fi
 
 	# install daemon binary
-	exeinto /opt/${MY_PN}/tv_bin
+	exeinto /opt/${PN}/tv_bin
 	doexe ${PN}d
 
 	# set up logdir
-	keepdir /var/log/${MY_PN}
-	dosym /var/log/${MY_PN} /opt/${MY_PN}/logfiles
+	keepdir /var/log/${PN}
+	dosym /var/log/${PN} /opt/${PN}/logfiles
 
 	# set up config dir
-	keepdir /etc/${MY_PN}
-	dosym /etc/${MY_PN} /opt/${MY_PN}/config
+	keepdir /etc/${PN}
+	dosym /etc/${PN} /opt/${PN}/config
 
 	doinitd "${T}"/${PN}d${MV}
 	systemd_newunit script/${PN}d.service ${PN}d${MV}.service
 
-	newicon -s 48 desktop/${PN}.png ${MY_PN}.png
-	dodoc ../doc/linux_FAQ_{EN,DE}.txt
-	make_desktop_entry ${MY_PN} TeamViewer ${MY_PN}
+	newicon -s 48 desktop/${PN}.png ${PN}.png
+	dodoc ../doc/*.txt
+	make_desktop_entry ${PN} TeamViewer ${PN}
 }
 
 pkg_preinst() {
