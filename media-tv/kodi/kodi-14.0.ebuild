@@ -42,7 +42,7 @@ HOMEPAGE="http://kodi.tv/"
 LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~x86 ~amd64"
-IUSE="airplay alsa altivec avahi bluetooth bluray caps cec css debug +fishbmc gles goom java joystick midi mysql nfs +opengl profile +projectm pulseaudio pvr +rsxs rtmp +samba +sdl sse sse2 sftp test udisks upnp upower +usb vaapi vdpau webserver +X +xrandr"
+IUSE="airplay alsa altivec avahi bluetooth bluray caps cec css debug +fishbmc gles goom java joystick midi mysql nfs +opengl profile +projectm pulseaudio pvr +rsxs rtmp +samba +sdl sse sse2 sftp test udisks upnp upower +usb vaapi vdpau wayland webserver +X +xrandr"
 REQUIRED_USE="
 	pvr? ( mysql )
 	rsxs? ( X )
@@ -131,7 +131,8 @@ COMMON_DEPEND="${PYTHON_DEPS}
 		x11-libs/libXinerama
 		xrandr? ( x11-libs/libXrandr )
 		x11-libs/libXrender
-	)"
+	)
+	wayland? ( dev-libs/wayland )"
 RDEPEND="${COMMON_DEPEND}
 	udisks? ( sys-fs/udisks:0 )
 	upower? ( || ( sys-power/upower sys-power/upower-pm-utils ) )"
@@ -219,7 +220,6 @@ src_configure() {
 		--docdir=/usr/share/doc/${PF} \
 		--disable-ccache \
 		--disable-optimizations \
-		--enable-external-libraries \
 		$(has_version 'media-video/libav' && echo "--enable-libav-compat") \
 		$(use_enable airplay) \
 		$(use_enable avahi) \
@@ -231,7 +231,6 @@ src_configure() {
 		$(use_enable fishbmc) \
 		$(use_enable gles) \
 		$(use_enable goom) \
-		--disable-hal \
 		$(use_enable joystick) \
 		$(use_enable midi mid) \
 		$(use_enable mysql) \
@@ -253,7 +252,8 @@ src_configure() {
 		$(use_enable vdpau) \
 		$(use_enable webserver) \
 		$(use_enable X x11) \
-		$(use_enable xrandr)
+		$(use_enable xrandr) \
+		$(use_enable wayland)
 }
 
 src_install() {
