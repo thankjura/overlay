@@ -27,7 +27,7 @@ case ${PV} in
 *|*_p*)
 	MY_PV=${PV/_p/_r}
 	MY_P="${PN}-${MY_PV}"
-	SRC_URI="http://mirrors.xbmc.org/releases/source/${PV}-${CODENAME}.tar.gz"
+	SRC_URI="https://github.com/xbmc/xbmc/archive/${PV}-${CODENAME}.tar.gz"
 	KEYWORDS="~amd64 ~x86"
 
 	S=${WORKDIR}/xbmc-${PV}-${CODENAME}
