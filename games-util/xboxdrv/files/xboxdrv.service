@@ -1,0 +1,11 @@
+[Unit]
+Description=Userspace Xbox 360 Controller driver
+
+[Service]
+EnvironmentFile=-/etc/conf.d/xboxdrv
+BusName=org.seul.Xboxdrv
+ExecStart=/usr/bin/xboxdrv --daemon --detach ${XBOXDRV_OPTS}
+KillSignal=SIGINT
+
+[Install]
+WantedBy=default.target
