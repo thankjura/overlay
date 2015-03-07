@@ -1,0 +1,13 @@
+diff -ru docker-1.5.0.old/contrib/init/systemd/docker.service docker-1.5.0/contrib/init/systemd/docker.service
+--- docker-1.5.0.old/contrib/init/systemd/docker.service	2015-03-06 12:46:58.247668301 +0300
++++ docker-1.5.0/contrib/init/systemd/docker.service	2015-03-06 12:47:16.557917481 +0300
+@@ -5,7 +5,8 @@
+ Requires=docker.socket
+ 
+ [Service]
+-ExecStart=/usr/bin/docker -d -H fd://
++EnvironmentFile=-/etc/conf.d/docker
++ExecStart=/usr/bin/docker -d -H fd:// $DOCKER_OPTS
+ MountFlags=slave
+ LimitNOFILE=1048576
+ LimitNPROC=1048576
