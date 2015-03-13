@@ -1,6 +1,6 @@
-diff -ru robomongo-0.8.4.old/src/robomongo/gui/AppStyle.h robomongo-0.8.4/src/robomongo/gui/AppStyle.h
---- robomongo-0.8.4.old/src/robomongo/gui/AppStyle.h	2013-12-13 21:56:35.000000000 +0400
-+++ robomongo-0.8.4/src/robomongo/gui/AppStyle.h	2015-02-04 17:43:35.449324529 +0300
+diff -ru robomongo-0.8.5.old/src/robomongo/gui/AppStyle.h robomongo-0.8.5/src/robomongo/gui/AppStyle.h
+--- robomongo-0.8.5.old/src/robomongo/gui/AppStyle.h	2015-03-11 16:22:11.000000000 +0300
++++ robomongo-0.8.5/src/robomongo/gui/AppStyle.h	2015-03-13 12:57:37.420106159 +0300
 @@ -12,8 +12,8 @@
          #include <QProxyStyle>
          typedef QProxyStyle OsStyle;
@@ -12,10 +12,3 @@ diff -ru robomongo-0.8.4.old/src/robomongo/gui/AppStyle.h robomongo-0.8.4/src/ro
      #endif
  #endif
  
-@@ -36,4 +36,4 @@
-         virtual void drawPrimitive(PrimitiveElement element, const QStyleOption *option, QPainter *painter, const QWidget *widget) const;
-         virtual QRect subElementRect( SubElement element, const QStyleOption * option, const QWidget * widget=0 ) const;
-     };
--}
-\ В конце файла нет новой строки
-+}
