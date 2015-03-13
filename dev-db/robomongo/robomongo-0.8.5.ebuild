@@ -36,11 +36,9 @@ src_configure() {
 
 src_install() {
 	cd ${BUILD_DIR}
-	echo `pwd`
 	dobin src/build/robomongo
 	domenu robomongo/robomongo.desktop
 	cd ${S}
-	echo `pwd`
 	doicon install/linux/robomongo.png
 	dodoc whats-new.txt COPYRIGHT LICENSE README.md shortcuts.txt
 }
