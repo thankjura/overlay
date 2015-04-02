@@ -12,7 +12,7 @@ MY_PV="$(get_version_component_range 1-3)"
 MY_PN="idea"
 MY_PA="community"
 MY_PAS="IC"
-MY_BUILD="141.177.4"
+MY_BUILD="141.178.9"
 
 #MY_BUILD="$(delete_all_version_separators)"
 #MY_BUILD=${MY_BUILD/pre/.}
