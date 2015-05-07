@@ -1,0 +1,17 @@
+diff -ru webkitgtk-2.8.0.old/Source/WTF/wtf/Platform.h webkitgtk-2.8.0/Source/WTF/wtf/Platform.h
+--- webkitgtk-2.8.0.old/Source/WTF/wtf/Platform.h	2015-03-26 20:26:58.976395520 +0300
++++ webkitgtk-2.8.0/Source/WTF/wtf/Platform.h	2015-03-26 20:29:14.239431957 +0300
+@@ -672,6 +672,13 @@
+ #endif
+ #endif /* !defined(WTF_USE_JSVALUE64) && !defined(WTF_USE_JSVALUE32_64) */
+ 
++/* FIXME: The fast malloc implementation is broken on Itanium / IA64 because
++   some memory barriers are missing in the thread-unsafe code around the
++   pagemap_cache_ object. */
++#if CPU(IA64) || CPU(IA64_32)
++#define USE_SYSTEM_MALLOC 1
++#endif
++
+ /* The JIT is enabled by default on all x86, x86-64, ARM & MIPS platforms except ARMv7k. */
+ #if !defined(ENABLE_JIT) \
+     && (CPU(X86) || CPU(X86_64) || CPU(ARM) || CPU(ARM64) || CPU(MIPS)) \
