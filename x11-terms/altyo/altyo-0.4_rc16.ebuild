@@ -4,9 +4,13 @@
 
 EAPI=5
 
+inherit git-2
+
 DESCRIPTION="A drop-down terminal emulator, written in vala"
 HOMEPAGE="https://github.com/linvinus/AltYo"
-SRC_URI="https://github.com/linvinus/AltYo/archive/debian/${PV}-linvinus1.tar.gz"
+# SRC_URI="https://github.com/linvinus/AltYo/archive/debian/${PV}-linvinus1.tar.gz"
+EGIT_REPO_URI="git://github.com/linvinus/AltYo.git"
+EGIT_COMMIT="d5e8fbd6b2154d5802ea43a05338139824f8e248"
 
 LICENSE="GPL-3"
 SLOT="0"
@@ -18,7 +22,7 @@ RDEPEND="x11-libs/vte:2.91[introspection,vala]
          >=dev-libs/glib-2.32
          dev-lang/vala:0.26"
 
-S="${WORKDIR}/AltYo-debian-${PV}-linvinus1"
+# S="${WORKDIR}/AltYo-debian-${PV}-linvinus1"
 
 src_prepare() {
     local valac=$(find /usr/bin/valac-* | tail -n 1)
