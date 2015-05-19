@@ -4,7 +4,7 @@
 
 EAPI=5
 
-inherit eutils readme.gentoo
+inherit eutils
 
 DESCRIPTION="Intelligent Python IDE with unique code assistance and analysis"
 HOMEPAGE="http://www.jetbrains.com/pycharm/"
