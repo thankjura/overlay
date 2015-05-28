@@ -4,13 +4,15 @@
 
 EAPI="5"
 
-inherit games autotools eutils git-2
+inherit games autotools eutils
+
+MY_PV=`sed -e "s/^\(.*\)\([a-z]\)$/\1\.\2/" <<< ${PV}`
 
 DESCRIPTION="Stepmania 5 sm-ssc branch"
 HOMEPAGE="https://github.com/stepmania/stepmania"
-SRC_URI=""
+SRC_URI="https://github.com/stepmania/stepmania/archive/v${MY_PV}.tar.gz"
 
-EGIT_REPO_URI="git://github.com/stepmania/stepmania.git"
+# EGIT_REPO_URI="git://github.com/stepmania/stepmania.git"
 
 LICENSE="MIT"
 SLOT="0"
@@ -29,6 +31,8 @@ DEPEND="gtk? ( x11-libs/gtk+:2 )
 	media-libs/glew
 	virtual/opengl
 	!bundled-libs? ( dev-libs/libpcre dev-libs/jsoncpp )"
+
+S=${WORKDIR}/stepmania-${MY_PV}
 
 remove_bundled_lib() {
 	local blib_prefix
