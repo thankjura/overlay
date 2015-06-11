@@ -14,7 +14,7 @@ SRC_URI="mirror://gnu/guile/${P}.tar.gz"
 #EGIT_MASTER="stable-2.0"
 
 LICENSE="LGPL-3"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS=""
 IUSE="doc networking +regex +deprecated nls debug-malloc debug +threads"
 
 RDEPEND="
