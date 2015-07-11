@@ -1,10 +1,10 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/dev-util/pycharm-professional/pycharm-professional-4.0.6.ebuild,v 1.1 2015/04/28 20:30:31 xmw Exp $
+# $Header: /var/cvsroot/gentoo-x86/dev-util/pycharm-professional/pycharm-professional-4.5.2.ebuild,v 1.1 2015/07/05 16:06:00 xmw Exp $
 
 EAPI=5
 
-inherit eutils
+inherit eutils readme.gentoo
 
 DESCRIPTION="Intelligent Python IDE with unique code assistance and analysis"
 HOMEPAGE="http://www.jetbrains.com/pycharm/"
@@ -36,4 +36,6 @@ src_install() {
 	dosym /opt/${PN}/bin/pycharm.sh /usr/bin/${PN}
 	newicon "bin/${MY_PN}.png" ${PN}.png
 	make_desktop_entry ${PN} "${PN}" "${PN}"
+
+	readme.gentoo_src_install
 }
