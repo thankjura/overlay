@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: $
+# $Id$
 
 EAPI=5
 
@@ -10,9 +10,7 @@ MYD=$(get_version_component_range 1)_$(get_version_component_range 2)
 
 DESCRIPTION="NVIDIA CUDA Toolkit (compiler and friends)"
 HOMEPAGE="http://developer.nvidia.com/cuda"
-CURI="http://developer.download.nvidia.com/compute/cuda/${MYD}/Prod/local_installers"
-
-SRC_URI="${CURI}/cuda_${PV}_linux.run"
+SRC_URI="http://developer.download.nvidia.com/compute/cuda/${MYD}/Prod/local_installers/cuda_${PV}_linux.run"
 
 SLOT="0/${PV}"
 LICENSE="NVIDIA-CUDA"
@@ -21,8 +19,8 @@ IUSE="debugger doc eclipse profiler"
 
 DEPEND=""
 RDEPEND="${DEPEND}
-	>=sys-devel/gcc-4.9.2[cxx]
-	>=x11-drivers/nvidia-drivers-346.47[uvm]
+	>=sys-devel/gcc-4.7[cxx]
+	>=x11-drivers/nvidia-drivers-346.35
 	debugger? (
 		sys-libs/libtermcap-compat
 		sys-libs/ncurses[tinfo]
@@ -68,14 +66,12 @@ src_install() {
 		dohtml -r doc/html/*
 	fi
 
-	if use amd64; then
-		mv doc/man/man3/{,cuda-}deprecated.3 || die
-		doman doc/man/man*/*
-	fi
+	mv doc/man/man3/{,cuda-}deprecated.3 || die
+	doman doc/man/man*/*
 
 	use debugger || remove+=" bin/cuda-gdb extras/Debugger"
 	( use profiler || use eclipse ) || remove+=" libnsight"
-	use amd64 || remove+=" cuda-installer.pl"
+	remove+=" cuda-installer.pl"
 
 	if use profiler; then
 		# hack found in install-linux.pl
@@ -111,12 +107,12 @@ src_install() {
 	cat > "${T}"/99cuda <<- EOF
 		PATH=${ecudadir}/bin$(use profiler && echo ":${ecudadir}/libnvvp")
 		ROOTPATH=${ecudadir}/bin
-		LDPATH=${ecudadir}/lib$(use amd64 && echo "64:${ecudadir}/lib")
+		LDPATH=${ecudadir}/lib64:${ecudadir}/lib
 	EOF
 	doenvd "${T}"/99cuda
 
 	use profiler && \
-		make_wrapper nvprof "${EPREFIX}"${cudadir}/bin/nvprof "." ${ecudadir}/lib$(use amd64 && echo "64:${ecudadir}/lib")
+		make_wrapper nvprof "${EPREFIX}"${cudadir}/bin/nvprof "." ${ecudadir}/lib64:${ecudadir}/lib
 
 	dobin "${T}"/cuda-config
 }
