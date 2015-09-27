@@ -8,9 +8,9 @@ inherit eutils gnome2 autotools git-2
 
 DESCRIPTION="A drop down terminal, similar to the consoles found in first person shooters"
 HOMEPAGE="https://github.com/lanoxx/tilda"
-EGIT_BRANCH="vteport"
-EGIT_COMMIT="d285dee4ecc9fbd6fd4d50db5811600b4593e8dd"
-EGIT_REPO_URI="git://github.com/pik/tilda.git"
+#EGIT_BRANCH="master"
+EGIT_COMMIT="f0fad33f6144223646109f0fec135817200d6ba7"
+EGIT_REPO_URI="git://github.com/lanoxx/tilda.git"
 #SRC_URI="https://github.com/lanoxx/tilda/archive/${P}.tar.gz"
 SRC_URI=""
 
@@ -30,5 +30,5 @@ DEPEND="${RDEPEND}
 
 src_configure() {
 	eautoreconf || die
-	econf || die
+	econf --enable-vte-2.91 || die
 }
