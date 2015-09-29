@@ -35,12 +35,9 @@ inherit multilib fdo-mime gnome2-utils cmake-utils eutils python-single-r1 versi
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org"
 
-case ${PV} in
-	*_p*)
-		SRC_URI="http://dev.gentoo.org/~lu_zero/${P}.tar.gz" ;;
-	*)
-		SRC_URI="http://download.blender.org/source/${P}.tar.gz" ;;
-esac
+MY_P=${P/_rc/-rc}
+
+SRC_URI="http://download.blender.org/source/${MY_P}.tar.gz"
 
 if [[ -n ${PATCHSET} ]]; then
 	SRC_URI+=" http://dev.gentoo.org/~flameeyes/${PN}/${P}-patches-${PATCHSET}.tar.xz"
