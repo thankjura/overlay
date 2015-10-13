@@ -27,7 +27,7 @@
 # extern/libmv/third_party/glog
 
 EAPI=5
-PYTHON_COMPAT=( python3_4 )
+PYTHON_COMPAT=( python3_{4,5} )
 #PATCHSET="1"
 
 inherit multilib fdo-mime gnome2-utils cmake-utils eutils python-single-r1 versionator flag-o-matic toolchain-funcs pax-utils check-reqs
@@ -35,9 +35,12 @@ inherit multilib fdo-mime gnome2-utils cmake-utils eutils python-single-r1 versi
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org"
 
-MY_P=${P/_rc/-rc}
-
-SRC_URI="http://download.blender.org/source/${MY_P}.tar.gz"
+case ${PV} in
+	*_p*)
+		SRC_URI="http://dev.gentoo.org/~lu_zero/${P}.tar.gz" ;;
+	*)
+		SRC_URI="http://download.blender.org/source/${P}.tar.gz" ;;
+esac
 
 if [[ -n ${PATCHSET} ]]; then
 	SRC_URI+=" http://dev.gentoo.org/~flameeyes/${PN}/${P}-patches-${PATCHSET}.tar.xz"
@@ -121,7 +124,7 @@ pkg_setup() {
 src_prepare() {
 	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
 		"${FILESDIR}"/${PN}-2.68-fix-install-rules.patch \
-		"${FILESDIR}"/${PN}-2.70-sse2.patch 
+		"${FILESDIR}"/${PN}-2.70-sse2.patch
 	#	"${FILESDIR}"/${PN}-2.72-T42797.diff
 
 	epatch_user
@@ -174,7 +177,7 @@ src_configure() {
 		$(cmake-utils_use_with openimageio OPENIMAGEIO)
 		$(cmake-utils_use_with openal OPENAL)
 		$(cmake-utils_use_with openexr IMAGE_OPENEXR)
-		$(cmake-utils_use_with openmp OPENMP)
+		#$(cmake-utils_use_with openmp OPENMP)
 		$(cmake-utils_use_with opennl OPENNL)
 		$(cmake-utils_use_with player PLAYER)
 		$(cmake-utils_use_with redcode IMAGE_REDCODE)

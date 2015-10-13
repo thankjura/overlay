@@ -40,7 +40,6 @@ S="${WORKDIR}"/openvdb
 PYTHON_VERSION="3.4"
 
 src_prepare() {
-#	epatch "${FILESDIR}"/fixnumpy.patch
 	epatch "${FILESDIR}"/numpy_api.patch
 	epatch "${FILESDIR}"/pyOpenVDBModule.cc.patch
 	epatch "${FILESDIR}"/openvdb.patch

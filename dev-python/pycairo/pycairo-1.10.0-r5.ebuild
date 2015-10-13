@@ -57,6 +57,7 @@ src_prepare() {
 			pushd "${BUILD_DIR}" > /dev/null
 			wafdir="$(./waf unpack)"
 			pushd "${wafdir}" > /dev/null
+			epatch "${FILESDIR}/${PN}-1.10.0-py3_5.patch"
 			epatch "${FILESDIR}/${PN}-1.10.0-waf-py3_4.patch"
 			popd > /dev/null
 			popd > /dev/null
