@@ -1,6 +1,6 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/x11-drivers/nvidia-drivers/nvidia-drivers-340.76.ebuild,v 1.6 2015/03/31 18:12:46 ulm Exp $
+# $Id$
 
 EAPI=5
 
@@ -23,7 +23,7 @@ SRC_URI="
 "
 
 LICENSE="GPL-2 NVIDIA-r2"
-SLOT="0"
+SLOT="0/340"
 KEYWORDS="-* amd64 x86 ~amd64-fbsd ~x86-fbsd"
 IUSE="acpi multilib kernel_FreeBSD kernel_linux pax_kernel +tools +X uvm"
 RESTRICT="bindist mirror strip"
@@ -57,13 +57,8 @@ RDEPEND="
 		<x11-base/xorg-server-1.17.99:=
 		>=x11-libs/libvdpau-0.3-r1
 		multilib? (
-			|| (
-				 (
-					>=x11-libs/libX11-1.6.2[abi_x86_32]
-					>=x11-libs/libXext-1.3.2[abi_x86_32]
-				 )
-				app-emulation/emul-linux-x86-xlibs
-			)
+			>=x11-libs/libX11-1.6.2[abi_x86_32]
+			>=x11-libs/libXext-1.3.2[abi_x86_32]
 		)
 	)
 "
@@ -80,19 +75,6 @@ pkg_pretend() {
 		[ "${DEFAULT_ABI}" != "amd64" ]; then
 		eerror "This ebuild doesn't currently support changing your default ABI"
 		die "Unexpected \${DEFAULT_ABI} = ${DEFAULT_ABI}"
-	fi
-
-	if use kernel_linux && kernel_is ge 3 18 ; then
-		ewarn "Gentoo supports kernels which are supported by NVIDIA"
-		ewarn "which are limited to the following kernels:"
-		ewarn "<sys-kernel/gentoo-sources-3.18"
-		ewarn "<sys-kernel/vanilla-sources-3.18"
-		ewarn ""
-		ewarn "You are free to utilize epatch_user to provide whatever"
-		ewarn "support you feel is appropriate, but will not receive"
-		ewarn "support as a result of those changes."
-		ewarn ""
-		ewarn "Do not file a bug report about this."
 	fi
 
 	# Since Nvidia ships 3 different series of drivers, we need to give the user
@@ -162,12 +144,13 @@ src_prepare() {
 		if kernel_is lt 2 6 9 ; then
 			eerror "You must build this against 2.6.9 or higher kernels."
 		fi
+		if kernel_is ge 4 3 ; then
+			epatch "${FILESDIR}"/linux-4.3.0.patch
+		fi
 
 		# If greater than 2.6.5 use M= instead of SUBDIR=
 #		convert_to_m "${NV_SRC}"/Makefile.kbuild
 	fi
-
-	epatch "${FILESDIR}"/linux-4.0.patch
 
 	if use pax_kernel; then
 		ewarn "Using PAX patches is not supported. You will be asked to"
@@ -251,7 +234,7 @@ src_install() {
 
 		# Ensures that our device nodes are created when not using X
 		exeinto "$(get_udevdir)"
-		doexe "${FILESDIR}"/nvidia-udev.sh
+		newexe "${FILESDIR}"/nvidia-udev.sh-r1 nvidia-udev.sh
 		udev_newrules "${FILESDIR}"/nvidia.udev-rule 99-nvidia.rules
 	elif use kernel_FreeBSD; then
 		if use x86-fbsd; then

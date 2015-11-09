@@ -7,7 +7,10 @@ fi
 
 case $1 in
 	add|ADD)
-		/opt/bin/nvidia-smi > /dev/null
+		#hopefully this prevents infinite loops like bug #454740
+		if lsmod | grep -iq nvidia; then
+			/opt/bin/nvidia-smi > /dev/null
+		fi
 		;;
 	remove|REMOVE)
 		rm -f /dev/nvidia*
