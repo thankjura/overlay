@@ -9,7 +9,7 @@ inherit eutils gnome2 autotools git-2
 DESCRIPTION="A drop down terminal, similar to the consoles found in first person shooters"
 HOMEPAGE="https://github.com/lanoxx/tilda"
 #EGIT_BRANCH="master"
-EGIT_COMMIT="f0fad33f6144223646109f0fec135817200d6ba7"
+EGIT_COMMIT="d775f8db8ea61cc9aa2c6d7fb7bbdf67f7df61d4"
 EGIT_REPO_URI="git://github.com/lanoxx/tilda.git"
 #SRC_URI="https://github.com/lanoxx/tilda/archive/${P}.tar.gz"
 SRC_URI=""
