@@ -246,10 +246,11 @@ src_configure() {
 		$(cmake-utils_use_with nls INTERNATIONAL)
 		$(cmake-utils_use_with ndof INPUT_NDOF)
 		$(cmake-utils_use_with cycles CYCLES)
+		-DWITH_CPP11=OFF
+		-DWITH_LEGACY_DEPSGRAPH=OFF
 		-DWITH_BOOST=ON
 		-DWITH_BULLET=ON
 		-DWITH_HDF5=ON
-		-DWITH_SYSTEM_EIGEN3=ON
 		$(cmake-utils_use_with freestyle FREESTYLE)
 		$(cmake-utils_use_with opencolorio OPENCOLORIO)
 		
@@ -291,6 +292,7 @@ src_configure() {
 		
 		$(cmake-utils_use_with lzma LZMA)
 		$(cmake-utils_use_with lzo LZO)
+		$(cmake-utils_use_with lzo SYSTEM_LZO)
 		
 		$(cmake-utils_use_with boolean MOD_BOOLEAN)
 		$(cmake-utils_use_with remesh MOD_REMESH)
@@ -309,6 +311,7 @@ src_configure() {
 		$(cmake-utils_use_with alembic STATICALEMBIC)
 		$(cmake-utils_use_with opensubdiv OPENSUBDIV)
 		
+		$(cmake-utils_use_with !portable SYSTEM_EIGEN3)
 		$(cmake-utils_use_with portable INSTALL_PORTABLE)
 		$(cmake-utils_use_with portable STATIC_LIBS)
 		$(cmake-utils_use_with portable PYTHON_INSTALL)
@@ -318,7 +321,6 @@ src_configure() {
 		$(cmake-utils_use_with opengl SYSTEM_GLEW)
 		$(cmake-utils_use_with opengl SYSTEM_GLES)
 		$(cmake-utils_use_with opengl GL_PROFILE_COMPAT)
-		$(cmake-utils_use_with lzo SYSTEM_LZO)
 		$(cmake-utils_use_with jpeg2k SYSTEM_OPENJPEG)
 		
 		-DWITH_OPENNL=ON"
