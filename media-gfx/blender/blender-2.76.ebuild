@@ -1,36 +1,48 @@
-# Copyright 1999-2014 Gentoo Foundation
+# Copyright 2015 Julian Ospald <hasufell@posteo.de>
 # Distributed under the terms of the GNU General Public License v2
-# $Header: /var/cvsroot/gentoo-x86/media-gfx/blender/blender-9999.ebuild,v 1.6 2014/11/30 23:00:00 brothermechanic Exp $
+# $Id$
+
+## BUNDLED-DEPS:
+# extern/cuew
+# extern/Eigen3
+# extern/xdnd
+# extern/carve
+# extern/glew
+# extern/libmv
+# extern/clew
+# extern/colamd
+# extern/lzma
+# extern/gtest
+# extern/rangetree
+# extern/libredcode
+# extern/wcwidth
+# extern/binreloc
+# extern/recastnavigation
+# extern/bullet2
+# extern/lzo
+# extern/libopenjpeg
+# extern/libmv/third_party/msinttypes
+# extern/libmv/third_party/ceres
+# extern/libmv/third_party/gflags
+# extern/libmv/third_party/glog
 
 EAPI=5
-PYTHON_COMPAT=( python3_{4,5} )
+PYTHON_COMPAT=( python3_4 python3_5 )
+# python3_5 need patch 
+# https://github.com/thankjura/overlay/blob/5705fb755d4ccecc3b885d863138dcc2d922c92c/dev-lang/python/files/3.5-pyatomicfix.patch
 
-SRC_URI="http://download.blender.org/source/${P}.tar.gz"
-
-inherit cmake-utils eutils python-single-r1 gnome2-utils fdo-mime pax-utils versionator toolchain-funcs flag-o-matic
+inherit multilib fdo-mime gnome2-utils cmake-utils eutils python-single-r1 versionator flag-o-matic toolchain-funcs pax-utils check-reqs
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
-HOMEPAGE="http://www.blender.org/"
+HOMEPAGE="http://www.blender.org"
+SRC_URI="http://download.blender.org/source/${P}.tar.gz"
 
-LICENSE="|| ( GPL-2 BL )"
 SLOT="0"
-KEYWORDS="~x86 ~amd64"
-IUSE_BUILD="+blender game-engine -player +bullet collada +nls -ndof +cycles freestyle +opencolorio"
-IUSE_COMPILER="buildinfo +openmp +sse +sse2"
-IUSE_SYSTEM="X -portable -valgrind -debug -doc"
-IUSE_IMAGE="+openimageio -dpx -dds +openexr -jpeg2k -redcode tiff"
-IUSE_CODEC="+openal sdl jack avi +ffmpeg -sndfile +quicktime"
-IUSE_COMPRESSION="-lzma +lzo"
-IUSE_MODIFIERS="+fluid +smoke +boolean +remesh oceansim +decimate"
-IUSE_MODULES="osl +openvdb +addons contrib -alembic opensubdiv"
-IUSE_GPU="+opengl +cuda -sm_20 -sm_21 -sm_30 -sm_35 -sm_50"
-IUSE="${IUSE_BUILD} ${IUSE_COMPILER} ${IUSE_SYSTEM} ${IUSE_IMAGE} ${IUSE_CODEC} ${IUSE_COMPRESSION} ${IUSE_MODIFIERS} ${IUSE_MODULES} ${IUSE_GPU}"
-
-REQUIRED_USE="${PYTHON_REQUIRED_USE}
-	            redcode? ( ffmpeg jpeg2k )
-			player? ( game-engine opengl )
-			  game-engine? ( bullet opengl )
-			    openvdb ( !osl )"
+LICENSE="|| ( GPL-2 BL )"
+KEYWORDS="~amd64 ~x86"
+IUSE_MODIFIERS="+fluid +smoke +boolean +remesh +oceansim +decimate"
+IUSE_GPU="+opengl +cuda -sm_20 -sm_21 -sm_30 -sm_35 -sm_50 -sm_51"
+IUSE="${IUSE_MODIFIERS} ${IUSE_GPU} +boost +bullet colorio cycles +dds debug doc +elbeem ffmpeg fftw +game-engine jack jpeg2k libav ndof nls openal openimageio +opennl openmp +openexr player redcode sdl sndfile cpu_flags_x86_sse cpu_flags_x86_sse2 tiff c++0x opensubdiv"
 
 LANGS="en ar bg ca cs de el es es_ES fa fi fr he hr hu id it ja ky ne nl pl pt pt_BR ru sr sr@latin sv tr uk zh_CN zh_TW"
 for X in ${LANGS} ; do
@@ -38,118 +50,88 @@ for X in ${LANGS} ; do
 	REQUIRED_USE+=" linguas_${X}? ( nls )"
 done
 
+REQUIRED_USE="${PYTHON_REQUIRED_USE}
+	player? ( game-engine opengl )
+	game-engine? ( bullet opengl boost )
+	redcode? ( jpeg2k ffmpeg )
+	cycles? ( boost openexr tiff )
+	nls? ( boost )"
+
 RDEPEND="${PYTHON_DEPS}
-	dev-vcs/git
+	dev-libs/lzo:2
 	dev-python/numpy[${PYTHON_USEDEP}]
 	dev-python/requests[${PYTHON_USEDEP}]
-	dev-libs/jemalloc
-	sys-libs/zlib
-	sci-libs/fftw:3.0
-	media-libs/freetype
-	media-libs/libpng
+	>=media-libs/freetype-2.0:2
+	media-libs/libpng:0
+	media-libs/libsamplerate
 	sci-libs/ldl
+	sys-libs/zlib
+	virtual/jpeg:0
 	virtual/libintl
-	virtual/jpeg
-	dev-libs/boost[threads(+)]
-	sci-libs/colamd
 	opengl? ( 
 		virtual/opengl
 		media-libs/glew
 		virtual/glu
 	)
-	X? (
-	   x11-libs/libXi
-	   x11-libs/libX11
-	   x11-libs/libXxf86vm
-	)
-	opencolorio? ( media-libs/opencolorio )
+	x11-libs/libX11
+	x11-libs/libXi
+	x11-libs/libXxf86vm
+	boost? ( >=dev-libs/boost-1.44[nls?,threads(+)] )
+	colorio? ( <=media-libs/opencolorio-1.0.9 )
 	cycles? (
-		openimageio? ( >=media-libs/openimageio-1.1.5 )
-		cuda? ( dev-util/nvidia-cuda-toolkit )
-		osl? (
-		      >=sys-devel/llvm-3.1
-		      media-gfx/osl
-		      )
-		openvdb? ( media-gfx/openvdb[openvdb-compression] )
+		media-libs/openimageio
 	)
-	sdl? ( media-libs/libsdl[sound,joystick] )
-	tiff? ( media-libs/tiff )
-	openexr? ( media-libs/openexr )
 	ffmpeg? (
-		>=media-video/ffmpeg-2.2[x264,xvid,mp3,encode]
-		jpeg2k? ( >=media-video/ffmpeg-2.2[x264,xvid,mp3,encode,jpeg2k] )
+		!libav? ( >=media-video/ffmpeg-2.1.4:0=[x264,mp3,encode,theora,jpeg2k?] )
+		libav? ( >=media-video/libav-9:0=[x264,mp3,encode,theora,jpeg2k?] )
 	)
-	openal? ( >=media-libs/openal-1.6.372 )
+	fftw? ( sci-libs/fftw:3.0 )
 	jack? ( media-sound/jack-audio-connection-kit )
-	sndfile? ( media-libs/libsndfile )
-	collada? ( media-libs/opencollada )
+	jpeg2k? ( media-libs/openjpeg:0 )
 	ndof? (
 		app-misc/spacenavd
 		dev-libs/libspnav
 	)
-	quicktime? ( media-libs/libquicktime )
-	app-arch/lzma
-	valgrind? ( dev-util/valgrind )
-	lzma? ( app-arch/lzma )
-	lzo? ( dev-libs/lzo )
-	alembic? ( media-libs/alembic )
-	opensubdiv? ( media-libs/opensubdiv )"
-
+	nls? ( virtual/libiconv )
+	openal? ( >=media-libs/openal-1.6.372 )
+	openimageio? ( media-libs/openimageio )
+	openexr? ( media-libs/ilmbase media-libs/openexr )
+	sdl? ( media-libs/libsdl2[sound,joystick] )
+	sndfile? ( media-libs/libsndfile )
+	tiff? ( media-libs/tiff:0 )
+	cuda? ( dev-util/nvidia-cuda-toolkit )
+	opensubdiv? ( media-libs/opensubdiv )
+"
 DEPEND="${RDEPEND}
-	dev-cpp/eigen:3
-	nls? ( sys-devel/gettext )
+	>=dev-cpp/eigen-3.2.4:3
 	doc? (
-		dev-python/sphinx
 		app-doc/doxygen[-nodot(-),dot(+)]
-	)"
+		dev-python/sphinx
+	)
+	nls? ( sys-devel/gettext )"
+
+pkg_pretend() {
+	if use openmp && ! tc-has-openmp; then
+		eerror "You are using gcc built without 'openmp' USE."
+		eerror "Switch CXX to an OpenMP capable compiler."
+		die "Need openmp"
+	fi
+
+	if use doc; then
+		CHECKREQS_DISK_BUILD="4G" check-reqs_pkg_pretend
+	fi
+}
 
 pkg_setup() {
 	python-single-r1_pkg_setup
-	enable_openmp="OFF"
-	if use openmp; then
-		if tc-has-openmp; then
-			enable_openmp="ON"
-		else
-			ewarn "You are using gcc built without 'openmp' USE."
-			ewarn "Switch CXX to an OpenMP capable compiler."
-			die "Need openmp"
-		fi
-	fi
-
-	if ! use sm_30 && ! use sm_35 && ! use sm_50; then
-		if use cuda; then
-			ewarn "You have not chosen a CUDA kernel. It takes an extreamly long time"
-			ewarn "to compile all the CUDA kernels. Check http://www.nvidia.com/object/cuda_gpus.htm"
-			ewarn "for your gpu and enable the matching sm_?? use flag to save time."
-		fi
-	else
-		if ! use cuda; then
-			ewarn "You have enabled a CUDA kernel (sm_??),  but you have not set"
-			ewarn "'cuda' USE. CUDA will not be compiled until you do so."
-		fi
-	fi
-	
 }
 
 src_prepare() {
-#	rm -r "${WORKDIR}/${P}"/release/scripts/addons_contrib/sequencer_extra_actions/* \
-#	|| die
-
 	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
 		"${FILESDIR}"/${PN}-2.68-fix-install-rules.patch \
 		"${FILESDIR}"/${PN}-2.70-sse2.patch \
-		"${FILESDIR}"/sequencer_extra_actions-3.8.patch.bz2 \
-		"${FILESDIR}"/01_include_addon_contrib_in_release.patch \
-		"${FILESDIR}"/050_thumbnailer_use_python3.patch
 		
 	epatch_user
-
-	# remove some bundled deps
-	rm -r \
-		extern/libopenjpeg \
-		extern/glew \
-		extern/glew-es \
-		|| die
 
 	# we don't want static glew, but it's scattered across
 	# thousand files
@@ -157,29 +139,16 @@ src_prepare() {
 	sed -i \
 		-e '/-DGLEW_STATIC/d' \
 		$(find . -type f -name "CMakeLists.txt") || die
-
-	ewarn "$(echo "Remaining bundled dependencies:";
-			( find extern -mindepth 1 -maxdepth 1 -type d; ) | sed 's|^|- |')"
-	# linguas cleanup
-	local i
-	if ! use nls; then
-		rm -r "${S}"/release/datafiles/locale || die
-	else
-		if [[ -n "${LINGUAS+x}" ]] ; then
-			cd "${S}"/release/datafiles/locale/po
-			for i in *.po ; do
-				mylang=${i%.po}
-				has ${mylang} ${LINGUAS} || { rm -r ${i} || die ; }
-			done
-		fi
-	fi
 }
 
 src_configure() {
-	append-flags -funsigned-char -fno-strict-aliasing -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -DWITH_OPENNL -DHAVE_STDBOOL_H
-	#append-lfs-flags
-	local mycmakeargs=""
-	#CUDA Kernal Selection
+	# FIX: forcing '-funsigned-char' fixes an anti-aliasing issue with menu
+	# shadows, see bug #276338 for reference
+	append-flags -funsigned-char
+	append-lfs-flags
+    local mycmakeargs=""
+
+    #CUDA Kernal Selection
 	local CUDA_ARCH=""
 	if use cuda; then
 		if use sm_20; then
@@ -217,6 +186,13 @@ src_configure() {
 				CUDA_ARCH="sm_50"
 			fi
 		fi
+		if use sm_51; then
+			if [[ -n "${CUDA_ARCH}" ]] ; then
+				CUDA_ARCH="${CUDA_ARCH};sm_51"
+			else
+				CUDA_ARCH="sm_51"
+			fi
+		fi
 
 		#If a kernel isn't selected then all of them are built by default
 		if [ -n "${CUDA_ARCH}" ] ; then
@@ -231,68 +207,30 @@ src_configure() {
 		-DCUDA_NVCC=/opt/cuda/bin/nvcc"
 	fi
 
-	#make DESTDIR="${D}" install didn't work
+	# WITH_PYTHON_SECURITY
+	# WITH_PYTHON_SAFETY
 	mycmakeargs="${mycmakeargs}
-		-DCMAKE_INSTALL_PREFIX="/usr"
+		-DCMAKE_INSTALL_PREFIX=/usr
 		-DPYTHON_VERSION="${EPYTHON/python/}"
 		-DPYTHON_LIBRARY="$(python_get_library_path)"
 		-DPYTHON_INCLUDE_DIR="$(python_get_includedir)"
-		$(cmake-utils_use_with blender BLENDER)
-		$(cmake-utils_use_with game-engine GAMEENGINE)
-		$(cmake-utils_use_with player PLAYER)
+		-DWITH_INSTALL_PORTABLE=OFF
+		$(cmake-utils_use_with boost BOOST)
 		$(cmake-utils_use_with bullet BULLET)
-		$(cmake-utils_use_with collada OPENCOLLADA)
-		-DWITH_FFTW3=ON
-		$(cmake-utils_use_with nls INTERNATIONAL)
-		$(cmake-utils_use_with ndof INPUT_NDOF)
+		$(cmake-utils_use_with ffmpeg CODEC_FFMPEG)
+		$(cmake-utils_use_with sndfile CODEC_SNDFILE)
+		$(cmake-utils_use_with c++0x CPP11)
 		$(cmake-utils_use_with cycles CYCLES)
-		-DWITH_CPP11=OFF
-		-DWITH_LEGACY_DEPSGRAPH=OFF
-		-DWITH_BOOST=ON
-		-DWITH_BULLET=ON
-		-DWITH_HDF5=ON
-		$(cmake-utils_use_with freestyle FREESTYLE)
-		$(cmake-utils_use_with opencolorio OPENCOLORIO)
-		
-		$(cmake-utils_use_with buildinfo BUILDINFO)
-		$(cmake-utils_use_with openmp OPENMP)
-		$(cmake-utils_use_with sse RAYOPTIMIZATION)
-		$(cmake-utils_use_with sse2 SSE2)
-		
-		$(cmake-utils_use_with X X11)
-		$(cmake-utils_use_with !X HEADLESS)
-		$(cmake-utils_use_with X X11_XF86VMODE)
-		$(cmake-utils_use_with X X11_XINPUT)
-		$(cmake-utils_use_with X GHOST_XDND)
-		$(cmake-utils_use_with valgrind VALGRIND)
-		$(cmake-utils_use_with debug DEBUG)
-		$(cmake-utils_use_with debug GPU_DEBUG)
-		$(cmake-utils_use_with debug WITH_CYCLES_DEBUG)
-		$(cmake-utils_use_with doc DOCS)
-		$(cmake-utils_use_with doc DOC_MANPAGE)
-		
-		$(cmake-utils_use_with openimageio OPENIMAGEIO)
-		$(cmake-utils_use_with dpx IMAGE_CINEON)
+		$(cmake-utils_use_with fftw FFTW3)
+		$(cmake-utils_use_with game-engine GAMEENGINE)
 		$(cmake-utils_use_with dds IMAGE_DDS)
-		-DWITH_IMAGE_HDR=ON
 		$(cmake-utils_use_with openexr IMAGE_OPENEXR)
 		$(cmake-utils_use_with jpeg2k IMAGE_OPENJPEG)
 		$(cmake-utils_use_with redcode IMAGE_REDCODE)
 		$(cmake-utils_use_with tiff IMAGE_TIFF)
-		
-		$(cmake-utils_use_with openal OPENAL)
-		$(cmake-utils_use_with sdl SDL)
-		$(cmake-utils_use_with sdl SDL_DYNLOAD)
+		$(cmake-utils_use_with ndof INPUT_NDOF)
+		$(cmake-utils_use_with nls INTERNATIONAL)
 		$(cmake-utils_use_with jack JACK)
-		$(cmake-utils_use_with jack JACK_DYNLOAD)
-		$(cmake-utils_use_with avi CODEC_AVI)
-		$(cmake-utils_use_with ffmpeg CODEC_FFMPEG)
-		$(cmake-utils_use_with sndfile CODEC_SNDFILE)
-		$(cmake-utils_use_with quicktime QUICKTIME)
-		
-		$(cmake-utils_use_with lzma LZMA)
-		$(cmake-utils_use_with lzo LZO)
-		$(cmake-utils_use_with lzo SYSTEM_LZO)
 		
 		$(cmake-utils_use_with boolean MOD_BOOLEAN)
 		$(cmake-utils_use_with remesh MOD_REMESH)
@@ -301,30 +239,25 @@ src_configure() {
 		$(cmake-utils_use_with decimate MOD_DECIMATE)
 		$(cmake-utils_use_with smoke MOD_SMOKE)
 		
-		$(cmake-utils_use_with osl LLVM)
-		-DLLVM_STATIC=OFF
-		-DLLVM_LIBRARY="/usr/lib"
-		$(cmake-utils_use_with osl CYCLES_OSL)
-		$(cmake-utils_use_with openvdb OPENVDB)
-		$(cmake-utils_use_with openvdb OPENVDB_BLOSC)
-		$(cmake-utils_use_with alembic ALEMBIC)
-		$(cmake-utils_use_with alembic STATICALEMBIC)
+		$(cmake-utils_use_with openal OPENAL)
+		-DWITH_OPENCOLLADA=OFF
+		$(cmake-utils_use_with colorio OPENCOLORIO)
+		$(cmake-utils_use_with openimageio OPENIMAGEIO)
+		$(cmake-utils_use_with openmp OPENMP)
+		$(cmake-utils_use_with opennl OPENNL)
+		$(cmake-utils_use_with player PLAYER)
+		-DWITH_PYTHON_INSTALL=OFF
+		-DWITH_PYTHON_INSTALL_NUMPY=OFF
+		$(cmake-utils_use_with cpu_flags_x86_sse RAYOPTIMIZATION)
+		$(cmake-utils_use_with sdl SDL)
+		$(cmake-utils_use_with cpu_flags_x86_sse2 SSE2)
 		$(cmake-utils_use_with opensubdiv OPENSUBDIV)
-		
-		$(cmake-utils_use_with !portable SYSTEM_EIGEN3)
-		$(cmake-utils_use_with portable INSTALL_PORTABLE)
-		$(cmake-utils_use_with portable STATIC_LIBS)
-		$(cmake-utils_use_with portable PYTHON_INSTALL)
-		$(cmake-utils_use_with portable PYTHON_INSTALL_NUMPY)
-		$(cmake-utils_use_with portable PYTHON_INSTALL_REQUESTS)
-		
-		$(cmake-utils_use_with opengl SYSTEM_GLEW)
-		$(cmake-utils_use_with opengl SYSTEM_GLES)
-		$(cmake-utils_use_with opengl GL_PROFILE_COMPAT)
-		$(cmake-utils_use_with jpeg2k SYSTEM_OPENJPEG)
-		
-		-DWITH_OPENNL=ON"
-
+		-DWITH_STATIC_LIBS=OFF
+		-DWITH_SYSTEM_GLEW=ON
+		-DWITH_SYSTEM_OPENJPEG=ON
+		-DWITH_SYSTEM_BULLET=OFF
+		-DWITH_SYSTEM_EIGEN3=ON
+		-DWITH_SYSTEM_LZO=ON"
 	cmake-utils_src_configure
 }
 
@@ -334,7 +267,7 @@ src_compile() {
 	if use doc; then
 		einfo "Generating Blender C/C++ API docs ..."
 		cd "${CMAKE_USE_DIR}"/doc/doxygen || die
-		doxygen -u Doxyfile
+		doxygen -u Doxyfile || die
 		doxygen || die "doxygen failed to build API docs."
 
 		cd "${CMAKE_USE_DIR}" || die
@@ -365,6 +298,10 @@ src_install() {
 	# fucked up cmake will relink binary for no reason
 	emake -C "${CMAKE_BUILD_DIR}" DESTDIR="${D}" install/fast
 
+	# fix doc installdir
+	dohtml "${CMAKE_USE_DIR}"/release/text/readme.html
+	rm -r "${ED%/}"/usr/share/doc/blender || die
+
 	python_fix_shebang "${ED%/}"/usr/bin/blender-thumbnailer.py
 	python_optimize "${ED%/}"/usr/share/blender/${PV}/scripts
 }
@@ -375,12 +312,8 @@ pkg_preinst() {
 
 pkg_postinst() {
 	elog
-	elog "Blender compiles from master think by default"
-	elog "You may change a branch and a rev, for ex, in /etc/portage/env/blender"
-	elog "EGIT_COMMIT="v2.74""
-	elog "EGIT_BRANCH="master""
-	elog "and don't forget add to /etc/portage/package.env"
-	elog "media-gfx/blender blender"
+	elog "Blender uses python integration. As such, may have some"
+	elog "inherit risks with running unknown python scripting."
 	elog
 	elog "It is recommended to change your blender temp directory"
 	elog "from /tmp to /home/user/tmp or another tmp file under your"
