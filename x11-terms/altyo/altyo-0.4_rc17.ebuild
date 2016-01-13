@@ -10,7 +10,7 @@ DESCRIPTION="A drop-down terminal emulator, written in vala"
 HOMEPAGE="https://github.com/linvinus/AltYo"
 # SRC_URI="https://github.com/linvinus/AltYo/archive/debian/${PV}-linvinus1.tar.gz"
 EGIT_REPO_URI="git://github.com/linvinus/AltYo.git"
-EGIT_COMMIT="d5e8fbd6b2154d5802ea43a05338139824f8e248"
+EGIT_COMMIT="dac5b86b10668995ca28ecbc131c1ff7bd77e35c"
 
 LICENSE="GPL-3"
 SLOT="0"

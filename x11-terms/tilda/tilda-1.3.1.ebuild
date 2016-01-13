@@ -4,15 +4,11 @@
 
 EAPI=4
 
-inherit eutils gnome2 autotools git-2
+inherit eutils gnome2 autotools
 
 DESCRIPTION="A drop down terminal, similar to the consoles found in first person shooters"
 HOMEPAGE="https://github.com/lanoxx/tilda"
-#EGIT_BRANCH="master"
-EGIT_COMMIT="d775f8db8ea61cc9aa2c6d7fb7bbdf67f7df61d4"
-EGIT_REPO_URI="git://github.com/lanoxx/tilda.git"
-#SRC_URI="https://github.com/lanoxx/tilda/archive/${P}.tar.gz"
-SRC_URI=""
+SRC_URI="https://github.com/lanoxx/tilda/archive/${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -26,7 +22,7 @@ RDEPEND="x11-libs/vte:2.91
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
-#S=${WORKDIR}"/"${PN}-${COMMIT}
+S=${WORKDIR}"/"${PN}-${P}
 
 src_configure() {
 	eautoreconf || die
