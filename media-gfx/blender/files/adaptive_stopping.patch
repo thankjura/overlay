@@ -1,0 +1,2334 @@
+diff -ru --new-file blender-2.76b.old/intern/cycles/blender/addon/properties.py blender-2.76b/intern/cycles/blender/addon/properties.py
+--- blender-2.76b.old/intern/cycles/blender/addon/properties.py	2015-11-04 13:02:14.000000000 +0300
++++ blender-2.76b/intern/cycles/blender/addon/properties.py	2016-01-14 23:44:01.010036491 +0300
+@@ -523,6 +523,31 @@
+                 default=0.1,
+                 min=0.0, max=5.0
+                 )
++        cls.adaptive_distribution = BoolProperty(
++            name="Adaptive distribution",
++            default=False,
++            description="Distribute samples inside every tile according to the remaining error, "
++                        "mainly useful for bigger tiles (this doesn't affect the total samples per tile)",
++            )
++        cls.adaptive_stopping = BoolProperty(
++            name="Adaptive stopping",
++            default=False,
++            description="Stop rendering a tile once its error falls below the threshold "
++                        "(note that tiles still stop when the sample count is reached).",
++            )
++        cls.adaptive_confidence = FloatProperty(
++            name="Confidence",
++            min=0, max=100,
++            default=80,
++            description="Desired confidence (in percent) that the remaining error in the tile is not visible anymore. "
++                        "The bigger this value is, the longer rendering will take.",
++            )
++        cls.adaptive_map_interval = IntProperty(
++            name="Map update rate",
++            min=1, max=2147483647,
++            default=25,
++            description="Number of samples taken before the error is re-estimated",
++            )
+ 
+     @classmethod
+     def unregister(cls):
+diff -ru --new-file blender-2.76b.old/intern/cycles/blender/addon/ui.py blender-2.76b/intern/cycles/blender/addon/ui.py
+--- blender-2.76b.old/intern/cycles/blender/addon/ui.py	2015-11-04 13:02:14.000000000 +0300
++++ blender-2.76b/intern/cycles/blender/addon/ui.py	2016-01-14 23:44:56.774020797 +0300
+@@ -174,7 +174,9 @@
+             sub.prop(cscene, "volume_samples", text="Volume")
+ 
+         if use_cpu(context) or cscene.feature_set == 'EXPERIMENTAL':
+-            layout.row().prop(cscene, "sampling_pattern", text="Pattern")
++            sub = layout.row()
++            sub.enabled = not (cscene.adaptive_stopping and cscene.feature_set == 'EXPERIMENTAL')
++            sub.prop(cscene, "sampling_pattern", text="Pattern")
+ 
+         for rl in scene.render.layers:
+             if rl.samples > 0:
+@@ -265,6 +267,28 @@
+         row = layout.row()
+         row.prop(rd, "motion_blur_shutter")
+ 
++class CyclesRender_PT_adaptive_sampling(CyclesButtonsPanel, Panel):
++    bl_label = "Adaptive Sampling"
++    bl_options = {'DEFAULT_CLOSED'}
++
++    @classmethod
++    def poll(cls, context):
++        return context.scene.cycles.feature_set == 'EXPERIMENTAL'
++
++    def draw_header(self, context):
++        cscene = context.scene.cycles
++        self.layout.prop(cscene, "adaptive_stopping", text="")
++
++    def draw(self, context):
++        layout = self.layout
++
++        cscene = context.scene.cycles
++        layout.active = cscene.adaptive_stopping
++
++        col = layout.column()
++        col.prop(cscene, "adaptive_distribution")
++        col.prop(cscene, "adaptive_confidence", slider=True)
++        col.prop(cscene, "adaptive_map_interval")
+ 
+ class CyclesRender_PT_film(CyclesButtonsPanel, Panel):
+     bl_label = "Film"
+diff -ru --new-file blender-2.76b.old/intern/cycles/blender/blender_session.cpp blender-2.76b/intern/cycles/blender/blender_session.cpp
+--- blender-2.76b.old/intern/cycles/blender/blender_session.cpp	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/blender/blender_session.cpp	2016-01-14 23:50:42.297064562 +0300
+@@ -142,7 +142,7 @@
+ 	BufferParams buffer_params = BlenderSync::get_buffer_params(b_render, b_v3d, b_rv3d, scene->camera, width, height);
+ 	session->reset(buffer_params, session_params.samples);
+ 
+-	b_engine.use_highlight_tiles(session_params.progressive_refine == false);
++	b_engine.use_highlight_tiles(session_params.progressive_refine == false || session_params.error_progressive);
+ }
+ 
+ void BlenderSession::reset_session(BL::BlendData b_data_, BL::Scene b_scene_)
+@@ -281,6 +281,12 @@
+ 				return PASS_BVH_TRAVERSED_INSTANCES;
+ 			if(b_pass.debug_type() == BL::RenderPass::debug_type_RAY_BOUNCES)
+ 				return PASS_RAY_BOUNCES;
++			if(b_pass.debug_type() == BL::RenderPass::debug_type_SAMPLES)
++				return PASS_SAMPLES;
++			if(b_pass.debug_type() == BL::RenderPass::debug_type_VARIANCE)
++				return PASS_VARIANCE;
++			if(b_pass.debug_type() == BL::RenderPass::debug_type_IMPORTANCE)
++				return PASS_IMPORTANCE;
+ 			break;
+ 		}
+ #endif
+@@ -351,7 +357,7 @@
+ 	b_engine.end_result(b_rr, (int)cancel, (int)do_merge_results);
+ }
+ 
+-void BlenderSession::do_write_update_render_tile(RenderTile& rtile, bool do_update_only)
++void BlenderSession::do_write_update_render_tile(RenderTile& rtile, bool do_update_only, bool remove_highlight)
+ {
+ 	BufferParams& params = rtile.buffers->params;
+ 	int x = params.full_x - session->tile_manager.params.full_x;
+@@ -387,18 +393,18 @@
+ 			update_render_result(b_rr, b_rlay, rtile);
+ 		}
+ 
+-		end_render_result(b_engine, b_rr, true, true);
++		end_render_result(b_engine, b_rr, !remove_highlight, true);
+ 	}
+ 	else {
+ 		/* write result */
+ 		write_render_result(b_rr, b_rlay, rtile);
+-		end_render_result(b_engine, b_rr, false, true);
++		end_render_result(b_engine, b_rr, !remove_highlight, true);
+ 	}
+ }
+ 
+ void BlenderSession::write_render_tile(RenderTile& rtile)
+ {
+-	do_write_update_render_tile(rtile, false);
++	do_write_update_render_tile(rtile, false, true);
+ }
+ 
+ void BlenderSession::update_render_tile(RenderTile& rtile)
+@@ -407,10 +413,12 @@
+ 	 * be updated in blender side
+ 	 * would need to be investigated a bit further, but for now shall be fine
+ 	 */
+-	if(!b_engine.is_preview())
+-		do_write_update_render_tile(rtile, true);
++	if(!b_engine.is_preview()) {
++		bool remove_highlight = session->params.error_progressive && (rtile.sample == rtile.start_sample + rtile.num_samples);
++		do_write_update_render_tile(rtile, true, remove_highlight);
++	}
+ 	else
+-		do_write_update_render_tile(rtile, false);
++		do_write_update_render_tile(rtile, false, false);
+ }
+ 
+ void BlenderSession::render()
+@@ -447,6 +455,10 @@
+ 		/* add passes */
+ 		vector<Pass> passes;
+ 		Pass::add(PASS_COMBINED, passes);
++		if(session_params.adaptive_stopping) {
++			Pass::add(PASS_SAMPLES, passes);
++			Pass::add(PASS_VARIANCE, passes);
++		}
+ 
+ 		if(session_params.device.advanced_shading) {
+ 
+@@ -831,22 +843,42 @@
+ void BlenderSession::get_progress(float& progress, double& total_time, double& render_time)
+ {
+ 	double tile_time;
+-	int tile, sample, samples_per_tile;
++	int tile;
+ 	int tile_total = session->tile_manager.state.num_tiles;
+ 	int samples = session->tile_manager.state.sample + 1;
+ 	int total_samples = session->tile_manager.num_samples;
+ 
+ 	session->progress.get_tile(tile, total_time, render_time, tile_time);
+ 
+-	sample = session->progress.get_sample();
+-	samples_per_tile = session->tile_manager.num_samples;
++	if(session->params.error_progressive) {
++		if(tile > tile_total) {
++			float max_error = session->tile_manager.state.tiles.top().priority;
++			float convergence_speed = max_error * sqrtf(tile);
++			float convergence_factor = convergence_speed / session->params.stopping_threshold;
++			progress = ((float) tile / (convergence_factor*convergence_factor));
++		}
++		else
++			progress = 0.0f;
++	}
++	else if(session->params.adaptive_stopping) {
++		if(tile_total)
++			progress = (float)tile / (float)tile_total;
++		else
++			progress = 0.0f;
++	}
++	else {
++		int sample, samples_per_tile;
++
++		sample = session->progress.get_sample();
++		samples_per_tile = session->tile_manager.num_samples;
+ 
+-	if(background && samples_per_tile && tile_total)
+-		progress = ((float)sample / (float)(tile_total * samples_per_tile));
+-	else if(!background && samples > 0 && total_samples != USHRT_MAX)
+-		progress = ((float)samples) / total_samples;
+-	else
+-		progress = 0.0;
++		if(background && samples_per_tile && tile_total)
++			progress = ((float)sample / (float)(tile_total * samples_per_tile));
++		else if(!background && samples > 0 && total_samples != USHRT_MAX)
++			progress = ((float)samples) / total_samples;
++		else
++			progress = 0.0;
++	}
+ }
+ 
+ void BlenderSession::update_bake_progress()
+diff -ru --new-file blender-2.76b.old/intern/cycles/blender/blender_session.h blender-2.76b/intern/cycles/blender/blender_session.h
+--- blender-2.76b.old/intern/cycles/blender/blender_session.h	2015-10-27 19:57:22.000000000 +0300
++++ blender-2.76b/intern/cycles/blender/blender_session.h	2016-01-14 23:46:12.250349024 +0300
+@@ -103,7 +103,7 @@
+ 
+ protected:
+ 	void do_write_update_render_result(BL::RenderResult b_rr, BL::RenderLayer b_rlay, RenderTile& rtile, bool do_update_only);
+-	void do_write_update_render_tile(RenderTile& rtile, bool do_update_only);
++	void do_write_update_render_tile(RenderTile& rtile, bool do_update_only, bool remove_highlight);
+ 
+ 	int builtin_image_frame(const string &builtin_name);
+ 	void builtin_image_info(const string &builtin_name, void *builtin_data, bool &is_float, int &width, int &height, int &depth, int &channels);
+diff -ru --new-file blender-2.76b.old/intern/cycles/blender/blender_sync.cpp blender-2.76b/intern/cycles/blender/blender_sync.cpp
+--- blender-2.76b.old/intern/cycles/blender/blender_sync.cpp	2015-11-04 13:02:14.000000000 +0300
++++ blender-2.76b/intern/cycles/blender/blender_sync.cpp	2016-01-14 23:52:14.888668637 +0300
+@@ -208,7 +208,10 @@
+ 	if(get_boolean(cscene, "use_animated_seed"))
+ 		integrator->seed = hash_int_2d(b_scene.frame_current(), get_int(cscene, "seed"));
+ 
+-	integrator->sampling_pattern = (SamplingPattern)RNA_enum_get(&cscene, "sampling_pattern");
++	if(experimental && get_boolean(cscene, "adaptive_stopping"))
++		integrator->sampling_pattern = SAMPLING_PATTERN_SOBOL;
++	else
++		integrator->sampling_pattern = (SamplingPattern)RNA_enum_get(&cscene, "sampling_pattern");
+ 
+ 	integrator->layer_flag = render_layer.layer;
+ 
+@@ -568,6 +571,18 @@
+ 	params.text_timeout = get_float(cscene, "debug_text_timeout");
+ 
+ 	params.progressive_refine = get_boolean(cscene, "use_progressive_refine");
++	params.adaptive_stopping = background && params.experimental && get_boolean(cscene, "adaptive_stopping");
++	params.adaptive_distribution = params.adaptive_stopping && get_boolean(cscene, "adaptive_distribution");
++	if(params.adaptive_stopping) {
++		float confidence = get_float(cscene, "adaptive_confidence");
++		confidence = clamp(confidence, 1.0f, 99.999f) * 0.01f;
++		params.stopping_threshold = 1.0f / (M_SQRT2_F*fast_ierff(confidence));
++	}
++	else {
++		params.stopping_threshold = 0;
++	}
++	params.map_interval = get_int(cscene, "adaptive_map_interval");
++	params.error_progressive = params.progressive_refine && params.adaptive_stopping;
+ 
+ 	if(background) {
+ 		if(params.progressive_refine)
+diff -ru --new-file blender-2.76b.old/intern/cycles/device/device_cpu.cpp blender-2.76b/intern/cycles/device/device_cpu.cpp
+--- blender-2.76b.old/intern/cycles/device/device_cpu.cpp	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/device/device_cpu.cpp	2016-01-14 23:54:32.617263032 +0300
+@@ -48,6 +48,7 @@
+ #include "util_foreach.h"
+ #include "util_function.h"
+ #include "util_logging.h"
++#include "util_importance.h"
+ #include "util_opengl.h"
+ #include "util_progress.h"
+ #include "util_system.h"
+@@ -229,16 +230,32 @@
+ 			int start_sample = tile.start_sample;
+ 			int end_sample = tile.start_sample + tile.num_samples;
+ 
++			tile.sample = tile.start_sample;
++			ImportanceMap *importance_map = NULL;
++			int next_check = task.adaptive_stopping? 3*task.map_interval: -1;
++
+ 			for(int sample = start_sample; sample < end_sample; sample++) {
+ 				if(task.get_cancel() || task_pool.canceled()) {
+ 					if(task.need_finish_queue == false)
+ 						break;
+ 				}
++				if(sample == next_check) {
++					if(tile_converged(tile, &task, &next_check))
++						break;
++					if(task.adaptive_distribution) {
++						if(importance_map)
++							delete importance_map;
++						importance_map = new ImportanceMap(tile);
++					}
++				}
+ 
+-				for(int y = tile.y; y < tile.y + tile.h; y++) {
+-					for(int x = tile.x; x < tile.x + tile.w; x++) {
+-						path_trace_kernel(&kg, render_buffer, rng_state,
+-						                  sample, x, y, tile.offset, tile.stride);
++				for(int y = 0; y < tile.h; y++) {
++					for(int x = 0; x < tile.w; x++) {
++						int px = x, py = y;
++						if(importance_map)
++							importance_map->sample(sample - 3*task.map_interval, px, py);
++						path_trace_kernel(&kg, render_buffer, rng_state, sample,
++								  px + tile.x, py + tile.y, tile.offset, tile.stride);
+ 					}
+ 				}
+ 
+@@ -246,6 +263,9 @@
+ 
+ 				task.update_progress(&tile);
+ 			}
++			
++			if(importance_map)
++				delete importance_map;
+ 
+ 			task.release_tile(tile);
+ 
+diff -ru --new-file blender-2.76b.old/intern/cycles/device/device_cuda.cpp blender-2.76b/intern/cycles/device/device_cuda.cpp
+--- blender-2.76b.old/intern/cycles/device/device_cuda.cpp	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/device/device_cuda.cpp	2016-01-14 23:58:39.410026510 +0300
+@@ -25,6 +25,7 @@
+ 
+ #include "cuew.h"
+ #include "util_debug.h"
++#include "util_importance.h"
+ #include "util_logging.h"
+ #include "util_map.h"
+ #include "util_opengl.h"
+@@ -48,6 +49,7 @@
+ 	int cuDevArchitecture;
+ 	bool first_error;
+ 	bool use_texture_storage;
++	device_vector<int2> adaptive_samples;
+ 
+ 	struct PixelMem {
+ 		GLuint cuPBO;
+@@ -579,8 +581,8 @@
+ 			}
+ 		}
+ 	}
+-
+-	void path_trace(RenderTile& rtile, int sample, bool branched)
++	
++	void path_trace(RenderTile& rtile, int sample, bool branched, device_ptr adaptive_samples_ptr)
+ 	{
+ 		if(have_error())
+ 			return;
+@@ -590,6 +592,7 @@
+ 		CUfunction cuPathTrace;
+ 		CUdeviceptr d_buffer = cuda_device_ptr(rtile.buffer);
+ 		CUdeviceptr d_rng_state = cuda_device_ptr(rtile.rng_state);
++		CUdeviceptr d_adaptive_samples = cuda_device_ptr(adaptive_samples_ptr);
+ 
+ 		/* get kernel function */
+ 		if(branched) {
+@@ -604,6 +607,7 @@
+ 
+ 		/* pass in parameters */
+ 		void *args[] = {&d_buffer,
++						 &d_adaptive_samples,
+ 						 &d_rng_state,
+ 						 &sample,
+ 						 &rtile.x,
+@@ -1005,13 +1009,45 @@
+ 				int start_sample = tile.start_sample;
+ 				int end_sample = tile.start_sample + tile.num_samples;
+ 
++				tile.sample = tile.start_sample;
++				ImportanceMap *importance_map = NULL;
++				int next_check = task->adaptive_stopping? 3*task->map_interval: -1;
++
++				if(task->adaptive_distribution && (adaptive_samples.data_size != tile.w*tile.h)) {
++					adaptive_samples.resize(tile.w*tile.h);
++					mem_free(adaptive_samples);
++					mem_alloc(adaptive_samples, MEM_READ_ONLY);
++				}
++
+ 				for(int sample = start_sample; sample < end_sample; sample++) {
+ 					if(task->get_cancel()) {
+ 						if(task->need_finish_queue == false)
+ 							break;
+ 					}
+ 
+-					path_trace(tile, sample, branched);
++					if(sample == next_check) {
++						if(tile_converged(tile, task, &next_check))
++							break;
++						if(task->adaptive_distribution) {
++							if(importance_map)
++								delete importance_map;
++							importance_map = new ImportanceMap(tile);
++						}
++					}
++
++					if(importance_map) {
++						int2 *samples_data = (int2*) adaptive_samples.data_pointer;
++						for(int y = 0; y < tile.h; y++) {
++							for(int x = 0; x < tile.w; x++) {
++								int px = x, py = y;
++								importance_map->sample(sample - 3*task->map_interval, px, py);
++								samples_data[y*tile.w + x] = make_int2(px, py);
++							}
++						}
++						mem_copy_to(adaptive_samples);
++					}
++
++					path_trace(tile, sample, branched, importance_map? adaptive_samples.device_pointer: (device_ptr) NULL);
+ 
+ 					tile.sample = sample + 1;
+ 
+diff -ru --new-file blender-2.76b.old/intern/cycles/device/device_opencl.cpp blender-2.76b/intern/cycles/device/device_opencl.cpp
+--- blender-2.76b.old/intern/cycles/device/device_opencl.cpp	2015-11-04 13:02:14.000000000 +0300
++++ blender-2.76b/intern/cycles/device/device_opencl.cpp	2016-01-15 00:01:48.045637392 +0300
+@@ -28,6 +28,7 @@
+ #include "buffers.h"
+ 
+ #include "util_foreach.h"
++#include "util_importance.h"
+ #include "util_logging.h"
+ #include "util_map.h"
+ #include "util_math.h"
+@@ -649,6 +650,7 @@
+ 	ConstMemMap const_mem_map;
+ 	MemMap mem_map;
+ 	device_ptr null_mem;
++	device_vector<int2> adaptive_samples;
+ 
+ 	bool device_initialized;
+ 	string platform_name;
+@@ -1717,12 +1719,13 @@
+ 		release_program_safe(path_trace_program);
+ 	}
+ 
+-	void path_trace(RenderTile& rtile, int sample)
++	void path_trace(RenderTile& rtile, int sample, device_ptr adaptive_samples_ptr)
+ 	{
+ 		/* Cast arguments to cl types. */
+ 		cl_mem d_data = CL_MEM_PTR(const_mem_map["__data"]->device_pointer);
+ 		cl_mem d_buffer = CL_MEM_PTR(rtile.buffer);
+ 		cl_mem d_rng_state = CL_MEM_PTR(rtile.rng_state);
++		cl_mem d_adaptive_samples = CL_MEM_PTR(adaptive_samples_ptr);
+ 		cl_int d_x = rtile.x;
+ 		cl_int d_y = rtile.y;
+ 		cl_int d_w = rtile.w;
+@@ -1738,7 +1741,8 @@
+ 			                0,
+ 			                d_data,
+ 			                d_buffer,
+-			                d_rng_state);
++			                d_rng_state,
++			                d_adaptive_samples);
+ 
+ #define KERNEL_TEX(type, ttype, name) \
+ 		set_kernel_arg_mem(ckPathTraceKernel, &start_arg_index, #name);
+@@ -1773,13 +1777,44 @@
+ 				int start_sample = tile.start_sample;
+ 				int end_sample = tile.start_sample + tile.num_samples;
+ 
++				tile.sample = tile.start_sample;
++				ImportanceMap *importance_map = NULL;
++				int next_check = task->adaptive_stopping? 3*task->map_interval: -1;
++
+ 				for(int sample = start_sample; sample < end_sample; sample++) {
+ 					if(task->get_cancel()) {
+ 						if(task->need_finish_queue == false)
+ 							break;
+ 					}
+ 
+-					path_trace(tile, sample);
++					if(sample == next_check) {
++						if(tile_converged(tile, task, &next_check))
++							break;
++						if(task->adaptive_distribution) {
++							if(importance_map) delete
++								importance_map;
++							importance_map = new ImportanceMap(tile);
++						}
++					}
++
++					if(importance_map) {
++						if(sample == start_sample) {
++							adaptive_samples.resize(tile.w*tile.h);
++							mem_free(adaptive_samples);
++							mem_alloc(adaptive_samples, MEM_READ_ONLY);
++						}
++						int2 *samples_data = (int2*) adaptive_samples.data_pointer;
++						for(int y = 0; y < tile.h; y++) {
++							for(int x = 0; x < tile.w; x++) {
++								int px = x, py = y;
++								importance_map->sample(sample - 3*task->map_interval, px, py);
++								samples_data[y*tile.w + x] = make_int2(px, py);
++							}
++						}
++						mem_copy_to(adaptive_samples);
++					}
++
++					path_trace(tile, sample, importance_map? adaptive_samples.device_pointer: (device_ptr) NULL);
+ 
+ 					tile.sample = sample + 1;
+ 
+diff -ru --new-file blender-2.76b.old/intern/cycles/device/device_task.h blender-2.76b/intern/cycles/device/device_task.h
+--- blender-2.76b.old/intern/cycles/device/device_task.h	2015-10-27 19:57:22.000000000 +0300
++++ blender-2.76b/intern/cycles/device/device_task.h	2016-01-15 00:02:16.322176502 +0300
+@@ -45,6 +45,12 @@
+ 	int num_samples;
+ 	int offset, stride;
+ 
++	bool adaptive_stopping;
++	bool adaptive_distribution;
++	float stopping_threshold;
++	int map_interval;
++	bool error_progressive;
++
+ 	device_ptr shader_input;
+ 	device_ptr shader_output;
+ 	int shader_eval_type;
+diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_debug.h blender-2.76b/intern/cycles/kernel/kernel_debug.h
+--- blender-2.76b.old/intern/cycles/kernel/kernel_debug.h	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_debug.h	2016-01-15 00:03:22.139429216 +0300
+@@ -31,17 +31,15 @@
+ {
+ 	int flag = kernel_data.film.pass_flag;
+ 	if(flag & PASS_BVH_TRAVERSAL_STEPS) {
+-		kernel_write_pass_float(buffer + kernel_data.film.pass_bvh_traversal_steps,
+-		                        sample,
+-		                        debug_data->num_bvh_traversal_steps);
++		kernel_write_pass_float(kg, buffer + kernel_data.film.pass_bvh_traversal_steps,
+ 	}
+ 	if(flag & PASS_BVH_TRAVERSED_INSTANCES) {
+-		kernel_write_pass_float(buffer + kernel_data.film.pass_bvh_traversed_instances,
++		kernel_write_pass_float(kg, buffer + kernel_data.film.pass_bvh_traversed_instances,
+ 		                        sample,
+ 		                        debug_data->num_bvh_traversed_instances);
+ 	}
+ 	if(flag & PASS_RAY_BOUNCES) {
+-		kernel_write_pass_float(buffer + kernel_data.film.pass_ray_bounces,
++		kernel_write_pass_float(kg, buffer + kernel_data.film.pass_ray_bounces,
+ 		                        sample,
+ 		                        debug_data->num_ray_bounces);
+ 	}
+diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_passes.h blender-2.76b/intern/cycles/kernel/kernel_passes.h
+--- blender-2.76b.old/intern/cycles/kernel/kernel_passes.h	2015-10-27 19:57:22.000000000 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_passes.h	2016-01-15 00:11:49.791995934 +0300
+@@ -14,49 +14,71 @@
+  * limitations under the License.
+  */
+ 
++#include "kernel_types.h"
++#include "util_atomic.h"
++
+ CCL_NAMESPACE_BEGIN
+ 
+-ccl_device_inline void kernel_write_pass_float(ccl_global float *buffer, int sample, float value)
++ccl_device_inline void kernel_write_pass_float(KernelGlobals *kg, ccl_global float *buffer, int sample, float value)
+ {
+-	ccl_global float *buf = buffer;
+ #if defined(__SPLIT_KERNEL__) && defined(__WORK_STEALING__)
+ 	atomic_add_float(buf, value);
++	atomic_add_float(buffer, value);
+ #else
+-	*buf = (sample == 0)? value: *buf + value;
++	if(sample == 0)
++		*buffer = value;
++#if defined(__ADAPTIVE__) && defined(__KERNEL_GPU__)
++	else if(kernel_data.film.use_atomics)
++		atomic_add_float(buffer, value);
++#endif // __ADAPTIVE__ && __KERNEL_GPU__
++	else
++		*buffer = *buffer + value;
+ #endif // __SPLIT_KERNEL__ && __WORK_STEALING__
+ }
+ 
+-ccl_device_inline void kernel_write_pass_float3(ccl_global float *buffer, int sample, float3 value)
++ccl_device_inline void kernel_write_pass_float3(KernelGlobals *kg, ccl_global float *buffer, int sample, float3 value)
+ {
+ #if defined(__SPLIT_KERNEL__) && defined(__WORK_STEALING__)
+-	ccl_global float *buf_x = buffer + 0;
+-	ccl_global float *buf_y = buffer + 1;
+-	ccl_global float *buf_z = buffer + 2;
+-
+-	atomic_add_float(buf_x, value.x);
+-	atomic_add_float(buf_y, value.y);
+-	atomic_add_float(buf_z, value.z);
++	atomic_add_float(buffer + 0, value.x);
++	atomic_add_float(buffer + 1, value.y);
++	atomic_add_float(buffer + 2, value.z);
+ #else
+ 	ccl_global float3 *buf = (ccl_global float3*)buffer;
+-	*buf = (sample == 0)? value: *buf + value;
++	if(sample == 0)
++		*buf = value;
++#if defined(__ADAPTIVE__) && defined(__KERNEL_GPU__)
++	else if(kernel_data.film.use_atomics) {
++		atomic_add_float(buffer + 0, value.x);
++		atomic_add_float(buffer + 1, value.y);
++		atomic_add_float(buffer + 2, value.z);
++	}
++#endif // __ADAPTIVE__ && __KERNEL_GPU__
++	else
++		*buf = *buf + value;
+ #endif // __SPLIT_KERNEL__ && __WORK_STEALING__
+ }
+ 
+-ccl_device_inline void kernel_write_pass_float4(ccl_global float *buffer, int sample, float4 value)
++ccl_device_inline void kernel_write_pass_float4(KernelGlobals *kg, ccl_global float *buffer, int sample, float4 value)
+ {
+ #if defined(__SPLIT_KERNEL__) && defined(__WORK_STEALING__)
+-	ccl_global float *buf_x = buffer + 0;
+-	ccl_global float *buf_y = buffer + 1;
+-	ccl_global float *buf_z = buffer + 2;
+-	ccl_global float *buf_w = buffer + 3;
+-
+-	atomic_add_float(buf_x, value.x);
+-	atomic_add_float(buf_y, value.y);
+-	atomic_add_float(buf_z, value.z);
+-	atomic_add_float(buf_w, value.w);
++	atomic_add_float(buffer + 0, value.x);
++	atomic_add_float(buffer + 1, value.y);
++	atomic_add_float(buffer + 2, value.z);
++	atomic_add_float(buffer + 3, value.w);
+ #else
+ 	ccl_global float4 *buf = (ccl_global float4*)buffer;
+-	*buf = (sample == 0)? value: *buf + value;
++	if(sample == 0)
++		*buf = value;
++#if defined(__ADAPTIVE__) && defined(__KERNEL_GPU__)
++	else if(kernel_data.film.use_atomics) {
++		atomic_add_float(buffer + 0, value.x);
++		atomic_add_float(buffer + 1, value.y);
++		atomic_add_float(buffer + 2, value.z);
++		atomic_add_float(buffer + 3, value.w);
++	}
++#endif // __ADAPTIVE__ && __KERNEL_GPU__
++	else
++		*buf = *buf + value;
+ #endif // __SPLIT_KERNEL__ && __WORK_STEALING__
+ }
+ 
+@@ -83,30 +105,30 @@
+ 			if(sample == 0) {
+ 				if(flag & PASS_DEPTH) {
+ 					float depth = camera_distance(kg, ccl_fetch(sd, P));
+-					kernel_write_pass_float(buffer + kernel_data.film.pass_depth, sample, depth);
++					kernel_write_pass_float(kg, buffer + kernel_data.film.pass_depth, sample, depth);
+ 				}
+ 				if(flag & PASS_OBJECT_ID) {
+ 					float id = object_pass_id(kg, ccl_fetch(sd, object));
+-					kernel_write_pass_float(buffer + kernel_data.film.pass_object_id, sample, id);
++					kernel_write_pass_float(kg, buffer + kernel_data.film.pass_object_id, sample, id);
+ 				}
+ 				if(flag & PASS_MATERIAL_ID) {
+ 					float id = shader_pass_id(kg, sd);
+-					kernel_write_pass_float(buffer + kernel_data.film.pass_material_id, sample, id);
++					kernel_write_pass_float(kg, buffer + kernel_data.film.pass_material_id, sample, id);
+ 				}
+ 			}
+ 
+ 			if(flag & PASS_NORMAL) {
+ 				float3 normal = ccl_fetch(sd, N);
+-				kernel_write_pass_float3(buffer + kernel_data.film.pass_normal, sample, normal);
++				kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_normal, sample, normal);
+ 			}
+ 			if(flag & PASS_UV) {
+ 				float3 uv = primitive_uv(kg, sd);
+-				kernel_write_pass_float3(buffer + kernel_data.film.pass_uv, sample, uv);
++				kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_uv, sample, uv);
+ 			}
+ 			if(flag & PASS_MOTION) {
+ 				float4 speed = primitive_motion_vector(kg, sd);
+-				kernel_write_pass_float4(buffer + kernel_data.film.pass_motion, sample, speed);
+-				kernel_write_pass_float(buffer + kernel_data.film.pass_motion_weight, sample, 1.0f);
++				kernel_write_pass_float4(kg, buffer + kernel_data.film.pass_motion, sample, speed);
++				kernel_write_pass_float(kg, buffer + kernel_data.film.pass_motion_weight, sample, 1.0f);
+ 			}
+ 
+ 			state->flag |= PATH_RAY_SINGLE_PASS_DONE;
+@@ -158,44 +180,69 @@
+ 		return;
+ 	
+ 	if(flag & PASS_DIFFUSE_INDIRECT)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_diffuse_indirect, sample, L->indirect_diffuse);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_diffuse_indirect, sample, L->indirect_diffuse);
+ 	if(flag & PASS_GLOSSY_INDIRECT)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_glossy_indirect, sample, L->indirect_glossy);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_glossy_indirect, sample, L->indirect_glossy);
+ 	if(flag & PASS_TRANSMISSION_INDIRECT)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_transmission_indirect, sample, L->indirect_transmission);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_transmission_indirect, sample, L->indirect_transmission);
+ 	if(flag & PASS_SUBSURFACE_INDIRECT)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_subsurface_indirect, sample, L->indirect_subsurface);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_subsurface_indirect, sample, L->indirect_subsurface);
+ 	if(flag & PASS_DIFFUSE_DIRECT)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_diffuse_direct, sample, L->direct_diffuse);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_diffuse_direct, sample, L->direct_diffuse);
+ 	if(flag & PASS_GLOSSY_DIRECT)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_glossy_direct, sample, L->direct_glossy);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_glossy_direct, sample, L->direct_glossy);
+ 	if(flag & PASS_TRANSMISSION_DIRECT)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_transmission_direct, sample, L->direct_transmission);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_transmission_direct, sample, L->direct_transmission);
+ 	if(flag & PASS_SUBSURFACE_DIRECT)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_subsurface_direct, sample, L->direct_subsurface);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_subsurface_direct, sample, L->direct_subsurface);
+ 
+ 	if(flag & PASS_EMISSION)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_emission, sample, L->emission);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_emission, sample, L->emission);
+ 	if(flag & PASS_BACKGROUND)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_background, sample, L->background);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_background, sample, L->background);
+ 	if(flag & PASS_AO)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_ao, sample, L->ao);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_ao, sample, L->ao);
+ 
+ 	if(flag & PASS_DIFFUSE_COLOR)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_diffuse_color, sample, L->color_diffuse);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_diffuse_color, sample, L->color_diffuse);
+ 	if(flag & PASS_GLOSSY_COLOR)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_glossy_color, sample, L->color_glossy);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_glossy_color, sample, L->color_glossy);
+ 	if(flag & PASS_TRANSMISSION_COLOR)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_transmission_color, sample, L->color_transmission);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_transmission_color, sample, L->color_transmission);
+ 	if(flag & PASS_SUBSURFACE_COLOR)
+-		kernel_write_pass_float3(buffer + kernel_data.film.pass_subsurface_color, sample, L->color_subsurface);
++		kernel_write_pass_float3(kg, buffer + kernel_data.film.pass_subsurface_color, sample, L->color_subsurface);
+ 	if(flag & PASS_SHADOW) {
+ 		float4 shadow = L->shadow;
+ 		shadow.w = kernel_data.film.pass_shadow_scale;
+-		kernel_write_pass_float4(buffer + kernel_data.film.pass_shadow, sample, shadow);
++		kernel_write_pass_float4(kg, buffer + kernel_data.film.pass_shadow, sample, shadow);
+ 	}
+ 	if(flag & PASS_MIST)
+-		kernel_write_pass_float(buffer + kernel_data.film.pass_mist, sample, 1.0f - L->mist);
++		kernel_write_pass_float(kg, buffer + kernel_data.film.pass_mist, sample, 1.0f - L->mist);
++#endif
++}
++
++ccl_device void kernel_write_result(KernelGlobals *kg, ccl_global float *buffer, int sample, float4 L)
++{
++#ifdef __ADAPTIVE__
++	float4 old_mean;
++	if((kernel_data.film.pass_flag & PASS_VARIANCE) && sample > 0)
++		old_mean = *((float4*) buffer) / sample;
++
++	kernel_write_pass_float4(kg, buffer, sample, L);
++
++	if(sample == 0 && (kernel_data.film.pass_flag & PASS_SAMPLES))
++		kernel_write_pass_float(kg, buffer + kernel_data.film.pass_samples, sample, 1.0f);
++
++	if(kernel_data.film.pass_flag & PASS_VARIANCE) {
++		if(sample == 0)
++			kernel_write_pass_float4(kg, buffer + kernel_data.film.pass_variance, sample, make_float4(0.0f, 0.0f, 0.0f, 0.0f));
++		else {
++			float4 new_mean = *((float4*) buffer) / (sample + 1);
++			kernel_write_pass_float4(kg, buffer + kernel_data.film.pass_variance, sample, (L - new_mean) * (L - old_mean));
++		}
++	}
++#else
++        kernel_write_pass_float4(kg, buffer, sample, L);
+ #endif
+ }
+ 
+diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path_branched.h blender-2.76b/intern/cycles/kernel/kernel_path_branched.h
+--- blender-2.76b.old/intern/cycles/kernel/kernel_path_branched.h	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_path_branched.h	2016-01-15 00:14:02.806476187 +0300
+@@ -508,6 +508,17 @@
+ 	rng_state += index;
+ 	buffer += index*pass_stride;
+ 
++#ifdef __ADAPTIVE__
++	if(sample > 0 && (kernel_data.film.pass_flag & PASS_SAMPLES)) {
++#ifdef __KERNEL_GPU__
++		sample = (int) atomic_add_float(buffer + kernel_data.film.pass_samples, 1.0f);
++#else
++		sample = (int) *(buffer + kernel_data.film.pass_samples);
++		*(buffer + kernel_data.film.pass_samples) += 1.0f;
++#endif
++	}
++#endif
++
+ 	/* initialize random numbers and ray */
+ 	RNG rng;
+ 	Ray ray;
+@@ -523,7 +534,7 @@
+ 		L = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
+ 
+ 	/* accumulate result in output buffer */
+-	kernel_write_pass_float4(buffer, sample, L);
++	kernel_write_result(kg, buffer, sample, L);
+ 
+ 	path_rng_end(kg, rng_state, rng);
+ }
+diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender-2.76b/intern/cycles/kernel/kernel_path.h
+--- blender-2.76b.old/intern/cycles/kernel/kernel_path.h	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_path.h	2016-01-15 00:13:02.349350170 +0300
+@@ -682,6 +682,17 @@
+ 	rng_state += index;
+ 	buffer += index*pass_stride;
+ 
++#ifdef __ADAPTIVE__
++	if(sample > 0 && (kernel_data.film.pass_flag & PASS_SAMPLES)) {
++#ifdef __KERNEL_GPU__
++		sample = (int) atomic_add_float(buffer + kernel_data.film.pass_samples, 1.0f);
++#else
++		sample = (int) *(buffer + kernel_data.film.pass_samples);
++		*(buffer + kernel_data.film.pass_samples) += 1.0f;
++#endif
++	}
++#endif
++
+ 	/* initialize random numbers and ray */
+ 	RNG rng;
+ 	Ray ray;
+@@ -697,7 +708,7 @@
+ 		L = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
+ 
+ 	/* accumulate result in output buffer */
+-	kernel_write_pass_float4(buffer, sample, L);
++	kernel_write_result(kg, buffer, sample, L);
+ 
+ 	path_rng_end(kg, rng_state, rng);
+ }
+diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.cu blender-2.76b/intern/cycles/kernel/kernels/cuda/kernel.cu
+--- blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.cu	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/kernel/kernels/cuda/kernel.cu	2016-01-15 00:18:22.174283188 +0300
+@@ -113,25 +113,38 @@
+ 
+ extern "C" __global__ void
+ CUDA_LAUNCH_BOUNDS(CUDA_THREADS_BLOCK_WIDTH, CUDA_KERNEL_MAX_REGISTERS)
+-kernel_cuda_path_trace(float *buffer, uint *rng_state, int sample, int sx, int sy, int sw, int sh, int offset, int stride)
++kernel_cuda_path_trace(float *buffer, uint *rng_state, uint2 *pixel_mapping, int sample, int sx, int sy, int sw, int sh, int offset, int stride)
+ {
+-	int x = sx + blockDim.x*blockIdx.x + threadIdx.x;
+-	int y = sy + blockDim.y*blockIdx.y + threadIdx.y;
++	int x = blockDim.x*blockIdx.x + threadIdx.x;
++	int y = blockDim.y*blockIdx.y + threadIdx.y;
+ 
+-	if(x < sx + sw && y < sy + sh)
+-		kernel_path_trace(NULL, buffer, rng_state, sample, x, y, offset, stride);
++#ifdef __ADAPTIVE__
++	if(pixel_mapping != NULL && x < sw && y < sh) {
++		uint2 pos = pixel_mapping[y*sw + x];
++		x = pos.x;
++		y = pos.y;
++	}
++	if(x < sw && y < sh)
++		kernel_path_trace(NULL, buffer, rng_state, sample, sx + x, sy + y, offset, stride);
+ }
+ 
+ #ifdef __BRANCHED_PATH__
+ extern "C" __global__ void
+ CUDA_LAUNCH_BOUNDS(CUDA_THREADS_BLOCK_WIDTH, CUDA_KERNEL_BRANCHED_MAX_REGISTERS)
+-kernel_cuda_branched_path_trace(float *buffer, uint *rng_state, int sample, int sx, int sy, int sw, int sh, int offset, int stride)
++kernel_cuda_branched_path_trace(float *buffer, uint *rng_state, uint2 *pixel_mapping, int sample, int sx, int sy, int sw, int sh, int offset, int stride)
+ {
+-	int x = sx + blockDim.x*blockIdx.x + threadIdx.x;
+-	int y = sy + blockDim.y*blockIdx.y + threadIdx.y;
++	int x = blockDim.x*blockIdx.x + threadIdx.x;
++	int y = blockDim.y*blockIdx.y + threadIdx.y;
+ 
+-	if(x < sx + sw && y < sy + sh)
+-		kernel_branched_path_trace(NULL, buffer, rng_state, sample, x, y, offset, stride);
++#ifdef __ADAPTIVE__
++	if(pixel_mapping != NULL && x < sw && y < sh) {
++		uint2 pos = pixel_mapping[y*sw + x];
++		x = pos.x;
++		y = pos.y;
++	}
++#endif
++	if(x < sw && y < sh)
++		kernel_branched_path_trace(NULL, buffer, rng_state, sample, sx + x, sy + y, offset, stride);
+ }
+ #endif
+ 
+diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/opencl/kernel.cl blender-2.76b/intern/cycles/kernel/kernels/opencl/kernel.cl
+--- blender-2.76b.old/intern/cycles/kernel/kernels/opencl/kernel.cl	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/kernel/kernels/opencl/kernel.cl	2016-01-15 00:20:17.864415350 +0300
+@@ -32,6 +32,7 @@
+ 	ccl_constant KernelData *data,
+ 	ccl_global float *buffer,
+ 	ccl_global uint *rng_state,
++    ccl_global uint2 *pixel_mapping,
+ 
+ #define KERNEL_TEX(type, ttype, name) \
+ 	ccl_global type *name,
+@@ -48,11 +49,19 @@
+ 	kg->name = name;
+ #include "../../kernel_textures.h"
+ 
+-	int x = sx + get_global_id(0);
+-	int y = sy + get_global_id(1);
++   int x = get_global_id(0);
++   int y = get_global_id(1);
+ 
+-	if(x < sx + sw && y < sy + sh)
+-		kernel_path_trace(kg, buffer, rng_state, sample, x, y, offset, stride);
++#ifdef __ADAPTIVE__
++   if(pixel_mapping != NULL && x < sw && y < sh) {
++       uint2 pos = pixel_mapping[y*sw + x];
++       x = pos.x;
++       y = pos.y;
++   }
++#endif
++
++   if(x < sw && y < sh)
++       kernel_path_trace(kg, buffer, rng_state, sample, sx + x, sy + y, offset, stride);
+ }
+ 
+ #else // __COMPILE_ONLY_MEGAKERNEL__
+@@ -166,4 +175,4 @@
+ 		kernel_film_convert_to_half_float(kg, rgba, buffer, sample_scale, x, y, offset, stride);
+ }
+ 
+-#endif // __COMPILE_ONLY_MEGAKERNEL__
+\ В конце файла нет новой строки
++#endif // __COMPILE_ONLY_MEGAKERNEL__
+diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_types.h blender-2.76b/intern/cycles/kernel/kernel_types.h
+--- blender-2.76b.old/intern/cycles/kernel/kernel_types.h	2015-11-04 13:02:14.000000000 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_types.h	2016-01-15 00:16:16.663961771 +0300
+@@ -74,6 +74,7 @@
+ #define __VOLUME_SCATTER__
+ #define __SHADOW_RECORD_ALL__
+ #define __VOLUME_RECORD_ALL__
++#define __ADAPTIVE__
+ #endif
+ 
+ #ifdef __KERNEL_CUDA__
+@@ -344,10 +345,13 @@
+ 	PASS_SUBSURFACE_INDIRECT = (1 << 23),
+ 	PASS_SUBSURFACE_COLOR = (1 << 24),
+ 	PASS_LIGHT = (1 << 25), /* no real pass, used to force use_light_pass */
++	PASS_SAMPLES = (1 << 26),
++	PASS_VARIANCE = (1 << 27),
+ #ifdef __KERNEL_DEBUG__
+-	PASS_BVH_TRAVERSAL_STEPS = (1 << 26),
+-	PASS_BVH_TRAVERSED_INSTANCES = (1 << 27),
+-	PASS_RAY_BOUNCES = (1 << 28),
++	PASS_BVH_TRAVERSAL_STEPS = (1 << 28),
++	PASS_BVH_TRAVERSED_INSTANCES = (1 << 29),
++	PASS_RAY_BOUNCES = (1 << 30),
++	PASS_IMPORTANCE = (1 << 31),
+ #endif
+ } PassType;
+ 
+@@ -854,12 +858,13 @@
+ 	int pass_shadow;
+ 	float pass_shadow_scale;
+ 	int filter_table_offset;
+-	int pass_pad2;
++	int pass_samples;
++
++	int pass_variance;
+ 
+ 	int pass_mist;
+-	float mist_start;
+-	float mist_inv_depth;
+-	float mist_falloff;
++	int pass_pad0;
++	int pass_pad1;
+ 
+ #ifdef __KERNEL_DEBUG__
+ 	int pass_bvh_traversal_steps;
+@@ -867,6 +872,10 @@
+ 	int pass_ray_bounces;
+ 	int pass_pad3;
+ #endif
++	int use_atomics;
++	float mist_start;
++	float mist_inv_depth;
++	float mist_falloff;
+ } KernelFilm;
+ 
+ typedef struct KernelBackground {
+diff -ru --new-file blender-2.76b.old/intern/cycles/render/buffers.cpp blender-2.76b/intern/cycles/render/buffers.cpp
+--- blender-2.76b.old/intern/cycles/render/buffers.cpp	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/render/buffers.cpp	2016-01-15 00:32:53.111632673 +0300
+@@ -19,10 +19,12 @@
+ #include "buffers.h"
+ #include "device.h"
+ 
++#include "util_color.h"
+ #include "util_debug.h"
+ #include "util_foreach.h"
+ #include "util_hash.h"
+ #include "util_image.h"
++#include "util_importance.h"
+ #include "util_math.h"
+ #include "util_opengl.h"
+ #include "util_time.h"
+@@ -118,6 +120,7 @@
+ 		device->mem_free(rng_state);
+ 		rng_state.clear();
+ 	}
++	importance_map.clear();
+ }
+ 
+ void RenderBuffers::reset(Device *device, BufferParams& params_)
+@@ -137,13 +140,21 @@
+ 
+ 	uint *init_state = rng_state.resize(params.width, params.height);
+ 	int x, y, width = params.width, height = params.height;
+-	
+-	for(x = 0; x < width; x++)
+-		for(y = 0; y < height; y++)
++
++	for(y = 0; y < height; y++)
++		for(x = 0; x < width; x++)
+ 			init_state[x + y*width] = hash_int_2d(params.full_x+x, params.full_y+y);
+ 
+ 	device->mem_alloc(rng_state, MEM_READ_WRITE);
+ 	device->mem_copy_to(rng_state);
++
++	/* allocate importance map */
++	if(params.use_importance) {
++		importance_map.resize(width * height);
++		for(y = 0; y < height; y++)
++			for(x = 0; x < width; x++)
++				importance_map[y*width + x] = 1.0f;
++	}
+ }
+ 
+ bool RenderBuffers::copy_from_device()
+@@ -156,9 +167,34 @@
+ 	return true;
+ }
+ 
++inline float RenderBuffers::get_sample_scale(const Pass &pass, float *pixel, int samples_pass, float scale, float exposure)
++{
++	if(samples_pass < 0)
++		return scale * exposure;
++	if(!pass.filter)
++		return exposure;
++	float sample_pass = *(pixel + samples_pass);
++	if(sample_pass == 0.0f)
++		return 0.0f;
++	return exposure / sample_pass;
++}
++
+ bool RenderBuffers::get_pass_rect(PassType type, float exposure, int sample, int components, float *pixels)
+ {
+ 	int pass_offset = 0;
++	int samples_pass = 0;
++	bool has_samples_pass = false;
++
++	foreach(Pass& pass, params.passes) {
++		if(pass.type == PASS_SAMPLES) {
++			has_samples_pass = true;
++			break;
++		}
++		samples_pass += pass.components;
++	}
++
++	if(!has_samples_pass)
++		samples_pass = -1;
+ 
+ 	foreach(Pass& pass, params.passes) {
+ 		if(pass.type != type) {
+@@ -170,24 +206,28 @@
+ 		int pass_stride = params.get_passes_size();
+ 
+ 		float scale = (pass.filter)? 1.0f/(float)sample: 1.0f;
+-		float scale_exposure = (pass.exposure)? scale*exposure: scale;
++		float pass_exposure = (pass.exposure)? exposure: 1.0f;
+ 
+ 		int size = params.width*params.height;
+ 
+ 		if(components == 1) {
++			if (pass.components != components)
++				printf("FAIL!\n");
+ 			assert(pass.components == components);
+ 
+ 			/* scalar */
+ 			if(type == PASS_DEPTH) {
+ 				for(int i = 0; i < size; i++, in += pass_stride, pixels++) {
+ 					float f = *in;
+-					pixels[0] = (f == 0.0f)? 1e10f: f*scale_exposure;
++					float fac = get_sample_scale(pass, in - pass_offset, samples_pass, scale, pass_exposure);
++					pixels[0] = (f == 0.0f)? 1e10f: f*fac;
+ 				}
+ 			}
+ 			else if(type == PASS_MIST) {
+ 				for(int i = 0; i < size; i++, in += pass_stride, pixels++) {
+ 					float f = *in;
+-					pixels[0] = saturate(f*scale_exposure);
++					float fac = get_sample_scale(pass, in - pass_offset, samples_pass, scale, pass_exposure);
++					pixels[0] = saturate(f*fac);
+ 				}
+ 			}
+ #ifdef WITH_CYCLES_DEBUG
+@@ -197,17 +237,23 @@
+ 					pixels[0] = f;
+ 				}
+ 			}
+-			else if(type == PASS_RAY_BOUNCES) {
++			else if(type == PASS_SAMPLES) {
+ 				for(int i = 0; i < size; i++, in += pass_stride, pixels++) {
+ 					float f = *in;
+ 					pixels[0] = f;
+ 				}
+ 			}
++			else if(type == PASS_IMPORTANCE) {
++				for(int i = 0; i < size; i++, in += pass_stride, pixels++) {
++					pixels[0] = params.use_importance? importance_map[i]: 1.0f;
++				}
++			}
+ #endif
+ 			else {
+ 				for(int i = 0; i < size; i++, in += pass_stride, pixels++) {
+ 					float f = *in;
+-					pixels[0] = f*scale_exposure;
++					float fac = get_sample_scale(pass, in - pass_offset, samples_pass, scale, pass_exposure);
++					pixels[0] = f*fac;
+ 				}
+ 			}
+ 		}
+@@ -251,10 +297,10 @@
+ 				/* RGB/vector */
+ 				for(int i = 0; i < size; i++, in += pass_stride, pixels += 3) {
+ 					float3 f = make_float3(in[0], in[1], in[2]);
+-
+-					pixels[0] = f.x*scale_exposure;
+-					pixels[1] = f.y*scale_exposure;
+-					pixels[2] = f.z*scale_exposure;
++					float fac = get_sample_scale(pass, in - pass_offset, samples_pass, scale, pass_exposure);
++					pixels[0] = f.x*fac;
++					pixels[1] = f.y*fac;
++					pixels[2] = f.z*fac;
+ 				}
+ 			}
+ 		}
+@@ -295,16 +341,30 @@
+ 					pixels[3] = f.w*invw;
+ 				}
+ 			}
++#ifdef WITH_CYCLES_DEBUG
++			else if(type == PASS_VARIANCE) {
++				for(int i = 0; i < size; i++, in += pass_stride, pixels += 4) {
++					float4 f = make_float4(in[0], in[1], in[2], in[3]);
++					float fac = get_sample_scale(pass, in - pass_offset, samples_pass, scale, 1.0f);
++
++					pixels[0] = f.x*fac;
++					pixels[1] = f.y*fac;
++					pixels[2] = f.z*fac;
++					pixels[3] = 1.0f;
++				}
++			}
++#endif
+ 			else {
+ 				for(int i = 0; i < size; i++, in += pass_stride, pixels += 4) {
+ 					float4 f = make_float4(in[0], in[1], in[2], in[3]);
+ 
+-					pixels[0] = f.x*scale_exposure;
+-					pixels[1] = f.y*scale_exposure;
+-					pixels[2] = f.z*scale_exposure;
++					pixels[0] = f.x*fac;
++					pixels[1] = f.y*fac;
++					pixels[2] = f.z*fac;
+ 
++					fac = get_sample_scale(pass, in - pass_offset, samples_pass, scale, 1.0f);
+ 					/* clamp since alpha might be > 1.0 due to russian roulette */
+-					pixels[3] = saturate(f.w*scale);
++					pixels[3] = saturate(f.w*fac);
+ 				}
+ 			}
+ 		}
+diff -ru --new-file blender-2.76b.old/intern/cycles/render/buffers.h blender-2.76b/intern/cycles/render/buffers.h
+--- blender-2.76b.old/intern/cycles/render/buffers.h	2015-10-27 19:57:22.000000000 +0300
++++ blender-2.76b/intern/cycles/render/buffers.h	2016-01-15 00:23:51.864340780 +0300
+@@ -43,6 +43,8 @@
+ 	int width;
+ 	int height;
+ 
++	bool use_importance;
++
+ 	/* offset into and width/height of the full buffer */
+ 	int full_x;
+ 	int full_y;
+@@ -72,6 +74,8 @@
+ 	device_vector<float> buffer;
+ 	/* random number generator state */
+ 	device_vector<uint> rng_state;
++	/* importance map */
++	vector<float> importance_map;
+ 
+ 	RenderBuffers(Device *device);
+ 	~RenderBuffers();
+@@ -82,7 +86,7 @@
+ 	bool get_pass_rect(PassType type, float exposure, int sample, int components, float *pixels);
+ 
+ protected:
+-	void device_free();
++	inline float get_sample_scale(const Pass &pass, float *pixel, int samples_pass, float scale, float exposure);
+ 
+ 	Device *device;
+ };
+@@ -142,6 +146,12 @@
+ 	device_ptr buffer;
+ 	device_ptr rng_state;
+ 
++	/* For restoring the Tile in error-progressive mode */
++	int t_index;
++	int t_x, t_y;
++	int t_device;
++	float t_priority;
++
+ 	RenderBuffers *buffers;
+ 
+ 	RenderTile();
+diff -ru --new-file blender-2.76b.old/intern/cycles/render/film.cpp blender-2.76b/intern/cycles/render/film.cpp
+--- blender-2.76b.old/intern/cycles/render/film.cpp	2015-11-04 13:02:14.000000000 +0300
++++ blender-2.76b/intern/cycles/render/film.cpp	2016-01-15 00:37:11.111638114 +0300
+@@ -165,7 +165,18 @@
+ 			pass.components = 1;
+ 			pass.exposure = false;
+ 			break;
++		case PASS_IMPORTANCE:
++			pass.components = 1;
++			pass.exposure = false;	
+ #endif
++		case PASS_SAMPLES:
++			pass.components = 1;
++			pass.exposure = false;
++			break;
++		case PASS_VARIANCE:
++			pass.components = 4;
++			pass.exposure = false;
++			break;
+ 	}
+ 
+ 	passes.push_back(pass);
+@@ -419,8 +430,16 @@
+ 			case PASS_RAY_BOUNCES:
+ 				kfilm->pass_ray_bounces = kfilm->pass_stride;
+ 				break;
++			case PASS_IMPORTANCE:
++				/* no kernel involvement for this pass */
++				break;
+ #endif
+-
++			case PASS_SAMPLES:
++				kfilm->pass_samples = kfilm->pass_stride;
++				break;
++			case PASS_VARIANCE:
++				kfilm->pass_variance = kfilm->pass_stride;
++				break;
+ 			case PASS_NONE:
+ 				break;
+ 		}
+@@ -441,6 +460,15 @@
+ 	kfilm->mist_inv_depth = (mist_depth > 0.0f)? 1.0f/mist_depth: 0.0f;
+ 	kfilm->mist_falloff = mist_falloff;
+ 
++	/* use atomics? */
++	kfilm->use_atomics = false;
++	foreach(Pass& pass, passes) {
++		if(pass.type == PASS_SAMPLES) {
++			kfilm->use_atomics = true;
++			break;
++		}
++	}
++
+ 	need_update = false;
+ }
+ 
+diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2.76b/intern/cycles/render/session.cpp
+--- blender-2.76b.old/intern/cycles/render/session.cpp	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/render/session.cpp	2016-01-15 00:49:13.611266538 +0300
+@@ -30,6 +30,7 @@
+ 
+ #include "util_foreach.h"
+ #include "util_function.h"
++#include "util_importance.h"
+ #include "util_logging.h"
+ #include "util_math.h"
+ #include "util_opengl.h"
+@@ -46,7 +47,8 @@
+ : params(params_),
+   tile_manager(params.progressive, params.samples, params.tile_size, params.start_resolution,
+        params.background == false || params.progressive_refine, params.background, params.tile_order,
+-       max(params.device.multi_devices.size(), 1)),
++       params.stopping_threshold, params.map_interval, max(params.device.multi_devices.size(), 1),
++       params.error_progressive), 
+   stats()
+ {
+ 	device_use_gl = ((params.device.type != DEVICE_CPU) && !params.background);
+@@ -230,7 +232,7 @@
+ 				 */
+ 			}
+ 			else if(pause || no_tiles) {
+-				update_status_time(pause, no_tiles);
++				update_status_time(false, pause, no_tiles);
+ 
+ 				while(1) {
+ 					double pause_start = time_dt();
+@@ -241,7 +243,7 @@
+ 						progress.set_start_time(start_time + paused_time);
+ 					progress.set_render_start_time(start_time + paused_time);
+ 
+-					update_status_time(pause, no_tiles);
++					update_status_time(false, pause, no_tiles);
+ 					progress.set_update();
+ 
+ 					if(!pause)
+@@ -271,7 +273,7 @@
+ 			thread_scoped_lock buffers_lock(buffers_mutex);
+ 
+ 			/* update status and timing */
+-			update_status_time();
++			update_status_time(false);
+ 
+ 			/* path trace */
+ 			path_trace();
+@@ -282,7 +284,7 @@
+ 				progress.set_cancel(device->error_message());
+ 
+ 			/* update status and timing */
+-			update_status_time();
++			update_status_time(false);
+ 
+ 			gpu_need_tonemap = true;
+ 			gpu_draw_ready = true;
+@@ -354,7 +356,7 @@
+ bool Session::acquire_tile(Device *tile_device, RenderTile& rtile)
+ {
+ 	if(progress.get_cancel()) {
+-		if(params.progressive_refine == false) {
++		if(params.progressive_refine == false || params.error_progressive) {
+ 			/* for progressive refine current sample should be finished for all tiles */
+ 			return false;
+ 		}
+@@ -374,9 +376,14 @@
+ 	rtile.y = tile_manager.state.buffer.full_y + tile.y;
+ 	rtile.w = tile.w;
+ 	rtile.h = tile.h;
+-	rtile.start_sample = tile_manager.state.sample;
++	rtile.start_sample = params.error_progressive? tile.sample: tile_manager.state.sample;
++	rtile.sample = rtile.start_sample;
+ 	rtile.num_samples = tile_manager.state.num_samples;
+ 	rtile.resolution = tile_manager.state.resolution_divider;
++	rtile.t_x = tile.x;
++	rtile.t_y = tile.y;
++	rtile.t_device = tile.device;
++	rtile.t_index = tile.index;
+ 
+ 	tile_lock.unlock();
+ 
+@@ -451,20 +458,30 @@
+ 	thread_scoped_lock tile_lock(tile_mutex);
+ 
+ 	if(update_render_tile_cb) {
+-		if(params.progressive_refine == false) {
++		if(params.progressive_refine == false || params.error_progressive) {
+ 			/* todo: optimize this by making it thread safe and removing lock */
+ 
+ 			update_render_tile_cb(rtile);
+ 		}
+ 	}
+ 
+-	update_status_time();
++	update_status_time(true);
+ }
+ 
+ void Session::release_tile(RenderTile& rtile)
+ {
+ 	thread_scoped_lock tile_lock(tile_mutex);
+ 
++	if(params.error_progressive) {
++		if(rtile.sample >= params.samples)
++			rtile.t_priority = 0.0f;
++		else
++			rtile.t_priority = tile_error(rtile);
++
++		if(update_render_tile_cb)
++			update_render_tile_cb(rtile);
++	}
++
+ 	if(write_render_tile_cb) {
+ 		if(params.progressive_refine == false) {
+ 			/* todo: optimize this by making it thread safe and removing lock */
+@@ -474,7 +491,8 @@
+ 		}
+ 	}
+ 
+-	update_status_time();
++	update_status_time(true);
++	tile_manager.finished_tile(Tile(rtile));
+ }
+ 
+ void Session::run_cpu()
+@@ -520,7 +538,7 @@
+ 				delayed_reset.do_reset = false;
+ 			}
+ 			else if(pause || no_tiles) {
+-				update_status_time(pause, no_tiles);
++				update_status_time(false, pause, no_tiles);
+ 
+ 				while(1) {
+ 					double pause_start = time_dt();
+@@ -531,7 +549,7 @@
+ 						progress.set_start_time(start_time + paused_time);
+ 					progress.set_render_start_time(start_time + paused_time);
+ 
+-					update_status_time(pause, no_tiles);
++					update_status_time(false, pause, no_tiles);
+ 					progress.set_update();
+ 
+ 					if(!pause)
+@@ -559,7 +577,7 @@
+ 				break;
+ 
+ 			/* update status and timing */
+-			update_status_time();
++			update_status_time(false);
+ 
+ 			/* path trace */
+ 			path_trace();
+@@ -704,6 +722,8 @@
+ 
+ void Session::reset_(BufferParams& buffer_params, int samples)
+ {
++	buffer_params.use_importance = params.adaptive_distribution;
++
+ 	if(buffers) {
+ 		if(buffer_params.modified(buffers->params)) {
+ 			gpu_draw_ready = false;
+@@ -820,7 +840,7 @@
+ 	}
+ }
+ 
+-void Session::update_status_time(bool show_pause, bool show_done)
++void Session::update_status_time(bool tile_locked, bool show_pause, bool show_done)
+ {
+ 	int sample = tile_manager.state.sample;
+ 	int resolution = tile_manager.state.resolution_divider;
+@@ -839,8 +859,8 @@
+ 
+ 		substatus = string_printf("Path Tracing Tile %d/%d", tile, num_tiles);
+ 
+-		if((is_gpu && !is_multidevice && !device->info.use_split_kernel) ||
+-		   (is_cpu && (num_tiles == 1 || is_last_tile)))
++		if(((is_gpu && !is_multidevice && !device->info.use_split_kernel) ||
++		   (is_cpu && (num_tiles == 1 || is_last_tile))) && params.stopping_threshold == 0.0f)
+ 		{
+ 			/* When using split-kernel (OpenCL) each thread in a tile will be working on a different
+ 			 * sample. Can't display sample number when device uses split-kernel
+@@ -869,6 +889,22 @@
+ 
+ 			substatus += string_printf(", Sample %d/%d", status_sample, num_samples);
+ 		}
++
++	}
++	else if(params.error_progressive) {
++		float worst_error;
++		if(tile_locked)
++			worst_error = tile_manager.state.tiles.top().priority;
++		else {
++			thread_scoped_lock tile_lock(tile_mutex);
++			worst_error = tile_manager.state.tiles.top().priority;
++		}
++		if(worst_error >= 1e5f)
++			substatus = string_printf("Path Tracing, First Pass");
++		else {
++			float confidence = 100.0f * fast_erff(1.0f / (M_SQRT2_F*worst_error));
++			substatus = string_printf("Path Tracing, Confidence %f", (double) confidence);
++		}
+ 	}
+ 	else if(tile_manager.num_samples == USHRT_MAX)
+ 		substatus = string_printf("Path Tracing Sample %d", sample+1);
+@@ -915,9 +951,14 @@
+ 	task.get_cancel = function_bind(&Progress::get_cancel, &this->progress);
+ 	task.update_tile_sample = function_bind(&Session::update_tile_sample, this, _1);
+ 	task.update_progress_sample = function_bind(&Session::update_progress_sample, this);
+-	task.need_finish_queue = params.progressive_refine;
++	task.need_finish_queue = params.progressive_refine && !params.error_progressive;
+ 	task.integrator_branched = scene->integrator->method == Integrator::BRANCHED_PATH;
+ 	task.requested_tile_size = params.tile_size;
++	task.adaptive_stopping = params.adaptive_stopping;
++	task.adaptive_distribution = params.adaptive_distribution;
++	task.stopping_threshold = params.stopping_threshold;
++	task.map_interval = params.map_interval;
++	task.error_progressive = params.error_progressive;
+ 
+ 	device->task_add(task);
+ }
+@@ -961,7 +1002,7 @@
+ 			return false;
+ 	}
+ 
+-	if(params.progressive_refine) {
++	if(params.progressive_refine && !params.error_progressive) {
+ 		foreach(RenderBuffers *buffers, tile_buffers) {
+ 			RenderTile rtile;
+ 			rtile.buffers = buffers;
+diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.h blender-2.76b/intern/cycles/render/session.h
+--- blender-2.76b.old/intern/cycles/render/session.h	2015-10-27 19:57:22.000000000 +0300
++++ blender-2.76b/intern/cycles/render/session.h	2016-01-15 00:38:24.132048976 +0300
+@@ -47,6 +47,12 @@
+ 	bool progressive_refine;
+ 	string output_path;
+ 
++	bool adaptive_distribution;
++	bool adaptive_stopping;
++	float stopping_threshold;
++	int map_interval;
++	bool error_progressive;
++
+ 	bool progressive;
+ 	bool experimental;
+ 	int samples;
+@@ -95,6 +101,11 @@
+ 		&& progressive_refine == params.progressive_refine
+ 		&& output_path == params.output_path
+ 		/* && samples == params.samples */
++		&& adaptive_stopping == params.adaptive_stopping
++		&& adaptive_distribution == params.adaptive_distribution
++		&& stopping_threshold == params.stopping_threshold
++		&& map_interval == params.map_interval
++		&& error_progressive == params.error_progressive
+ 		&& progressive == params.progressive
+ 		&& experimental == params.experimental
+ 		&& tile_size == params.tile_size
+@@ -156,7 +167,7 @@
+ 
+ 	void run();
+ 
+-	void update_status_time(bool show_pause = false, bool show_done = false);
++	void update_status_time(bool tile_locked, bool show_pause = false, bool show_done = false);
+ 
+ 	void tonemap(int sample);
+ 	void path_trace();
+diff -ru --new-file blender-2.76b.old/intern/cycles/render/tile.cpp blender-2.76b/intern/cycles/render/tile.cpp
+--- blender-2.76b.old/intern/cycles/render/tile.cpp	2015-11-04 13:02:14.000000000 +0300
++++ blender-2.76b/intern/cycles/render/tile.cpp	2016-01-15 01:01:58.646159568 +0300
+@@ -22,9 +22,12 @@
+ CCL_NAMESPACE_BEGIN
+ 
+ TileManager::TileManager(bool progressive_, int num_samples_, int2 tile_size_, int start_resolution_,
+-                         bool preserve_tile_device_, bool background_, TileOrder tile_order_, int num_devices_)
++                         bool preserve_tile_device_, bool background_, TileOrder tile_order_,
++                         float stopping_threshold_, int map_interval_, int num_devices_,
++                         bool error_progressive_)
+ {
+ 	progressive = progressive_;
++	error_progressive = error_progressive_;
+ 	tile_size = tile_size_;
+ 	tile_order = tile_order_;
+ 	start_resolution = start_resolution_;
+@@ -32,6 +35,8 @@
+ 	num_devices = num_devices_;
+ 	preserve_tile_device = preserve_tile_device_;
+ 	background = background_;
++	stopping_threshold = stopping_threshold_;
++	map_interval = map_interval_;
+ 
+ 	BufferParams buffer_params;
+ 	reset(buffer_params, 0);
+@@ -79,6 +84,7 @@
+ 	int resolution = state.resolution_divider;
+ 	int image_w = max(1, params.width/resolution);
+ 	int image_h = max(1, params.height/resolution);
++	int centx = image_w / 2, centy = image_h / 2;
+ 
+ 	state.tiles.clear();
+ 
+@@ -98,8 +104,32 @@
+ 			int y = tile_y * tile_size.y;
+ 			int w = (tile_x == tile_w-1)? image_w - x: tile_size.x;
+ 			int h = (tile_y == tile_h-1)? image_h - y: tile_size.y;
++			
++			float priority = 1e5f + (image_w * image_h);
++			int distx, disty;
++			switch (tile_order) {
++				case TILE_CENTER:
++					distx = centx - (x + w);
++					disty = centy - (y + h);
++					priority -= sqrtf((float)(distx * distx + disty * disty));
++					break;
++				case TILE_RIGHT_TO_LEFT:
++					priority -= (image_w - x - 1) * image_h + y;
++					break;
++				case TILE_LEFT_TO_RIGHT:
++					priority -= x * image_h + y;
++					break;
++				case TILE_TOP_TO_BOTTOM:
++					priority -= (image_h - y - 1) * image_w + x;
++					break;
++				case TILE_BOTTOM_TO_TOP:
++					priority -= y * image_w + x;
++					break;
++				default:
++					break;
++			}
+ 
+-			state.tiles.push_back(Tile(tile_index, x, y, w, h, cur_device));
++			state.tiles.push_back(Tile(tile_index, x, y, w, h, cur_device, priority));
+ 			cur_tiles++;
+ 
+ 			if(cur_tiles == tiles_per_device) {
+@@ -116,6 +146,7 @@
+ 	int resolution = state.resolution_divider;
+ 	int image_w = max(1, params.width/resolution);
+ 	int image_h = max(1, params.height/resolution);
++	int centx = image_w / 2, centy = image_h / 2;
+ 
+ 	state.tiles.clear();
+ 
+@@ -137,7 +168,7 @@
+ 				int w = (tile_x == tile_w-1)? image_w - x: tile_size.x;
+ 				int h = (tile_y == tile_h-1)? device_h - y: tile_size.y;
+ 
+-				state.tiles.push_back(Tile(tile_index, x, y + device_y, w, h, device));
++				state.tiles.push_back(Tile(tile_index, x, y + device_y, w, h, device, 1e5f));
+ 			}
+ 		}
+ 	}
+@@ -165,9 +196,9 @@
+ 	state.buffer.full_height = max(1, params.full_height/resolution);
+ }
+ 
+-list<Tile>::iterator TileManager::next_viewport_tile(int device)
++PriorityQueue<Tile>::iterator TileManager::next_viewport_tile(int device)
+ {
+-	list<Tile>::iterator iter;
++	PriorityQueue<Tile>::iterator iter;
+ 
+ 	int logical_device = preserve_tile_device? device: 0;
+ 
+@@ -179,9 +210,9 @@
+ 	return state.tiles.end();
+ }
+ 
+-list<Tile>::iterator TileManager::next_background_tile(int device, TileOrder tile_order)
++PriorityQueue<Tile>::iterator TileManager::next_background_tile(int device, TileOrder tile_order)
+ {
+-	list<Tile>::iterator iter, best = state.tiles.end();
++	PriorityQueue<Tile>::iterator iter, best = state.tiles.end();
+ 
+ 	int resolution = state.resolution_divider;
+ 	int logical_device = preserve_tile_device? device: 0;
+@@ -233,8 +264,31 @@
+ 
+ bool TileManager::next_tile(Tile& tile, int device)
+ {
+-	list<Tile>::iterator tile_it;
+-	
++	int logical_device = preserve_tile_device? device: 0;
++	if(error_progressive) {
++		list<Tile> wrong_device; /* Tiles that had worse error but are on the wrong device */
++		while(!state.tiles.empty()) {
++			Tile t = state.tiles.top();
++			state.tiles.pop();
++			if(t.device != logical_device)
++				wrong_device.push_back(t);
++			else {
++				for(list<Tile>::iterator iter = wrong_device.begin(); iter != wrong_device.end(); iter++)
++					state.tiles.push(*iter);
++				if(t.priority <= stopping_threshold) /* Done (for this device) since the worst error is below threshold */
++					return false;
++				tile = t;
++				state.num_rendered_tiles++;
++				return true;
++			}
++		}
++		for(list<Tile>::iterator iter = wrong_device.begin(); iter != wrong_device.end(); iter++) /* No tile (for this device) left */
++			state.tiles.push(*iter);
++		return false;
++	}
++
++	PriorityQueue<Tile>::iterator tile_it;	
++
+ 	if(background)
+ 		tile_it = next_background_tile(device, tile_order);
+ 	else
+@@ -251,9 +305,23 @@
+ 	return false;
+ }
+ 
++void TileManager::finished_tile(Tile tile)
++{
++	if(error_progressive) {
++		state.tiles.push_back(tile);
++		/* Finished warmup? */
++		if(state.num_samples != 3*map_interval && state.tiles.top().priority < 1e5f)
++			state.num_samples = map_interval;
++	}
++}
++
+ bool TileManager::done()
+ {
+-	return (state.sample+state.num_samples >= num_samples && state.resolution_divider == 1);
++	if(error_progressive)
++		/* If the queue is empty, no tiles have yet been generated */
++		return state.tiles.empty()? false: state.tiles.top().priority <= stopping_threshold;
++	else
++		return (state.sample+state.num_samples >= num_samples && state.resolution_divider == 1);
+ }
+ 
+ bool TileManager::next()
+@@ -261,7 +329,13 @@
+ 	if(done())
+ 		return false;
+ 
+-	if(progressive && state.resolution_divider > 1) {
++	if(error_progressive) {
++		state.sample = 0;
++		state.num_samples = 3*map_interval;
++		state.resolution_divider = 1;
++		set_tiles();
++	}
++	else if(progressive && state.resolution_divider > 1) {
+ 		state.sample = 0;
+ 		state.resolution_divider /= 2;
+ 		state.num_samples = 1;
+diff -ru --new-file blender-2.76b.old/intern/cycles/render/tile.h blender-2.76b/intern/cycles/render/tile.h
+--- blender-2.76b.old/intern/cycles/render/tile.h	2015-10-27 19:57:22.000000000 +0300
++++ blender-2.76b/intern/cycles/render/tile.h	2016-01-15 00:52:36.424960142 +0300
+@@ -31,13 +31,25 @@
+ 	int index;
+ 	int x, y, w, h;
+ 	int device;
++	int sample;
++	float priority;
+ 	bool rendering;
+ 
+ 	Tile()
+ 	{}
+ 
+-	Tile(int index_, int x_, int y_, int w_, int h_, int device_)
+-	: index(index_), x(x_), y(y_), w(w_), h(h_), device(device_), rendering(false) {}
++	Tile(int index_, int x_, int y_, int w_, int h_, int device_, float priority_)
++	: index(index_), x(x_), y(y_), w(w_), h(h_), device(device_), sample(0), priority(priority_), rendering(false) {}
++	Tile(const RenderTile &rtile)
++	: index(rtile.t_index), x(rtile.t_x), y(rtile.t_y), w(rtile.w), h(rtile.h), device(rtile.t_device), sample(rtile.start_sample + rtile.num_samples), priority(rtile.t_priority), rendering(false) {}
++
++	bool operator<(const Tile &b) const {
++		if(priority < b.priority)
++			return true;
++		if(priority == b.priority)
++			return index > b.index;
++		return false;
++	}
+ };
+ 
+ /* Tile order */
+@@ -64,19 +76,22 @@
+ 		int resolution_divider;
+ 		int num_tiles;
+ 		int num_rendered_tiles;
+-		list<Tile> tiles;
++		PriorityQueue<Tile> tiles;
+ 	} state;
+ 
+ 	int num_samples;
+ 
+ 	TileManager(bool progressive, int num_samples, int2 tile_size, int start_resolution,
+-	            bool preserve_tile_device, bool background, TileOrder tile_order, int num_devices = 1);
++	            bool preserve_tile_device, bool background, TileOrder tile_order,
++				float stopping_threshold, int map_interval, int num_devices,
++				bool error_progressive);
+ 	~TileManager();
+ 
+ 	void reset(BufferParams& params, int num_samples);
+ 	void set_samples(int num_samples);
+ 	bool next();
+ 	bool next_tile(Tile& tile, int device = 0);
++	void finished_tile(Tile tile);
+ 	bool done();
+ 	
+ 	void set_tile_order(TileOrder tile_order_) { tile_order = tile_order_; }
+@@ -85,10 +100,13 @@
+ 	void set_tiles();
+ 
+ 	bool progressive;
++	bool error_progressive;
+ 	int2 tile_size;
+ 	TileOrder tile_order;
+ 	int start_resolution;
+ 	int num_devices;
++	float stopping_threshold;
++	int map_interval;
+ 
+ 	/* in some cases it is important that the same tile will be returned for the same
+ 	 * device it was originally generated for (i.e. viewport rendering when buffer is
+@@ -116,10 +134,10 @@
+ 	void gen_tiles_sliced();
+ 
+ 	/* returns tiles for background render */
+-	list<Tile>::iterator next_background_tile(int device, TileOrder tile_order);
++	PriorityQueue<Tile>::iterator next_background_tile(int device, TileOrder tile_order);
+ 
+ 	/* returns first unhandled tile for viewport render */
+-	list<Tile>::iterator next_viewport_tile(int device);
++	PriorityQueue<Tile>::iterator next_viewport_tile(int device);
+ };
+ 
+ CCL_NAMESPACE_END
+diff -ru --new-file blender-2.76b.old/intern/cycles/util/CMakeLists.txt blender-2.76b/intern/cycles/util/CMakeLists.txt
+--- blender-2.76b.old/intern/cycles/util/CMakeLists.txt	2015-11-04 13:02:14.000000000 +0300
++++ blender-2.76b/intern/cycles/util/CMakeLists.txt	2016-01-15 01:02:58.586213829 +0300
+@@ -2,6 +2,9 @@
+ set(INC
+ 	.
+ 	../../glew-mx
++	../device
++	../kernel
++	../render
+ )
+ 
+ set(INC_SYS
+@@ -11,6 +14,7 @@
+ set(SRC
+ 	util_aligned_malloc.cpp
+ 	util_cache.cpp
++	util_importance.cpp	
+ 	util_logging.cpp
+ 	util_md5.cpp
+ 	util_path.cpp
+@@ -45,6 +49,7 @@
+ 	util_half.h
+ 	util_hash.h
+ 	util_image.h
++	util_importance.h
+ 	util_list.h
+ 	util_logging.h
+ 	util_map.h
+diff -ru --new-file blender-2.76b.old/intern/cycles/util/util_atomic.h blender-2.76b/intern/cycles/util/util_atomic.h
+--- blender-2.76b.old/intern/cycles/util/util_atomic.h	2015-11-02 16:25:37.000000000 +0300
++++ blender-2.76b/intern/cycles/util/util_atomic.h	2016-01-15 01:04:17.862577207 +0300
+@@ -39,7 +39,7 @@
+ /* Float atomics implementation credits:
+  *   http://suhorukov.blogspot.in/2011/12/opencl-11-atomic-operations-on-floating.html
+  */
+-ccl_device_inline void atomic_add_float(volatile ccl_global float *source,
++ccl_device_inline float atomic_add_float(volatile ccl_global float *source,
+                                         const float operand)
+ {
+ 	union {
+@@ -56,10 +56,24 @@
+ 	} while(atomic_cmpxchg((volatile ccl_global unsigned int *)source,
+ 	                       prev_value.int_value,
+ 	                       new_value.int_value) != prev_value.int_value);
++	} while(atomic_cmpxchg((volatile ccl_global unsigned int *)source,
++	                        prev_value.int_value,
++	                        new_value.int_value) != prev_value.int_value);
++	return prev_value.float_value;
+ }
+ 
+ #endif  /* __KERNEL_OPENCL__ */
+ 
++#ifdef __KERNEL_CUDA__
++
++ccl_device_inline float atomic_add_float(ccl_global float *source,
++                                        const float operand)
++{
++	return atomicAdd(source, operand);
++}
++
++#endif  /* __KERNEL_CUDA__ */
++
+ #endif  /* __KERNEL_GPU__ */
+ 
+ #endif /* __UTIL_ATOMIC_H__ */
+diff -ru --new-file blender-2.76b.old/intern/cycles/util/util_color.h blender-2.76b/intern/cycles/util/util_color.h
+--- blender-2.76b.old/intern/cycles/util/util_color.h	2015-10-27 19:57:22.000000000 +0300
++++ blender-2.76b/intern/cycles/util/util_color.h	2016-01-15 01:05:21.800674663 +0300
+@@ -239,6 +239,29 @@
+ 	return c.x*0.2126f + c.y*0.7152f + c.z*0.0722f;
+ }
+ 
++ccl_device float linear_rgba_to_gray(float4 c)
++{
++	return c.x*0.2126f + c.y*0.7152f + c.z*0.0722f;
++}
++
++ccl_device float linear_gray_to_inv_tvi(float v) {
++	/* Based on eq. 4 from "A Model of Visual Adaptation for Realistic Image Synthesis",
++	 * modified for bright regions, with a display luminance of 200 cd/m^2 */
++	v *= 200.f;
++	if(v < 1e-6f)
++		return expf(0.72f * logf(10.0f));
++
++	float log_v = log10f(v);
++	float log_i;
++	if(log_v < -2.6f)
++		log_i = -0.72f;
++	else if(log_v < 1.9f)
++		log_i = powf(0.249f*log_v + 0.65f, 2.7f) - 0.72f;
++	else
++		log_i = (log_v - 1.4f) * (log_v - 1.4f) + 0.3981375f;
++	return expf(-log_i * logf(10.0f)) * 200.f;
++}
++
+ CCL_NAMESPACE_END
+ 
+ #endif /* __UTIL_COLOR_H__ */
+diff -ru --new-file blender-2.76b.old/intern/cycles/util/util_importance.cpp blender-2.76b/intern/cycles/util/util_importance.cpp
+--- blender-2.76b.old/intern/cycles/util/util_importance.cpp	1970-01-01 03:00:00.000000000 +0300
++++ blender-2.76b/intern/cycles/util/util_importance.cpp	2016-01-15 01:08:12.894514090 +0300
+@@ -0,0 +1,318 @@
++/*
++ * Copyright 2011-2014 Blender Foundation
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License
++ */
++
++#include <algorithm>
++#include <cmath>
++
++#include "util_color.h"
++#include "util_foreach.h"
++#include "util_hash.h"
++#include "util_importance.h"
++
++#include "buffers.h"
++#include "tile.h"
++
++CCL_NAMESPACE_BEGIN
++
++/* Gaussian blur kernel (size 4) */
++static const float gaussian_4[] = {0.30406f, 0.22855f, 0.09681f, 0.02262f};
++
++bool find_passes(RenderTile &rtile, int &samples_pass_o, int &variance_pass_o) {
++   samples_pass_o = 0;
++   variance_pass_o = 0;
++   bool found_samples_pass = false, found_variance_pass = false;
++   foreach(Pass& pass, rtile.buffers->params.passes) {
++       if(pass.type == PASS_SAMPLES) {
++           found_samples_pass = true;
++           break;
++       }
++       samples_pass_o += pass.components;
++   }
++   foreach(Pass& pass, rtile.buffers->params.passes) {
++       if(pass.type == PASS_VARIANCE) {
++           found_variance_pass = true;
++           break;
++       }
++       variance_pass_o += pass.components;
++   }
++   return found_samples_pass && found_variance_pass;
++}
++
++#define BUFFER_ID(tile, px, py) (tile.offset + ((py)+tile.y)*tile.stride + (px)+tile.x)
++
++ImportanceMap::ImportanceMap(RenderTile &rtile)
++{
++   width = rtile.w;
++   height = rtile.h;
++   data = new float[width*height];
++   marginal = new float[height];
++
++   rtile.buffers->copy_from_device();
++
++   int pass_stride = rtile.buffers->params.get_passes_size();
++   float *passes = (float*)rtile.buffers->buffer.data_pointer;
++   float *importance = &rtile.buffers->importance_map[0];
++
++   int samples_pass_o = 0, variance_pass_o = 0;
++   if(!find_passes(rtile, samples_pass_o, variance_pass_o))
++       return;
++
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           int index = BUFFER_ID(rtile, x, y);
++           data[y*width + x] = linear_rgba_to_gray(*((float4*) (passes + index*pass_stride)) / *(passes + index*pass_stride + samples_pass_o));
++       }
++   }
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           importance[BUFFER_ID(rtile, x, y)] = 0;
++           for(int d = -3; d < 4; d++)
++               importance[BUFFER_ID(rtile, x, y)] += gaussian_4[std::abs(d)] * data[y*width + max(min(x + d, width-1), 0)];
++       }
++   }
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           data[y*width + x] = 0;
++           for(int d = -3; d < 4; d++)
++               data[y*width + x] += gaussian_4[std::abs(d)] * importance[BUFFER_ID(rtile, x, max(min(y + d, height-1), 0))];
++           data[y*width + x] = linear_gray_to_inv_tvi(data[y*width + x]);
++       }
++   }
++
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           int index = BUFFER_ID(rtile, x, y);
++           float4 pixel_variance = *((float4*) (passes + index*pass_stride + variance_pass_o));
++           float pixel_samples = *(passes + index*pass_stride + samples_pass_o);
++
++           if(pixel_samples < 2)
++               *importance = 10;
++           else {
++               float4 variance = pixel_variance / (pixel_samples - 1.0f);
++               importance[index] = sqrtf(max(linear_rgba_to_gray(variance), 0.0f) / pixel_samples) * data[y*width + x];
++           }
++       }
++   }
++
++   float *blurred_importance = new float[width*height];
++
++   /* Gaussian blur */
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           data[y*width + x] = 0;
++           for(int d = -3; d < 4; d++)
++               data[y*width + x] += gaussian_4[std::abs(d)] * importance[BUFFER_ID(rtile, max(min(x + d, width-1), 0), y)];
++       }
++   }
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           blurred_importance[y*width + x] = 0;
++           for(int d = -3; d < 4; d++)
++               blurred_importance[y*width + x] += gaussian_4[std::abs(d)] * data[max(min(y + d, height-1), 0)*width + x];
++       }
++   }
++
++   /* Bilateral blur (gamma_space=6, gamma_color=0.5, image=blurred importance, determinator=importance) */
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           float pixel_value = importance[BUFFER_ID(rtile, x, y)];
++           float weight = 0;
++           data[y*width + x] = 0;
++           for(int my = max(0, y - 6); my < min(height, y + 6); my++) {
++               for(int mx = max(0, x - 6); mx < min(width, x + 6); mx++) {
++                   float value = importance[BUFFER_ID(rtile, mx, my)];
++                   if(fabsf(value - pixel_value) < 0.5f) {
++                       data[y*width + x] += blurred_importance[my*width + mx];
++                       weight += 1.0f;
++                   }
++               }
++           }
++           data[y*width + x] /= weight;
++       }
++   }
++
++   delete[] blurred_importance;
++
++   /* Gaussian blur */
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           importance[BUFFER_ID(rtile, x, y)] = 0;
++           for(int d = -3; d < 4; d++)
++               importance[BUFFER_ID(rtile, x, y)] += gaussian_4[std::abs(d)] * data[y*width + max(min(x + d, width-1), 0)];
++       }
++   }
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           data[y*width + x] = 0;
++           for(int d = -3; d < 4; d++)
++               data[y*width + x] += gaussian_4[std::abs(d)] * importance[BUFFER_ID(rtile, x, max(min(y + d, height-1), 0))];
++       }
++   }
++
++   float sumImportance = 0.0f;
++
++   for(int y = 0; y < height; y++) {
++       for(int x = 0; x < width; x++) {
++           int index = BUFFER_ID(rtile, x, y);
++
++           data[y*width + x] *= data[y*width + x];
++           data[y*width + x] *= data[y*width + x];
++
++           importance[index] = data[y*width + x];
++           sumImportance += data[y*width + x];
++       }
++   }
++
++   /* Normalize for Debug pass, the absolute scale doesn't matter for CDF sampling anyways */
++   float fac = 0.25f * width * height / sumImportance;
++   for(int y = 0; y < height; y++)
++       for(int x = 0; x < width; x++)
++           importance[BUFFER_ID(rtile, x, y)] *= fac;
++
++   /* Convert in-place to 2D CDF distribution */
++   for(int y = 0; y < height; y++) {
++       float *row = data + y*width;
++
++       for(int x = 1; x < width; x++)
++           row[x] += row[x-1];
++
++       marginal[y] = row[width-1];
++       if(y > 0)
++           marginal[y] += marginal[y-1];
++
++       float scale = 1.0f / row[width-1];
++       for(int x = 0; x < width; x++)
++           row[x] *= scale;
++   }
++
++   float scale = 1.0f / marginal[height-1];
++   for(int y = 0; y < height; y++)
++       marginal[y] *= scale;
++}
++
++ImportanceMap::~ImportanceMap()
++{
++   delete[] data;
++   delete[] marginal;
++}
++
++void ImportanceMap::sample(int sample, int &x, int &y)
++{
++   float u, v;
++   /* Sample 02-Sequence for pixel jittering (1D Sobol for v, Van-der-Corput for u) */
++   uint r = 0, i = sample;
++   for(uint va = 1U << 31; i; i >>= 1, va ^= va >> 1)
++       if(i & 1)
++           r ^= va;
++
++   uint rotation = hash_int_2d(x, y);
++   v = (float)r * (1.0f/(float)0xFFFFFFFF) + (rotation & 0xFFFF) * (1.0f/(float)0xFFFF);
++   v -= floorf(v);
++
++   i = (sample << 16) | (sample >> 16);
++   i = ((i & 0x00ff00ff) << 8) | ((i & 0xff00ff00) >> 8);
++   i = ((i & 0x0f0f0f0f) << 4) | ((i & 0xf0f0f0f0) >> 4);
++   i = ((i & 0x33333333) << 2) | ((i & 0xcccccccc) >> 2);
++   i = ((i & 0x55555555) << 1) | ((i & 0xaaaaaaaa) >> 1);
++   u = (float)i * (1.0f/(float)0xFFFFFFFF) + (rotation >> 16) * (1.0f/(float)0xFFFF);
++   u -= floorf(u);
++
++   /* Sample 2D CDF */
++   u = (x + u)/width;
++   v = (y + v)/height;
++   y = min(std::upper_bound(marginal, marginal + height, v) - marginal, height-1);
++   x = min(std::upper_bound(data + y*width, data + (y+1)*width, u) - (data + y*width), width-1);
++}
++
++float tile_error(RenderTile &rtile)
++{
++   rtile.buffers->copy_from_device();
++
++   int pass_stride = rtile.buffers->params.get_passes_size();
++   float *passes = (float*)rtile.buffers->buffer.data_pointer;
++
++   int samples_pass_o = 0, variance_pass_o = 0;
++   if(!find_passes(rtile, samples_pass_o, variance_pass_o))
++       return -1;
++
++   float *smooth_tvi = new float[rtile.w*rtile.h];
++   float *temp_gaussian = new float[rtile.w*rtile.h];
++   for(int y = 0; y < rtile.h; y++) {
++       for(int x = 0; x < rtile.w; x++) {
++           int index = BUFFER_ID(rtile, x, y);
++           smooth_tvi[y*rtile.w + x] = linear_rgba_to_gray(*((float4*) (passes + index*pass_stride)) / passes[index*pass_stride + samples_pass_o]);
++       }
++   }
++   for(int y = 0; y < rtile.h; y++) {
++       for(int x = 0; x < rtile.w; x++) {
++           temp_gaussian[y*rtile.w + x] = 0;
++           for(int d = -3; d < 4; d++)
++               temp_gaussian[y*rtile.w + x] += gaussian_4[std::abs(d)] * smooth_tvi[y*rtile.w + max(min(x + d, rtile.w-1), 0)];
++       }
++   }
++   for(int y = 0; y < rtile.h; y++) {
++       for(int x = 0; x < rtile.w; x++) {
++           smooth_tvi[y*rtile.w + x] = 0;
++           for(int d = -3; d < 4; d++)
++               smooth_tvi[y*rtile.w + x] += gaussian_4[std::abs(d)] * temp_gaussian[max(min(y + d, rtile.h-1), 0)*rtile.w + x];
++           smooth_tvi[y*rtile.w + x] = linear_gray_to_inv_tvi(smooth_tvi[y*rtile.w + x]);
++       }
++   }
++   delete[] temp_gaussian;
++
++   double error = 0.0;
++   for(int y = 0; y < rtile.h; y++) {
++       for(int x = 0; x < rtile.w; x++) {
++           int index = BUFFER_ID(rtile, x, y);
++           float4 pixel_variance = *((float4*) (passes + index*pass_stride + variance_pass_o));
++           float pixel_samples = *(passes + index*pass_stride + samples_pass_o);
++
++           if(pixel_samples < 2)
++               return 1e5f;
++
++           float4 variance = pixel_variance / (pixel_samples - 1.0f);
++           float svariance = sqrtf(max(linear_rgba_to_gray(variance), 0.0f) / pixel_samples) * smooth_tvi[y*rtile.w + x];
++
++           error += pow((double) svariance, 2.0);
++       }
++   }
++
++   delete[] smooth_tvi;
++
++   error /= rtile.w * rtile.h;
++   return (float) pow(error, 0.5);
++}
++
++#undef BUFFER_ID
++
++bool tile_converged(RenderTile &rtile, DeviceTask *task, int *next_check)
++{
++   if(task->error_progressive) {
++       *next_check += task->map_interval;
++       return false;
++   }
++   if(!task->adaptive_stopping)
++       return false;
++
++   float error = tile_error(rtile);
++   if(error < 0)
++       return false;
++   int converged_at = (int) (error*error * rtile.sample / (task->stopping_threshold*task->stopping_threshold));
++   *next_check = rtile.sample + max((converged_at - rtile.sample)/2, task->map_interval);
++   return (error <= task->stopping_threshold);
++}
++
++CCL_NAMESPACE_END
+diff -ru --new-file blender-2.76b.old/intern/cycles/util/util_importance.h blender-2.76b/intern/cycles/util/util_importance.h
+--- blender-2.76b.old/intern/cycles/util/util_importance.h	1970-01-01 03:00:00.000000000 +0300
++++ blender-2.76b/intern/cycles/util/util_importance.h	2016-01-15 01:07:25.992735144 +0300
+@@ -0,0 +1,43 @@
++/*
++ * Copyright 2011-2013 Blender Foundation
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#ifndef __UTIL_IMPORTANCE_H__
++#define __UTIL_IMPORTANCE_H__
++
+++#include <algorithm>
+++#include "util_color.h"
+++#include "buffers.h"
+++#include "device_task.h"
++
++CCL_NAMESPACE_BEGIN
++
++float tile_error(RenderTile &rtile);
++bool tile_converged(RenderTile &rtile, DeviceTask *task, int *next_check);
++
++class ImportanceMap {
++public:
++	ImportanceMap(RenderTile &tile);
++	~ImportanceMap();
++
++	void sample(int sample, int &x, int &y);
++private:
++	float *data, *marginal;
++	int width, height;
++};
++
++CCL_NAMESPACE_END
++
++#endif /* __UTIL_IMPORTANCE_H__ */
+diff -ru --new-file blender-2.76b.old/intern/cycles/util/util_list.h blender-2.76b/intern/cycles/util/util_list.h
+--- blender-2.76b.old/intern/cycles/util/util_list.h	2015-10-27 19:57:22.000000000 +0300
++++ blender-2.76b/intern/cycles/util/util_list.h	2016-01-15 01:08:51.736159498 +0300
+@@ -18,11 +18,23 @@
+ #define __UTIL_LIST_H__
+ 
+ #include <list>
++#include <queue>
+ 
+ CCL_NAMESPACE_BEGIN
+ 
+ using std::list;
+ 
++template<typename T, typename compare = std::less<T> >
++class PriorityQueue : public std::priority_queue<T, std::vector<T>, compare>
++{
++public:
++	typedef typename std::vector<T>::iterator iterator;
++	void clear() { this->c.clear(); }
++	iterator begin() { return this->c.begin(); }
++	iterator end() { return this->c.end(); }
++	void push_back(const T &v) { this->push(v); }
++};
++
+ CCL_NAMESPACE_END
+ 
+ #endif /* __UTIL_LIST_H__ */
+diff -ru --new-file blender-2.76b.old/source/blender/makesrna/intern/rna_render.c blender-2.76b/source/blender/makesrna/intern/rna_render.c
+--- blender-2.76b.old/source/blender/makesrna/intern/rna_render.c	2015-11-02 16:25:38.000000000 +0300
++++ blender-2.76b/source/blender/makesrna/intern/rna_render.c	2016-01-15 01:09:57.286249362 +0300
+@@ -81,6 +81,9 @@
+ 	{RENDER_PASS_DEBUG_BVH_TRAVERSAL_STEPS, "BVH_TRAVERSAL_STEPS", 0, "BVH Traversal Steps", ""},
+ 	{RENDER_PASS_DEBUG_BVH_TRAVERSED_INSTANCES, "BVH_TRAVERSED_INSTANCES", 0, "BVH Traversed Instances", ""},
+ 	{RENDER_PASS_DEBUG_RAY_BOUNCES, "RAY_BOUNCES", 0, "Ray Steps", ""},
++	{RENDER_PASS_DEBUG_SAMPLES, "SAMPLES", 0, "Samples per Pixel", ""},
++	{RENDER_PASS_DEBUG_IMPORTANCE, "IMPORTANCE", 0, "Pixel Importance", ""},
++	{RENDER_PASS_DEBUG_VARIANCE, "VARIANCE", 0, "Pixel Variance", ""},
+ 	{0, NULL, 0, NULL, NULL}
+ };
+ 
+diff -ru --new-file blender-2.76b.old/source/blender/render/extern/include/RE_pipeline.h blender-2.76b/source/blender/render/extern/include/RE_pipeline.h
+--- blender-2.76b.old/source/blender/render/extern/include/RE_pipeline.h	2015-11-04 13:02:15.000000000 +0300
++++ blender-2.76b/source/blender/render/extern/include/RE_pipeline.h	2016-01-15 01:10:25.011710583 +0300
+@@ -101,6 +101,9 @@
+ 	RENDER_PASS_DEBUG_BVH_TRAVERSAL_STEPS = 0,
+ 	RENDER_PASS_DEBUG_BVH_TRAVERSED_INSTANCES = 1,
+ 	RENDER_PASS_DEBUG_RAY_BOUNCES = 2,
++	RENDER_PASS_DEBUG_SAMPLES = 3,
++	RENDER_PASS_DEBUG_VARIANCE = 4,
++	RENDER_PASS_DEBUG_IMPORTANCE = 5,
+ };
+ 
+ /* a renderlayer is a full image, but with all passes and samples */
+diff -ru --new-file blender-2.76b.old/source/blender/render/intern/source/render_result.c blender-2.76b/source/blender/render/intern/source/render_result.c
+--- blender-2.76b.old/source/blender/render/intern/source/render_result.c	2015-11-04 13:02:15.000000000 +0300
++++ blender-2.76b/source/blender/render/intern/source/render_result.c	2016-01-15 01:11:10.184462356 +0300
+@@ -537,6 +537,12 @@
+ 			return "BVH Traversed Instances";
+ 		case RENDER_PASS_DEBUG_RAY_BOUNCES:
+ 			return "Ray Bounces";
++		case RENDER_PASS_DEBUG_SAMPLES:
++			return "Samples per pixel";
++		case RENDER_PASS_DEBUG_VARIANCE:
++			return "Pixel variance";
++		case RENDER_PASS_DEBUG_IMPORTANCE:
++			return "Pixel importance";
+ 	}
+ 	return "Unknown";
+ }
