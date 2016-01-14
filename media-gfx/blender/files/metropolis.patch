@@ -3106,7 +3106,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/scene.h blender-2.76b
  	device_vector<uchar4> tex_image[TEX_EXTENDED_NUM_IMAGES_CPU];
 diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2.76b/intern/cycles/render/session.cpp
 --- blender-2.76b.old/intern/cycles/render/session.cpp	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/render/session.cpp	2016-01-14 20:24:00.518323318 +0300
++++ blender-2.76b/intern/cycles/render/session.cpp	2016-01-14 20:35:48.709575123 +0300
 @@ -30,11 +30,13 @@
  
  #include "util_foreach.h"
@@ -3284,7 +3284,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  {
  	int sample = tile_manager.state.sample;
  	int resolution = tile_manager.state.resolution_divider;
-@@ -870,6 +895,19 @@
+@@ -870,6 +895,23 @@
  			substatus += string_printf(", Sample %d/%d", status_sample, num_samples);
  		}
  	}
@@ -3298,13 +3298,17 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
 +		}
 +		if (worstErr == 1e10f)
 +			substatus = string_printf("Path Tracing First Pass");
-+		else
-+			substatus = string_printf("Path Tracing Max Error %f", worstErr);
++		else {
++			std::ostringstream buffWorsErr;
++			buffWorsErr<<worstErr;
++			substatus = string_printf("Path Tracing Max Error %s", buffWorsErr.str());
++			delete buffWorsErr;
++		}
 +    }
  	else if(tile_manager.num_samples == USHRT_MAX)
  		substatus = string_printf("Path Tracing Sample %d", sample+1);
  	else
-@@ -905,6 +943,37 @@
+@@ -905,6 +947,37 @@
  	progress.increment_sample();
  }
  
@@ -3342,7 +3346,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  void Session::path_trace()
  {
  	/* add path trace task */
-@@ -915,9 +984,15 @@
+@@ -915,9 +988,15 @@
  	task.get_cancel = function_bind(&Progress::get_cancel, &this->progress);
  	task.update_tile_sample = function_bind(&Session::update_tile_sample, this, _1);
  	task.update_progress_sample = function_bind(&Session::update_progress_sample, this);
@@ -3359,7 +3363,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  
  	device->task_add(task);
  }
-@@ -961,7 +1036,7 @@
+@@ -961,7 +1040,7 @@
  			return false;
  	}
  
