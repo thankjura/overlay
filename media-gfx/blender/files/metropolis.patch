@@ -1564,7 +1564,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_metropolis.h b
 +#endif
 diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_passes.h blender-2.76b/intern/cycles/kernel/kernel_passes.h
 --- blender-2.76b.old/intern/cycles/kernel/kernel_passes.h	2015-10-27 19:57:22.000000000 +0300
-+++ blender-2.76b/intern/cycles/kernel/kernel_passes.h	2016-01-14 19:33:33.680329246 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_passes.h	2016-01-14 19:37:07.801395954 +0300
 @@ -18,16 +18,35 @@
  
  ccl_device_inline void kernel_write_pass_float(ccl_global float *buffer, int sample, float value)
@@ -1610,10 +1610,12 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_passes.h blend
  #if defined(__SPLIT_KERNEL__) && defined(__WORK_STEALING__)
  	ccl_global float *buf_x = buffer + 0;
  	ccl_global float *buf_y = buffer + 1;
-@@ -60,8 +80,227 @@
+@@ -60,8 +80,226 @@
  #endif // __SPLIT_KERNEL__ && __WORK_STEALING__
  }
  
+-ccl_device_inline void kernel_write_data_passes(KernelGlobals *kg, ccl_global float *buffer, PathRadiance *L,
+-	ShaderData *sd, int sample, ccl_addr_space PathState *state, float3 throughput)
 +ccl_device_inline void kernel_write_pass_float_atomic(ccl_global float *buffer, int sample, float value)
 +{
 +	if (!buffer) return;
@@ -1833,13 +1835,11 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_passes.h blend
 +#undef write_float3
 +#undef write_float4
 +
- ccl_device_inline void kernel_write_data_passes(KernelGlobals *kg, ccl_global float *buffer, PathRadiance *L,
--	ShaderData *sd, int sample, ccl_addr_space PathState *state, float3 throughput)
-+		ShaderData *sd, int sample, PathState *state, float3 throughput)
++ccl_device_inline void kernel_write_data_passes(KernelGlobals *kg, PathRadiance *L, ShaderData *sd, int sample, PathState *state, float3 throughput, PassData* pd)
  {
  #ifdef __PASSES__
  	int path_flag = state->flag;
-@@ -81,32 +320,22 @@
+@@ -81,32 +319,22 @@
  		{
  
  			if(sample == 0) {
@@ -1885,7 +1885,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_passes.h blend
  			}
  
  			state->flag |= PATH_RAY_SINGLE_PASS_DONE;
-@@ -149,7 +378,7 @@
+@@ -149,7 +377,7 @@
  #endif
  }
  
@@ -1894,7 +1894,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_passes.h blend
  {
  #ifdef __PASSES__
  	int flag = kernel_data.film.pass_flag;
-@@ -158,44 +387,44 @@
+@@ -158,44 +386,44 @@
  		return;
  	
  	if(flag & PASS_DIFFUSE_INDIRECT)
