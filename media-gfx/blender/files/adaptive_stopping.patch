@@ -823,8 +823,8 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  }
 diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.cu blender-2.76b/intern/cycles/kernel/kernels/cuda/kernel.cu
 --- blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.cu	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/kernel/kernels/cuda/kernel.cu	2016-01-15 00:18:22.174283188 +0300
-@@ -113,25 +113,38 @@
++++ blender-2.76b/intern/cycles/kernel/kernels/cuda/kernel.cu	2016-01-15 01:36:43.590182203 +0300
+@@ -113,25 +113,41 @@
  
  extern "C" __global__ void
  CUDA_LAUNCH_BOUNDS(CUDA_THREADS_BLOCK_WIDTH, CUDA_KERNEL_MAX_REGISTERS)
@@ -844,6 +844,8 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.c
 +		x = pos.x;
 +		y = pos.y;
 +	}
++#endif
++
 +	if(x < sw && y < sh)
 +		kernel_path_trace(NULL, buffer, rng_state, sample, sx + x, sy + y, offset, stride);
  }
@@ -858,9 +860,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.c
 -	int y = sy + blockDim.y*blockIdx.y + threadIdx.y;
 +	int x = blockDim.x*blockIdx.x + threadIdx.x;
 +	int y = blockDim.y*blockIdx.y + threadIdx.y;
- 
--	if(x < sx + sw && y < sy + sh)
--		kernel_branched_path_trace(NULL, buffer, rng_state, sample, x, y, offset, stride);
++
 +#ifdef __ADAPTIVE__
 +	if(pixel_mapping != NULL && x < sw && y < sh) {
 +		uint2 pos = pixel_mapping[y*sw + x];
@@ -868,6 +868,9 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.c
 +		y = pos.y;
 +	}
 +#endif
+ 
+-	if(x < sx + sw && y < sy + sh)
+-		kernel_branched_path_trace(NULL, buffer, rng_state, sample, x, y, offset, stride);
 +	if(x < sw && y < sh)
 +		kernel_branched_path_trace(NULL, buffer, rng_state, sample, sx + x, sy + y, offset, stride);
  }
