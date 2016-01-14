@@ -2031,7 +2031,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path_branched.
  #endif  /* __BRANCHED_PATH__ */
 diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender-2.76b/intern/cycles/kernel/kernel_path.h
 --- blender-2.76b.old/intern/cycles/kernel/kernel_path.h	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/kernel/kernel_path.h	2016-01-14 20:00:47.098135011 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_path.h	2016-01-14 20:02:29.355212968 +0300
 @@ -39,6 +39,8 @@
  #include "kernel_volume.h"
  #endif
@@ -2078,7 +2078,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  	/* initialize random numbers and ray */
  	RNG rng;
  	Ray ray;
-@@ -690,17 +695,94 @@
+@@ -690,17 +695,93 @@
  
  	/* integrate */
  	float4 L;
@@ -2094,10 +2094,12 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  	/* accumulate result in output buffer */
 -	kernel_write_pass_float4(buffer, sample, L);
 +	kernel_write_pass_data(kg, &pd, buffer, sample, 1.0f, sample == 0, true, L, true, false);
-+
+ 
+-	path_rng_end(kg, rng_state, rng);
 +	path_rng_end(kg, rng_state, &rng);
-+}
-+
+ }
+ 
+-CCL_NAMESPACE_END
 +#ifdef __METROPOLIS__
 +ccl_device void kernel_metropolis_first_pass(KernelGlobals *kg, ccl_global float *buffer, double *sharedParams, ccl_global uint *rng_state, int x, int y, int offset, int stride)
 +{
@@ -2116,20 +2118,20 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
 +	
 +	kernel_write_pass_data(kg, &pd, buffer, 0, 1.0f, true, true, make_float4(0.0f, 0.0f, 0.0f, 0.0f), false, false);
 +	path_rng_end(kg, rng_state, &rng);
-+    metro_update_shared(sharedParams, linear_rgb_to_gray(L), false, false, false, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
++	metro_update_shared(sharedParams, linear_rgb_to_gray(L), false, false, false, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
 +}
 +
 +ccl_device void kernel_metropolis_warmup(KernelGlobals *kg, ccl_global uint *rng_state, double *sharedParams, int sample, int x, int y, int offset, int stride) {
 +	int index = offset + x + y*stride;
 +	rng_state += index;
-+    RNG rng;
-+    Ray ray;
++	RNG rng;
++	Ray ray;
 +	PassData pd;
 +	kernel_path_trace_setup(kg, rng_state, sample, x, y, &rng, &ray);
 +	kernel_setup_pass_data(kg, &pd);
 +	float4 L = kernel_path_integrate(kg, &rng, sample, ray, &pd);
 +	path_rng_end(kg, rng_state, &rng);
-+    metro_update_shared(sharedParams, linear_rgb_to_gray(L), false, false, false, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
++	metro_update_shared(sharedParams, linear_rgb_to_gray(L), false, false, false, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
 +}
 +
 +ccl_device bool kernel_metropolis_step(KernelGlobals *kg, float *rbuffer, MetropolisChain *metro, double *sharedParams, int sx, int sy, int w, int h, int offset, int stride)
@@ -2143,17 +2145,16 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
 +	y = (int) (metro->proposedSamples[1]*h) + sy;
 +	cx = (int) (metro->currentSamples[0]*w) + sx;
 +	cy = (int) (metro->currentSamples[1]*h) + sy;
-+        
+ 
 +	Ray ray;
 +	PassData pd;
 +	camera_sample(kg, x, y, metro->proposedSamples[0]*w - x + sx, //Fractional parts of the pixel coords
-+                            metro->proposedSamples[1]*h - y + sy,
-+                            metro_get_sample(kg, metro, PRNG_LENS_U),
-+                            metro_get_sample(kg, metro, PRNG_LENS_V),
-+                            metro_get_sample(kg, metro, PRNG_TIME), &ray);
++							metro->proposedSamples[1]*h - y + sy,
++							metro_get_sample(kg, metro, PRNG_LENS_U),
++							metro_get_sample(kg, metro, PRNG_LENS_V),
++							metro_get_sample(kg, metro, PRNG_TIME), &ray);
 +	kernel_setup_pass_data(kg, &pd);
- 
--	path_rng_end(kg, rng_state, rng);
++
 +	if(ray.t != 0.0f)
 +		L = kernel_path_integrate(kg, (RNG*) metro, 0xffffffff, ray, &pd); //0xffffffff means "use metropolis rng"
 +	else
@@ -2163,19 +2164,18 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
 +	/*if ((kernel_data.integrator.map_interval > 0) && sample >= kernel_data.integrator.map_interval)
 +		newImportance *= tile.buffers->importance_map[((int) (m.proposedSamples[1]*tile.h))*tile.w + ((int) (m.proposedSamples[0]*tile.w))];*/
 +
-+    float  *buffer = rbuffer + (offset +  y*stride +  x)*kernel_data.film.pass_stride;
-+    float *cbuffer = rbuffer + (offset + cy*stride + cx)*kernel_data.film.pass_stride;
++	float  *buffer = rbuffer + (offset +  y*stride +  x)*kernel_data.film.pass_stride;
++	float *cbuffer = rbuffer + (offset + cy*stride + cx)*kernel_data.film.pass_stride;
 +	bool accepted = metro_consider_sample(kg, metro, sharedParams, newImportance, L, buffer, cbuffer, pd);
 +
-+    metro_update_shared(sharedParams, newImportance, true, metro->isLargeMutation, accepted, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
++	metro_update_shared(sharedParams, newImportance, true, metro->isLargeMutation, accepted, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
 +
 +	metro_end_sample(kg, metro, sharedParams, w*h);
-+    return accepted;
- }
++	return accepted;
++}
 +#endif
- 
- CCL_NAMESPACE_END
- 
++
++CCL_NAMESPACE_END
 diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_random.h blender-2.76b/intern/cycles/kernel/kernel_random.h
 --- blender-2.76b.old/intern/cycles/kernel/kernel_random.h	2015-10-27 19:57:22.000000000 +0300
 +++ blender-2.76b/intern/cycles/kernel/kernel_random.h	2016-01-14 15:33:49.937686317 +0300
@@ -3106,7 +3106,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/scene.h blender-2.76b
  	device_vector<uchar4> tex_image[TEX_EXTENDED_NUM_IMAGES_CPU];
 diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2.76b/intern/cycles/render/session.cpp
 --- blender-2.76b.old/intern/cycles/render/session.cpp	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/render/session.cpp	2016-01-14 17:26:48.805405397 +0300
++++ blender-2.76b/intern/cycles/render/session.cpp	2016-01-14 20:24:00.518323318 +0300
 @@ -30,11 +30,13 @@
  
  #include "util_foreach.h"
@@ -3126,8 +3126,8 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
    tile_manager(params.progressive, params.samples, params.tile_size, params.start_resolution,
         params.background == false || params.progressive_refine, params.background, params.tile_order,
 -       max(params.device.multi_devices.size(), 1)),
-+       params.stopping_threshold, params.map_interval, max(params.device.multi_devices.size(), 1),
-+       params.num_progressive_samples, params.error_progressive),
++	   params.stopping_threshold, params.map_interval, max(params.device.multi_devices.size(), 1),
++	   params.num_progressive_samples, params.error_progressive),
    stats()
  {
  	device_use_gl = ((params.device.type != DEVICE_CPU) && !params.background);
@@ -3167,25 +3167,24 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  			/* for progressive refine current sample should be finished for all tiles */
  			return false;
  		}
-@@ -370,11 +373,14 @@
- 		return false;
+@@ -371,10 +374,15 @@
  	
  	/* fill render tile */
--	rtile.x = tile_manager.state.buffer.full_x + tile.x;
--	rtile.y = tile_manager.state.buffer.full_y + tile.y;
+ 	rtile.x = tile_manager.state.buffer.full_x + tile.x;
 +	rtile.t_x = tile.x;
+ 	rtile.y = tile_manager.state.buffer.full_y + tile.y;
 +	rtile.t_y = tile.y;
  	rtile.w = tile.w;
  	rtile.h = tile.h;
 -	rtile.start_sample = tile_manager.state.sample;
-+    rtile.t_device = tile.device;
-+    rtile.t_index = tile.index;
-+    rtile.t_priority = 1e10f;
++	rtile.t_device = tile.device;
++	rtile.t_index = tile.index;
++	rtile.t_priority = 1e10f;
 +	rtile.start_sample = params.error_progressive?tile.sample:tile_manager.state.sample;
  	rtile.num_samples = tile_manager.state.num_samples;
  	rtile.resolution = tile_manager.state.resolution_divider;
  
-@@ -419,7 +425,7 @@
+@@ -419,7 +427,7 @@
  
  		tilebuffers = tile_buffers[tile.index];
  		if(tilebuffers == NULL) {
@@ -3194,7 +3193,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  			tile_buffers[tile.index] = tilebuffers;
  
  			tilebuffers->reset(tile_device, buffer_params);
-@@ -428,7 +434,7 @@
+@@ -428,7 +436,7 @@
  		tile_lock.unlock();
  	}
  	else {
@@ -3203,7 +3202,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  
  		tilebuffers->reset(tile_device, buffer_params);
  	}
-@@ -451,20 +457,26 @@
+@@ -451,19 +459,24 @@
  	thread_scoped_lock tile_lock(tile_mutex);
  
  	if(update_render_tile_cb) {
@@ -3222,17 +3221,15 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  void Session::release_tile(RenderTile& rtile)
  {
  	thread_scoped_lock tile_lock(tile_mutex);
- 
 +	if (params.error_progressive) {
 +		rtile.t_priority = tile_error(rtile, params.adaptive_error_power);
 +		if(update_render_tile_cb)
 +			update_render_tile_cb(rtile);
 +	}
-+
+ 
  	if(write_render_tile_cb) {
  		if(params.progressive_refine == false) {
- 			/* todo: optimize this by making it thread safe and removing lock */
-@@ -474,7 +486,8 @@
+@@ -474,7 +487,8 @@
  		}
  	}
  
@@ -3242,7 +3239,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  }
  
  void Session::run_cpu()
-@@ -492,6 +505,8 @@
+@@ -492,6 +506,8 @@
  		reset_(delayed_reset.params, delayed_reset.samples);
  		delayed_reset.do_reset = false;
  	}
@@ -3251,14 +3248,14 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  
  	while(!progress.get_cancel()) {
  		/* advance to next tile */
-@@ -558,14 +573,20 @@
+@@ -558,14 +574,23 @@
  			if(progress.get_cancel())
  				break;
  
 +			if (params.importance_equalisation && params.metropolis && !first_pass && !tile_manager.done()) {
 +				buffers->build_importance_map();
 +			}
-+			
++
 +			first_pass = false;
 +
  			/* update status and timing */
@@ -3266,7 +3263,11 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
 +			update_status_time(false);
  
  			/* path trace */
- 			path_trace();
+-			path_trace();
++			if (params.metropolis)
++				metropolis_trace();
++			else
++				path_trace();
  
  			/* update status and timing */
 -			update_status_time();
@@ -3274,7 +3275,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  
  			if(!params.background)
  				need_tonemap = true;
-@@ -820,7 +841,7 @@
+@@ -820,7 +845,7 @@
  	}
  }
  
@@ -3283,7 +3284,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  {
  	int sample = tile_manager.state.sample;
  	int resolution = tile_manager.state.resolution_divider;
-@@ -870,6 +891,23 @@
+@@ -870,6 +895,19 @@
  			substatus += string_printf(", Sample %d/%d", status_sample, num_samples);
  		}
  	}
@@ -3297,13 +3298,9 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
 +		}
 +		if (worstErr == 1e10f)
 +			substatus = string_printf("Path Tracing First Pass");
-+		else {
-+			std::ostringstream buffWorsErr;
-+			buffWorsErr<<worstErr;
-+			substatus = string_printf("Path Tracing Max Error %s", buffWorsErr.str());
-+			delete buffWorsErr;
-+        }
-+	}
++		else
++			substatus = string_printf("Path Tracing Max Error %f", worstErr);
++    }
  	else if(tile_manager.num_samples == USHRT_MAX)
  		substatus = string_printf("Path Tracing Sample %d", sample+1);
  	else
@@ -3315,7 +3312,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
 +{
 +	/* add path trace task */
 +	DeviceTask task(DeviceTask::METROPOLIS_TRACE);
-+	
++
 +	task.acquire_tile = function_bind(&Session::acquire_tile, this, _1, _2);
 +	task.release_tile = function_bind(&Session::release_tile, this, _1);
 +	task.get_cancel = function_bind(&Progress::get_cancel, &this->progress);
@@ -3331,9 +3328,9 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
 +	task.importance_equalisation = params.importance_equalisation;
 +	task.error_progressive = params.error_progressive;
 +	task.warmup_samples = params.warmup_samples;
-+	if (params.num_metro_chains == 0) {
++    if (params.num_metro_chains == 0) {
 +		if (device->info.type == DEVICE_CUDA)
-+        	task.num_metro_chains = 8192;
++			task.num_metro_chains = 8192;
 +		else
 +			task.num_metro_chains = 1;
 +	} else task.num_metro_chains = params.num_metro_chains;
@@ -3345,22 +3342,23 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  void Session::path_trace()
  {
  	/* add path trace task */
-@@ -915,8 +984,14 @@
+@@ -915,9 +984,15 @@
  	task.get_cancel = function_bind(&Progress::get_cancel, &this->progress);
  	task.update_tile_sample = function_bind(&Session::update_tile_sample, this, _1);
  	task.update_progress_sample = function_bind(&Session::update_progress_sample, this);
 -	task.need_finish_queue = params.progressive_refine;
 +	task.need_finish_queue = params.progressive_refine && !params.error_progressive;
  	task.integrator_branched = scene->integrator->method == Integrator::BRANCHED_PATH;
+ 	task.requested_tile_size = params.tile_size;
 +	task.integrator_metropolis = false;
 +	task.adaptive = params.adaptive;
 +	task.stopping_threshold = params.stopping_threshold;
 +	task.adaptive_error_power = params.adaptive_error_power;
 +	task.map_interval = params.map_interval;
 +	task.error_progressive = params.error_progressive;
- 	task.requested_tile_size = params.tile_size;
  
  	device->task_add(task);
+ }
 @@ -961,7 +1036,7 @@
  			return false;
  	}
