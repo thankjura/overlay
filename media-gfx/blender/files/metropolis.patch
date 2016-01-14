@@ -1958,7 +1958,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_passes.h blend
  
 diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path_branched.h blender-2.76b/intern/cycles/kernel/kernel_path_branched.h
 --- blender-2.76b.old/intern/cycles/kernel/kernel_path_branched.h	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/kernel/kernel_path_branched.h	2016-01-14 02:16:46.190634848 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_path_branched.h	2016-01-14 19:56:35.805407857 +0300
 @@ -180,7 +180,7 @@
  }
  #endif
@@ -2031,7 +2031,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path_branched.
  #endif  /* __BRANCHED_PATH__ */
 diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender-2.76b/intern/cycles/kernel/kernel_path.h
 --- blender-2.76b.old/intern/cycles/kernel/kernel_path.h	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/kernel/kernel_path.h	2016-01-14 19:29:45.350165455 +0300
++++ blender-2.76b/intern/cycles/kernel/kernel_path.h	2016-01-14 20:00:47.098135011 +0300
 @@ -39,6 +39,8 @@
  #include "kernel_volume.h"
  #endif
@@ -2041,34 +2041,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  #include "kernel_path_state.h"
  #include "kernel_shadow.h"
  #include "kernel_emission.h"
-@@ -345,7 +347,7 @@
- #ifdef __VOLUME__
- 		Ray volume_ray = *ray;
- 		bool need_update_volume_stack = kernel_data.integrator.use_volumes &&
--		                                ccl_fetch(sd, flag) & SD_OBJECT_INTERSECTS_VOLUME;
-+					ccl_fetch(sd, flag) & SD_OBJECT_INTERSECTS_VOLUME;
- #endif
- 
- 		/* compute lighting with the BSDF closure */
-@@ -366,13 +368,12 @@
- #ifdef __VOLUME__
- 				if(need_update_volume_stack) {
- 					/* Setup ray from previous surface point to the new one. */
--					volume_ray.D = normalize_len(hit_ray.P - volume_ray.P,
--					                             &volume_ray.t);
-+					volume_ray.D = normalize_len(hit_ray.P - volume_ray.P, &volume_ray.t);
- 
- 					kernel_volume_stack_update_for_subsurface(
--					    kg,
--					    &volume_ray,
--					    hit_state.volume_stack);
-+						kg,
-+						&volume_ray,
-+						hit_state.volume_stack);
- 
- 					/* Move volume ray forward. */
- 					volume_ray.P = hit_ray.P;
-@@ -393,7 +394,7 @@
+@@ -393,7 +395,7 @@
  }
  #endif
  
@@ -2077,18 +2050,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  {
  	/* initialize */
  	PathRadiance L;
-@@ -505,8 +506,8 @@
- 					/* indirect sample. if we use distance sampling and take just
- 					 * one sample for direct and indirect light, we could share
- 					 * this computation, but makes code a bit complex */
--					float rphase = path_state_rng_1D_for_decision(kg, rng, &state, PRNG_PHASE);
--					float rscatter = path_state_rng_1D_for_decision(kg, rng, &state, PRNG_SCATTER_DISTANCE);
-+					float rphase = path_state_rng_1D_for_decision(kg, rng, state, PRNG_PHASE);
-+					float rscatter = path_state_rng_1D_for_decision(kg, rng, state, PRNG_SCATTER_DISTANCE);
- 
- 					result = kernel_volume_decoupled_scatter(kg,
- 						&state, &volume_ray, &volume_sd, &throughput,
-@@ -597,7 +598,7 @@
+@@ -597,7 +599,7 @@
  #endif
  
  		/* holdout mask objects do not write data passes */
@@ -2097,7 +2059,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  
  		/* blurring of bsdf after bounces, for rays that have a small likelihood
  		 * of following this particular path (diffuse, rough glossy) */
-@@ -662,7 +663,7 @@
+@@ -662,7 +664,7 @@
  
  	float3 L_sum = path_radiance_clamp_and_sum(kg, &L);
  
@@ -2106,7 +2068,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  
  #ifdef __KERNEL_DEBUG__
  	kernel_write_debug_passes(kg, buffer, &state, &debug_data, sample);
-@@ -682,6 +683,9 @@
+@@ -682,6 +684,9 @@
  	rng_state += index;
  	buffer += index*pass_stride;
  
@@ -2116,7 +2078,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  	/* initialize random numbers and ray */
  	RNG rng;
  	Ray ray;
-@@ -690,17 +694,93 @@
+@@ -690,17 +695,94 @@
  
  	/* integrate */
  	float4 L;
@@ -2132,12 +2094,10 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
  	/* accumulate result in output buffer */
 -	kernel_write_pass_float4(buffer, sample, L);
 +	kernel_write_pass_data(kg, &pd, buffer, sample, 1.0f, sample == 0, true, L, true, false);
- 
--	path_rng_end(kg, rng_state, rng);
++
 +	path_rng_end(kg, rng_state, &rng);
- }
- 
--CCL_NAMESPACE_END
++}
++
 +#ifdef __METROPOLIS__
 +ccl_device void kernel_metropolis_first_pass(KernelGlobals *kg, ccl_global float *buffer, double *sharedParams, ccl_global uint *rng_state, int x, int y, int offset, int stride)
 +{
@@ -2156,20 +2116,20 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
 +	
 +	kernel_write_pass_data(kg, &pd, buffer, 0, 1.0f, true, true, make_float4(0.0f, 0.0f, 0.0f, 0.0f), false, false);
 +	path_rng_end(kg, rng_state, &rng);
-+	metro_update_shared(sharedParams, linear_rgb_to_gray(L), false, false, false, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
++    metro_update_shared(sharedParams, linear_rgb_to_gray(L), false, false, false, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
 +}
 +
 +ccl_device void kernel_metropolis_warmup(KernelGlobals *kg, ccl_global uint *rng_state, double *sharedParams, int sample, int x, int y, int offset, int stride) {
 +	int index = offset + x + y*stride;
 +	rng_state += index;
-+	RNG rng;
-+	Ray ray;
++    RNG rng;
++    Ray ray;
 +	PassData pd;
 +	kernel_path_trace_setup(kg, rng_state, sample, x, y, &rng, &ray);
 +	kernel_setup_pass_data(kg, &pd);
 +	float4 L = kernel_path_integrate(kg, &rng, sample, ray, &pd);
 +	path_rng_end(kg, rng_state, &rng);
-+	metro_update_shared(sharedParams, linear_rgb_to_gray(L), false, false, false, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
++    metro_update_shared(sharedParams, linear_rgb_to_gray(L), false, false, false, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
 +}
 +
 +ccl_device bool kernel_metropolis_step(KernelGlobals *kg, float *rbuffer, MetropolisChain *metro, double *sharedParams, int sx, int sy, int w, int h, int offset, int stride)
@@ -2183,16 +2143,17 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
 +	y = (int) (metro->proposedSamples[1]*h) + sy;
 +	cx = (int) (metro->currentSamples[0]*w) + sx;
 +	cy = (int) (metro->currentSamples[1]*h) + sy;
-+
++        
 +	Ray ray;
 +	PassData pd;
 +	camera_sample(kg, x, y, metro->proposedSamples[0]*w - x + sx, //Fractional parts of the pixel coords
-+							metro->proposedSamples[1]*h - y + sy,
-+							metro_get_sample(kg, metro, PRNG_LENS_U),
-+							metro_get_sample(kg, metro, PRNG_LENS_V),
-+							metro_get_sample(kg, metro, PRNG_TIME), &ray);
++                            metro->proposedSamples[1]*h - y + sy,
++                            metro_get_sample(kg, metro, PRNG_LENS_U),
++                            metro_get_sample(kg, metro, PRNG_LENS_V),
++                            metro_get_sample(kg, metro, PRNG_TIME), &ray);
 +	kernel_setup_pass_data(kg, &pd);
-+
+ 
+-	path_rng_end(kg, rng_state, rng);
 +	if(ray.t != 0.0f)
 +		L = kernel_path_integrate(kg, (RNG*) metro, 0xffffffff, ray, &pd); //0xffffffff means "use metropolis rng"
 +	else
@@ -2202,18 +2163,19 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_path.h blender
 +	/*if ((kernel_data.integrator.map_interval > 0) && sample >= kernel_data.integrator.map_interval)
 +		newImportance *= tile.buffers->importance_map[((int) (m.proposedSamples[1]*tile.h))*tile.w + ((int) (m.proposedSamples[0]*tile.w))];*/
 +
-+	float *buffer = rbuffer + (offset +  y*stride +  x)*kernel_data.film.pass_stride;
-+	float *cbuffer = rbuffer + (offset + cy*stride + cx)*kernel_data.film.pass_stride;
++    float  *buffer = rbuffer + (offset +  y*stride +  x)*kernel_data.film.pass_stride;
++    float *cbuffer = rbuffer + (offset + cy*stride + cx)*kernel_data.film.pass_stride;
 +	bool accepted = metro_consider_sample(kg, metro, sharedParams, newImportance, L, buffer, cbuffer, pd);
 +
-+	metro_update_shared(sharedParams, newImportance, true, metro->isLargeMutation, accepted, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
- 
-+	metro_end_sample(kg, metro, sharedParams, w*h);
-+	return accepted;
-+}
-+#endif
++    metro_update_shared(sharedParams, newImportance, true, metro->isLargeMutation, accepted, !(L == make_float4(0.0f, 0.0f, 0.0f, 0.0f)));
 +
-+CCL_NAMESPACE_END
++	metro_end_sample(kg, metro, sharedParams, w*h);
++    return accepted;
+ }
++#endif
+ 
+ CCL_NAMESPACE_END
+ 
 diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_random.h blender-2.76b/intern/cycles/kernel/kernel_random.h
 --- blender-2.76b.old/intern/cycles/kernel/kernel_random.h	2015-10-27 19:57:22.000000000 +0300
 +++ blender-2.76b/intern/cycles/kernel/kernel_random.h	2016-01-14 15:33:49.937686317 +0300
