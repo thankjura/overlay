@@ -2221,7 +2221,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/util/util_importance.cpp ble
 +CCL_NAMESPACE_END
 diff -ru --new-file blender-2.76b.old/intern/cycles/util/util_importance.h blender-2.76b/intern/cycles/util/util_importance.h
 --- blender-2.76b.old/intern/cycles/util/util_importance.h	1970-01-01 03:00:00.000000000 +0300
-+++ blender-2.76b/intern/cycles/util/util_importance.h	2016-01-15 01:07:25.992735144 +0300
++++ blender-2.76b/intern/cycles/util/util_importance.h	2016-01-15 01:41:21.403604824 +0300
 @@ -0,0 +1,43 @@
 +/*
 + * Copyright 2011-2013 Blender Foundation
@@ -2242,10 +2242,10 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/util/util_importance.h blend
 +#ifndef __UTIL_IMPORTANCE_H__
 +#define __UTIL_IMPORTANCE_H__
 +
-++#include <algorithm>
-++#include "util_color.h"
-++#include "buffers.h"
-++#include "device_task.h"
++#include <algorithm>
++#include "util_color.h"
++#include "buffers.h"
++#include "device_task.h"
 +
 +CCL_NAMESPACE_BEGIN
 +
