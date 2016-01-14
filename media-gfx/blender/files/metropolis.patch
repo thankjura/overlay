@@ -2438,7 +2438,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/cpu/kernel_ss
  void kernel_cpu_sse41_convert_to_byte(KernelGlobals *kg, uchar4 *rgba, float *buffer, float sample_scale, int x, int y, int offset, int stride)
 diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.cu blender-2.76b/intern/cycles/kernel/kernels/cuda/kernel.cu
 --- blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.cu	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/kernel/kernels/cuda/kernel.cu	2016-01-14 15:27:42.930245580 +0300
++++ blender-2.76b/intern/cycles/kernel/kernels/cuda/kernel.cu	2016-01-14 19:06:07.677421298 +0300
 @@ -113,30 +113,99 @@
  
  extern "C" __global__ void
@@ -2531,7 +2531,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernels/cuda/kernel.c
 +}
 +
 +extern "C" __global__ void
-+UDA_LAUNCH_BOUNDS(CUDA_THREADS_BLOCK_WIDTH, CUDA_KERNEL_MAX_REGISTERS)
++CUDA_LAUNCH_BOUNDS(CUDA_THREADS_BLOCK_WIDTH, CUDA_KERNEL_MAX_REGISTERS)
 +kernel_cuda_metropolis_step(float *rbuffer, double *sharedParams, MetropolisChain *chains, int numChains,
 +int sx, int sy, int sw, int sh, int offset, int stride)
 +{
