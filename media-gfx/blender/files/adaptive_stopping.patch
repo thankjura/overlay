@@ -1268,7 +1268,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/film.cpp blender-2.76
  
 diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2.76b/intern/cycles/render/session.cpp
 --- blender-2.76b.old/intern/cycles/render/session.cpp	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/render/session.cpp	2016-01-15 00:49:13.611266538 +0300
++++ blender-2.76b/intern/cycles/render/session.cpp	2016-01-15 12:51:47.106819191 +0300
 @@ -30,6 +30,7 @@
  
  #include "util_foreach.h"
@@ -1409,7 +1409,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  					progress.set_update();
  
  					if(!pause)
-@@ -559,7 +577,7 @@
+@@ -559,13 +577,13 @@
  				break;
  
  			/* update status and timing */
@@ -1418,6 +1418,13 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/session.cpp blender-2
  
  			/* path trace */
  			path_trace();
+ 
+ 			/* update status and timing */
+-			update_status_time();
++			update_status_time(false);
+ 
+ 			if(!params.background)
+ 				need_tonemap = true;
 @@ -704,6 +722,8 @@
  
  void Session::reset_(BufferParams& buffer_params, int samples)
