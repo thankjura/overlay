@@ -1170,7 +1170,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/buffers.cpp blender-2
  		}
 diff -ru --new-file blender-2.76b.old/intern/cycles/render/buffers.h blender-2.76b/intern/cycles/render/buffers.h
 --- blender-2.76b.old/intern/cycles/render/buffers.h	2015-10-27 19:57:22.000000000 +0300
-+++ blender-2.76b/intern/cycles/render/buffers.h	2016-01-15 00:23:51.864340780 +0300
++++ blender-2.76b/intern/cycles/render/buffers.h	2016-01-15 12:43:18.140272917 +0300
 @@ -43,6 +43,8 @@
  	int width;
  	int height;
@@ -1189,16 +1189,15 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/buffers.h blender-2.7
  
  	RenderBuffers(Device *device);
  	~RenderBuffers();
-@@ -82,7 +86,7 @@
- 	bool get_pass_rect(PassType type, float exposure, int sample, int components, float *pixels);
+@@ -83,6 +87,7 @@
  
  protected:
--	void device_free();
+ 	void device_free();
 +	inline float get_sample_scale(const Pass &pass, float *pixel, int samples_pass, float scale, float exposure);
  
  	Device *device;
  };
-@@ -142,6 +146,12 @@
+@@ -142,6 +147,12 @@
  	device_ptr buffer;
  	device_ptr rng_state;
  
