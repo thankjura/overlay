@@ -977,7 +977,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/kernel/kernel_types.h blende
  typedef struct KernelBackground {
 diff -ru --new-file blender-2.76b.old/intern/cycles/render/buffers.cpp blender-2.76b/intern/cycles/render/buffers.cpp
 --- blender-2.76b.old/intern/cycles/render/buffers.cpp	2015-11-02 16:25:37.000000000 +0300
-+++ blender-2.76b/intern/cycles/render/buffers.cpp	2016-01-15 00:32:53.111632673 +0300
++++ blender-2.76b/intern/cycles/render/buffers.cpp	2016-01-15 11:53:25.353873465 +0300
 @@ -19,10 +19,12 @@
  #include "buffers.h"
  #include "device.h"
@@ -1132,7 +1132,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/buffers.cpp blender-2
  				}
  			}
  		}
-@@ -295,16 +341,30 @@
+@@ -295,16 +341,31 @@
  					pixels[3] = f.w*invw;
  				}
  			}
@@ -1152,6 +1152,7 @@ diff -ru --new-file blender-2.76b.old/intern/cycles/render/buffers.cpp blender-2
  			else {
  				for(int i = 0; i < size; i++, in += pass_stride, pixels += 4) {
  					float4 f = make_float4(in[0], in[1], in[2], in[3]);
++					float fac = get_sample_scale(pass, in - pass_offset, samples_pass, scale, pass_exposure);
  
 -					pixels[0] = f.x*scale_exposure;
 -					pixels[1] = f.y*scale_exposure;
