@@ -3,13 +3,16 @@
 
 EAPI=5
 CMAKE_BUILD_TYPE=Release
-inherit cmake-utils
+inherit cmake-utils git-2
 
 DESCRIPTION="Robomongo — is a shell-centric crossplatform MongoDB management
 tool."
 
 HOMEPAGE="http://www.robomongo.org/"
-SRC_URI="https://github.com/paralect/robomongo/archive/v${PV}.tar.gz"
+#SRC_URI="https://github.com/paralect/robomongo/archive/v${PV}.tar.gz"
+EGIT_REPO_URI="git://github.com/paralect/robomongo.git"
+EGIT_BRANCH="v0.9"
+EGIT_COMMIT="968a83c38058989a859e4ede93936805820a4e93"
 
 LICENSE="GPL-3"
 SLOT="0"
