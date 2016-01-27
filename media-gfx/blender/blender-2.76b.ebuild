@@ -40,7 +40,7 @@ SRC_URI="http://download.blender.org/source/${P}.tar.gz"
 SLOT="0"
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64 ~x86"
-IUSE_MODIFIERS="+fluid +smoke +boolean +remesh +oceansim +decimate"
+IUSE_MODIFIERS="+fluid +smoke +boolean +remesh +oceansim +decimate +fracture"
 IUSE_GPU="+opengl +cuda -sm_20 -sm_21 -sm_30 -sm_35 -sm_50 -sm_51"
 IUSE="${IUSE_MODIFIERS} ${IUSE_GPU} +boost +bullet colorio cycles +dds debug doc +elbeem ffmpeg fftw +game-engine jack jpeg2k libav ndof nls openal openimageio +opennl openmp +openexr player redcode sdl sndfile cpu_flags_x86_sse cpu_flags_x86_sse2 tiff c++0x opensubdiv arc"
 
@@ -129,6 +129,10 @@ pkg_setup() {
 src_prepare() {
 	if use arc; then
 		epatch "${FILESDIR}"/adaptive_stopping.patch
+	fi
+
+	if use fracture; then
+		epatch "${FILESDIR}"/fracture_modifer.patch
 	fi
 
 	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
