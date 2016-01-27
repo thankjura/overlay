@@ -131,9 +131,9 @@ src_prepare() {
 		epatch "${FILESDIR}"/adaptive_stopping.patch
 	fi
 
-	if use fracture; then
-		epatch "${FILESDIR}"/fracture_modifer.patch
-	fi
+	#if use fracture; then
+	#	epatch "${FILESDIR}"/fracture_modifer.patch
+	#fi
 
 	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
 		"${FILESDIR}"/${PN}-2.68-fix-install-rules.patch \
