@@ -4,9 +4,7 @@
 
 EAPI=4
 PYTHON_DEPEND="2"
-SUPPORT_PYTHON_ABIS="1"
-RESTRICT_PYTHON_ABIS="3.*"
-inherit eutils gnome2-utils distutils
+inherit eutils gnome2-utils distutils python
 
 DESCRIPTION="Desktop automation utility for Linux and X11"
 HOMEPAGE="http://code.google.com/p/autokey/"
