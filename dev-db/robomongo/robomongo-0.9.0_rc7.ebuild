@@ -5,8 +5,7 @@ EAPI=5
 CMAKE_BUILD_TYPE=Release
 inherit cmake-utils toolchain-funcs
 
-DESCRIPTION="Robomongo — is a shell-centric crossplatform MongoDB management
-tool."
+DESCRIPTION="Robomongo — is a shell-centric crossplatform MongoDB management tool."
 
 ROBOSHELL_COMMIT="798c6c93c10f5ff1cb4f4ba9d0488ecb756a8685"
 
