@@ -1,0 +1,21 @@
+diff -ru stepmania-5.1.0a.old/configure.ac stepmania-5.1.0a/configure.ac
+--- stepmania-5.1.0a.old/configure.ac	2016-03-05 15:28:28.353747423 +0300
++++ stepmania-5.1.0a/configure.ac	2016-03-05 15:31:14.699203107 +0300
+@@ -409,6 +409,5 @@
+ fi
+ 
+ AC_CONFIG_FILES(Makefile)
+-AC_CONFIG_FILES(bundle/Makefile)
+ AC_CONFIG_FILES(src/Makefile)
+ AC_OUTPUT
+diff -ru stepmania-5.1.0a.old/Makefile.am stepmania-5.1.0a/Makefile.am
+--- stepmania-5.1.0a.old/Makefile.am	2015-10-31 01:43:03.000000000 +0300
++++ stepmania-5.1.0a/Makefile.am	2016-03-05 15:30:22.997439742 +0300
+@@ -1,6 +1,6 @@
+ ## Need 1.7 for subdir support.  (Well, 1.4 doesn't work, I don't know if anything between does.)
+ AUTOMAKE_OPTIONS = 1.7 foreign
+-SUBDIRS = bundle src
++SUBDIRS = src
+ ACLOCAL_AMFLAGS = -I autoconf/m4
+ 
+ installFiles = src/stepmania

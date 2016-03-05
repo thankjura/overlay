@@ -1,6 +1,6 @@
-diff -r 23cf2445ee5d autoconf/m4/ax_define_dir.m4
---- /dev/null	Thu Jan 01 00:00:00 1970 +0000
-+++ b/autoconf/m4/ax_define_dir.m4	Sat Jan 14 10:52:30 2012 +0200
+diff -ru --new-file stepmania-5.1.0a.old/autoconf/m4/ax_define_dir.m4 stepmania-5.1.0a/autoconf/m4/ax_define_dir.m4
+--- stepmania-5.1.0a.old/autoconf/m4/ax_define_dir.m4	1970-01-01 03:00:00.000000000 +0300
++++ stepmania-5.1.0a/autoconf/m4/ax_define_dir.m4	2016-03-05 13:20:24.718661894 +0300
 @@ -0,0 +1,49 @@
 +# ===========================================================================
 +#       http://www.gnu.org/software/autoconf-archive/ax_define_dir.html
@@ -51,10 +51,10 @@ diff -r 23cf2445ee5d autoconf/m4/ax_define_dir.m4
 +  test "$prefix_NONE" && prefix=NONE
 +  test "$exec_prefix_NONE" && exec_prefix=NONE
 +])
-diff -r 23cf2445ee5d configure.ac
---- a/configure.ac	Fri Jan 13 00:39:56 2012 -0500
-+++ b/configure.ac	Sat Jan 14 10:52:30 2012 +0200
-@@ -134,6 +134,11 @@
+diff -ru --new-file stepmania-5.1.0a.old/configure.ac stepmania-5.1.0a/configure.ac
+--- stepmania-5.1.0a.old/configure.ac	2015-10-31 01:43:03.000000000 +0300
++++ stepmania-5.1.0a/configure.ac	2016-03-05 13:21:29.560639884 +0300
+@@ -195,6 +195,11 @@
  	CXXFLAGS="$CXXFLAGS -msse2"
  fi
  
@@ -66,10 +66,10 @@ diff -r 23cf2445ee5d configure.ac
  AC_ARG_WITH(prof, AS_HELP_STRING([--with-prof],[Enable profiling]), with_prof=$withval, with_prof=no)
  if test "$with_prof" = "yes"; then
  	test "$DEFAULT_CFLAGS" = "yes" && CFLAGS="$CFLAGS -pg"
-diff -r 23cf2445ee5d src/arch/ArchHooks/ArchHooks_Unix.cpp
---- a/src/arch/ArchHooks/ArchHooks_Unix.cpp	Fri Jan 13 00:39:56 2012 -0500
-+++ b/src/arch/ArchHooks/ArchHooks_Unix.cpp	Sat Jan 14 10:52:30 2012 +0200
-@@ -269,15 +269,28 @@
+diff -ru --new-file stepmania-5.1.0a.old/src/arch/ArchHooks/ArchHooks_Unix.cpp stepmania-5.1.0a/src/arch/ArchHooks/ArchHooks_Unix.cpp
+--- stepmania-5.1.0a.old/src/arch/ArchHooks/ArchHooks_Unix.cpp	2015-10-31 01:43:03.000000000 +0300
++++ stepmania-5.1.0a/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-03-05 13:22:51.767884511 +0300
+@@ -379,15 +379,29 @@
  	 * (Deprecated; use rootfs.) */
  	FILEMAN->Mount( "dir", "/proc", "/proc" );
  #endif
@@ -88,6 +88,7 @@ diff -r 23cf2445ee5d src/arch/ArchHooks/ArchHooks_Unix.cpp
 +	else if( !stat(ext_dir  + "/Songs", &st) && st.st_mode&S_IFDIR )
 +		Root = ext_dir;
 +#else
++
  	if( !stat(sDirOfExecutable + "/Packages", &st) && st.st_mode&S_IFDIR )
  		Root = sDirOfExecutable;
  	else if( !stat(sDirOfExecutable + "/Songs", &st) && st.st_mode&S_IFDIR )
@@ -98,9 +99,9 @@ diff -r 23cf2445ee5d src/arch/ArchHooks/ArchHooks_Unix.cpp
  	else
  		RageException::Throw( "%s", COULDNT_FIND_SONGS.GetValue().c_str() );
  
-diff -r 23cf2445ee5d src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
---- a/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	Fri Jan 13 00:39:56 2012 -0500
-+++ b/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	Sat Jan 14 10:52:30 2012 +0200
+diff -ru --new-file stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp stepmania-5.1.0a/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
+--- stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2015-10-31 01:43:03.000000000 +0300
++++ stepmania-5.1.0a/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-03-05 13:23:49.565759465 +0300
 @@ -1,4 +1,5 @@
  #include "global.h"
 +#include "ProductInfo.h"
@@ -109,7 +110,7 @@ diff -r 23cf2445ee5d src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
  #include "RageUtil.h"
 @@ -29,7 +30,12 @@
  {
- 	ASSERT( Handle == NULL );
+ 	ASSERT( Handle == nullptr );
  
 -	Handle = dlopen( RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so", RTLD_NOW );
 +	#if defined(EXT_DATADIR)
@@ -118,12 +119,12 @@ diff -r 23cf2445ee5d src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
 + 		Handle = dlopen( RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so", RTLD_NOW );
 +	#endif
 +
- 	if( Handle == NULL )
+ 	if( Handle == nullptr )
  		return ssprintf( "dlopen(): %s", dlerror() );
  
-diff -r 23cf2445ee5d src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp
---- a/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	Fri Jan 13 00:39:56 2012 -0500
-+++ b/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	Sat Jan 14 10:52:30 2012 +0200
+diff -ru --new-file stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp stepmania-5.1.0a/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp
+--- stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2015-10-31 01:43:03.000000000 +0300
++++ stepmania-5.1.0a/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-03-05 13:24:51.817701743 +0300
 @@ -1,4 +1,5 @@
  #include "global.h"
 +#include "ProductInfo.h"
