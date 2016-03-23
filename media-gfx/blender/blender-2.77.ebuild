@@ -27,9 +27,7 @@
 # extern/libmv/third_party/glog
 
 EAPI=5
-PYTHON_COMPAT=( python3_4 python3_5 )
-# python3_5 need patch 
-# https://github.com/thankjura/overlay/blob/5705fb755d4ccecc3b885d863138dcc2d922c92c/dev-lang/python/files/3.5-pyatomicfix.patch
+PYTHON_COMPAT=( python3_5 )
 
 inherit multilib fdo-mime gnome2-utils cmake-utils eutils python-single-r1 versionator flag-o-matic toolchain-funcs pax-utils check-reqs
 
@@ -130,10 +128,6 @@ src_prepare() {
 	if use arc; then
 		epatch "${FILESDIR}"/adaptive_stopping.patch
 	fi
-
-	#if use fracture; then
-	#	epatch "${FILESDIR}"/fracture_modifer.patch
-	#fi
 
 	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
 		"${FILESDIR}"/${PN}-2.68-fix-install-rules.patch \
