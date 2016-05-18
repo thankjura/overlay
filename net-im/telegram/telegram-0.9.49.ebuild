@@ -11,12 +11,12 @@ EAPI=6
 GH_REPO='telegramdesktop/tdesktop'
 GH_TAG="v${PV}"
 
-inherit flag-o-matic check-reqs fdo-mime eutils qmake-utils github
+inherit flag-o-matic check-reqs fdo-mime eutils qmake-utils
 
 DESCRIPTION='Official cross-platorm desktop client for Telegram'
 HOMEPAGE='https://desktop.telegram.org/'
 LICENSE='GPL-3' # with OpenSSL exception
-
+SRC_URI="https://github.com/telegramdesktop/tdesktop/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 SLOT='0'
 
 KEYWORDS='~amd64 ~arm ~x86'
