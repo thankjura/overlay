@@ -13,7 +13,7 @@ GTEST_VER="ff07a5de0e81580547f1685e101194ed1a4fcd56"
 
 DESCRIPTION="Stepmania 5 sm-ssc branch"
 HOMEPAGE="https://github.com/stepmania/stepmania"
-SRC_URI="https://github.com/stepmania/stepmania/archive/v${PV}.tar.gz
+SRC_URI="https://github.com/stepmania/stepmania/archive/v${PV}2.tar.gz
 		 https://github.com/libtom/libtomcrypt/archive/${TOMCRYPT_VER}.tar.gz -> libtomcrypt-${TOMCRYPT_VER}.tar.gz 
 		 https://github.com/libtom/libtommath/archive/v${TOMMATH_VER}.tar.gz -> libtommath-${TOMMATH_VER}.tar.gz
 		 https://github.com/cppformat/cppformat/archive/${CPPFORMAT_VER}.tar.gz -> cppformat-${CPPFORMAT_VER}.tar.gz
