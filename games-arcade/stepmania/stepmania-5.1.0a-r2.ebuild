@@ -26,6 +26,8 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="debug X gtk +jpeg +mad +vorbis +network +ffmpeg sse2"
 
+S="${WORKDIR}/stepmania-5.1.0a2"
+
 DEPEND="gtk? ( x11-libs/gtk+:2 )
 	media-libs/alsa-lib
 	mad? ( media-libs/libmad )
