@@ -1,6 +1,6 @@
-diff -ru --new-file stepmania-5.1.0a.old/autoconf/m4/ax_define_dir.m4 stepmania-5.1.0a/autoconf/m4/ax_define_dir.m4
---- stepmania-5.1.0a.old/autoconf/m4/ax_define_dir.m4	1970-01-01 03:00:00.000000000 +0300
-+++ stepmania-5.1.0a/autoconf/m4/ax_define_dir.m4	2016-03-05 13:20:24.718661894 +0300
+diff -ru --new-file stepmania-5.1.0a2.old/autoconf/m4/ax_define_dir.m4 stepmania-5.1.0a2/autoconf/m4/ax_define_dir.m4
+--- stepmania-5.1.0a2.old/autoconf/m4/ax_define_dir.m4	1970-01-01 03:00:00.000000000 +0300
++++ stepmania-5.1.0a2/autoconf/m4/ax_define_dir.m4	2016-06-13 00:44:23.009301555 +0300
 @@ -0,0 +1,49 @@
 +# ===========================================================================
 +#       http://www.gnu.org/software/autoconf-archive/ax_define_dir.html
@@ -51,9 +51,9 @@ diff -ru --new-file stepmania-5.1.0a.old/autoconf/m4/ax_define_dir.m4 stepmania-
 +  test "$prefix_NONE" && prefix=NONE
 +  test "$exec_prefix_NONE" && exec_prefix=NONE
 +])
-diff -ru --new-file stepmania-5.1.0a.old/configure.ac stepmania-5.1.0a/configure.ac
---- stepmania-5.1.0a.old/configure.ac	2015-10-31 01:43:03.000000000 +0300
-+++ stepmania-5.1.0a/configure.ac	2016-03-05 13:21:29.560639884 +0300
+diff -ru --new-file stepmania-5.1.0a2.old/configure.ac stepmania-5.1.0a2/configure.ac
+--- stepmania-5.1.0a2.old/configure.ac	2016-03-31 02:49:52.000000000 +0300
++++ stepmania-5.1.0a2/configure.ac	2016-06-13 00:45:20.862120458 +0300
 @@ -195,6 +195,11 @@
  	CXXFLAGS="$CXXFLAGS -msse2"
  fi
@@ -66,9 +66,9 @@ diff -ru --new-file stepmania-5.1.0a.old/configure.ac stepmania-5.1.0a/configure
  AC_ARG_WITH(prof, AS_HELP_STRING([--with-prof],[Enable profiling]), with_prof=$withval, with_prof=no)
  if test "$with_prof" = "yes"; then
  	test "$DEFAULT_CFLAGS" = "yes" && CFLAGS="$CFLAGS -pg"
-diff -ru --new-file stepmania-5.1.0a.old/src/arch/ArchHooks/ArchHooks_Unix.cpp stepmania-5.1.0a/src/arch/ArchHooks/ArchHooks_Unix.cpp
---- stepmania-5.1.0a.old/src/arch/ArchHooks/ArchHooks_Unix.cpp	2015-10-31 01:43:03.000000000 +0300
-+++ stepmania-5.1.0a/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-03-05 13:22:51.767884511 +0300
+diff -ru --new-file stepmania-5.1.0a2.old/src/arch/ArchHooks/ArchHooks_Unix.cpp stepmania-5.1.0a2/src/arch/ArchHooks/ArchHooks_Unix.cpp
+--- stepmania-5.1.0a2.old/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-03-31 02:49:52.000000000 +0300
++++ stepmania-5.1.0a2/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-06-13 00:46:58.554503517 +0300
 @@ -379,15 +379,29 @@
  	 * (Deprecated; use rootfs.) */
  	FILEMAN->Mount( "dir", "/proc", "/proc" );
@@ -77,7 +77,7 @@ diff -ru --new-file stepmania-5.1.0a.old/src/arch/ArchHooks/ArchHooks_Unix.cpp s
 +	RString sProductFamily = PRODUCT_FAMILY;
 +	sProductFamily.MakeLower();
  
- 	RString Root;
+ 	std::string Root;
  	struct stat st;
 +
 +#if defined(EXT_DATADIR)
@@ -89,49 +89,48 @@ diff -ru --new-file stepmania-5.1.0a.old/src/arch/ArchHooks/ArchHooks_Unix.cpp s
 +		Root = ext_dir;
 +#else
 +
- 	if( !stat(sDirOfExecutable + "/Packages", &st) && st.st_mode&S_IFDIR )
+ 	if( !stat((sDirOfExecutable + "/Packages").c_str(), &st) && st.st_mode&S_IFDIR )
  		Root = sDirOfExecutable;
- 	else if( !stat(sDirOfExecutable + "/Songs", &st) && st.st_mode&S_IFDIR )
+ 	else if( !stat((sDirOfExecutable + "/Songs").c_str(), &st) && st.st_mode&S_IFDIR )
  		Root = sDirOfExecutable;
- 	else if( !stat(RageFileManagerUtil::sInitialWorkingDirectory + "/Songs", &st) && st.st_mode&S_IFDIR )
+ 	else if( !stat((RageFileManagerUtil::sInitialWorkingDirectory + "/Songs").c_str(), &st) && st.st_mode&S_IFDIR )
  		Root = RageFileManagerUtil::sInitialWorkingDirectory;
 +#endif
  	else
  		RageException::Throw( "%s", COULDNT_FIND_SONGS.GetValue().c_str() );
  
-diff -ru --new-file stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp stepmania-5.1.0a/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
---- stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2015-10-31 01:43:03.000000000 +0300
-+++ stepmania-5.1.0a/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-03-05 13:23:49.565759465 +0300
+diff -ru --new-file stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
+--- stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-03-31 02:49:52.000000000 +0300
++++ stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-06-13 00:47:56.691326710 +0300
 @@ -1,4 +1,5 @@
  #include "global.h"
 +#include "ProductInfo.h"
  #include "RageLog.h"
  #include "RageFileManager.h"
  #include "RageUtil.h"
-@@ -29,7 +30,12 @@
+@@ -29,7 +30,11 @@
  {
  	ASSERT( Handle == nullptr );
  
--	Handle = dlopen( RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so", RTLD_NOW );
+-	Handle = dlopen( (RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so").c_str(), RTLD_NOW );
 +	#if defined(EXT_DATADIR)
 +		Handle = dlopen( EXT_DATADIR + RString("/") + RString(PRODUCT_FAMILY).MakeLower() + "/" + "GtkModule.so", RTLD_NOW );
 +	#else
 + 		Handle = dlopen( RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so", RTLD_NOW );
 +	#endif
-+
  	if( Handle == nullptr )
- 		return ssprintf( "dlopen(): %s", dlerror() );
+ 		return fmt::sprintf( "dlopen(): %s", dlerror() );
  
-diff -ru --new-file stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp stepmania-5.1.0a/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp
---- stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2015-10-31 01:43:03.000000000 +0300
-+++ stepmania-5.1.0a/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-03-05 13:24:51.817701743 +0300
+diff -ru --new-file stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp
+--- stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-03-31 02:49:52.000000000 +0300
++++ stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-06-13 00:48:24.913726362 +0300
 @@ -1,4 +1,5 @@
  #include "global.h"
 +#include "ProductInfo.h"
  #include "LoadingWindow_GtkModule.h"
  #include "RageUtil.h"
  #include "RageSurface.h"
-@@ -15,7 +16,19 @@
+@@ -15,7 +16,18 @@
  extern "C" const char *Init( int *argc, char ***argv )
  {
  	// Need to use external library to load this image. Native loader seems broken :/
@@ -147,7 +146,6 @@ diff -ru --new-file stepmania-5.1.0a.old/src/arch/LoadingWindow/LoadingWindow_Gt
 +#else
  	const gchar *splash_image_path = "Data/splash.png";
 +#endif
-+
  	GtkWidget *vbox;
  
  	gtk_disable_setlocale();
