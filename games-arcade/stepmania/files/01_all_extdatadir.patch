@@ -1,59 +1,7 @@
-diff -ru --new-file stepmania-5.1.0a2.old/autoconf/m4/ax_define_dir.m4 stepmania-5.1.0a2/autoconf/m4/ax_define_dir.m4
---- stepmania-5.1.0a2.old/autoconf/m4/ax_define_dir.m4	1970-01-01 03:00:00.000000000 +0300
-+++ stepmania-5.1.0a2/autoconf/m4/ax_define_dir.m4	2016-06-13 00:44:23.009301555 +0300
-@@ -0,0 +1,49 @@
-+# ===========================================================================
-+#       http://www.gnu.org/software/autoconf-archive/ax_define_dir.html
-+# ===========================================================================
-+#
-+# SYNOPSIS
-+#
-+#   AX_DEFINE_DIR(VARNAME, DIR [, DESCRIPTION])
-+#
-+# DESCRIPTION
-+#
-+#   This macro sets VARNAME to the expansion of the DIR variable, taking
-+#   care of fixing up ${prefix} and such.
-+#
-+#   VARNAME is then offered as both an output variable and a C preprocessor
-+#   symbol.
-+#
-+#   Example:
-+#
-+#     AX_DEFINE_DIR([DATADIR], [datadir], [Where data are placed to.])
-+#
-+# LICENSE
-+#
-+#   Copyright (c) 2008 Stepan Kasal <kasal@ucw.cz>
-+#   Copyright (c) 2008 Andreas Schwab <schwab@suse.de>
-+#   Copyright (c) 2008 Guido U. Draheim <guidod@gmx.de>
-+#   Copyright (c) 2008 Alexandre Oliva
-+#
-+#   Copying and distribution of this file, with or without modification, are
-+#   permitted in any medium without royalty provided the copyright notice
-+#   and this notice are preserved. This file is offered as-is, without any
-+#   warranty.
-+
-+#serial 6
-+
-+AU_ALIAS([AC_DEFINE_DIR], [AX_DEFINE_DIR])
-+AC_DEFUN([AX_DEFINE_DIR], [
-+  prefix_NONE=
-+  exec_prefix_NONE=
-+  test "x$prefix" = xNONE && prefix_NONE=yes && prefix=$ac_default_prefix
-+  test "x$exec_prefix" = xNONE && exec_prefix_NONE=yes && exec_prefix=$prefix
-+dnl In Autoconf 2.60, ${datadir} refers to ${datarootdir}, which in turn
-+dnl refers to ${prefix}.  Thus we have to use `eval' twice.
-+  eval ax_define_dir="\"[$]$2\""
-+  eval ax_define_dir="\"$ax_define_dir\""
-+  AC_SUBST($1, "$ax_define_dir")
-+  AC_DEFINE_UNQUOTED($1, "$ax_define_dir", [$3])
-+  test "$prefix_NONE" && prefix=NONE
-+  test "$exec_prefix_NONE" && exec_prefix=NONE
-+])
-diff -ru --new-file stepmania-5.1.0a2.old/configure.ac stepmania-5.1.0a2/configure.ac
---- stepmania-5.1.0a2.old/configure.ac	2016-03-31 02:49:52.000000000 +0300
-+++ stepmania-5.1.0a2/configure.ac	2016-06-13 00:45:20.862120458 +0300
+Только в stepmania-5.1.0a2/autoconf/m4: ax_define_dir.m4
+diff -ru stepmania-5.1.0a2.old/configure.ac stepmania-5.1.0a2/configure.ac
+--- stepmania-5.1.0a2.old/configure.ac	2016-06-13 02:08:04.211545713 +0300
++++ stepmania-5.1.0a2/configure.ac	2016-06-13 02:09:21.440666505 +0300
 @@ -195,6 +195,11 @@
  	CXXFLAGS="$CXXFLAGS -msse2"
  fi
@@ -66,23 +14,23 @@ diff -ru --new-file stepmania-5.1.0a2.old/configure.ac stepmania-5.1.0a2/configu
  AC_ARG_WITH(prof, AS_HELP_STRING([--with-prof],[Enable profiling]), with_prof=$withval, with_prof=no)
  if test "$with_prof" = "yes"; then
  	test "$DEFAULT_CFLAGS" = "yes" && CFLAGS="$CFLAGS -pg"
-diff -ru --new-file stepmania-5.1.0a2.old/src/arch/ArchHooks/ArchHooks_Unix.cpp stepmania-5.1.0a2/src/arch/ArchHooks/ArchHooks_Unix.cpp
+diff -ru stepmania-5.1.0a2.old/src/arch/ArchHooks/ArchHooks_Unix.cpp stepmania-5.1.0a2/src/arch/ArchHooks/ArchHooks_Unix.cpp
 --- stepmania-5.1.0a2.old/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-03-31 02:49:52.000000000 +0300
-+++ stepmania-5.1.0a2/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-06-13 00:46:58.554503517 +0300
++++ stepmania-5.1.0a2/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-06-13 02:14:40.695298142 +0300
 @@ -379,15 +379,29 @@
  	 * (Deprecated; use rootfs.) */
  	FILEMAN->Mount( "dir", "/proc", "/proc" );
  #endif
 +	// Get Lower case product family
-+	RString sProductFamily = PRODUCT_FAMILY;
-+	sProductFamily.MakeLower();
++	std::string sProductFamily = PRODUCT_FAMILY;
++    std::transform(sProductFamily.begin(), sProductFamily.end(), sProductFamily.begin(), ::tolower);
  
  	std::string Root;
  	struct stat st;
 +
 +#if defined(EXT_DATADIR)
 +	// Search folders at EXT_DATADIR
-+	RString ext_dir = EXT_DATADIR + RString("/") + sProductFamily;
++	std::string ext_dir = EXT_DATADIR + std::string("/") + sProductFamily;
 +	if( !stat(ext_dir + "/Packages", &st) && st.st_mode&S_IFDIR )
 +		Root = ext_dir;
 +	else if( !stat(ext_dir  + "/Songs", &st) && st.st_mode&S_IFDIR )
@@ -99,31 +47,33 @@ diff -ru --new-file stepmania-5.1.0a2.old/src/arch/ArchHooks/ArchHooks_Unix.cpp 
  	else
  		RageException::Throw( "%s", COULDNT_FIND_SONGS.GetValue().c_str() );
  
-diff -ru --new-file stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
+diff -ru stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
 --- stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-03-31 02:49:52.000000000 +0300
-+++ stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-06-13 00:47:56.691326710 +0300
++++ stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-06-13 02:17:58.953173194 +0300
 @@ -1,4 +1,5 @@
  #include "global.h"
 +#include "ProductInfo.h"
  #include "RageLog.h"
  #include "RageFileManager.h"
  #include "RageUtil.h"
-@@ -29,7 +30,11 @@
+@@ -29,7 +30,13 @@
  {
  	ASSERT( Handle == nullptr );
  
 -	Handle = dlopen( (RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so").c_str(), RTLD_NOW );
 +	#if defined(EXT_DATADIR)
-+		Handle = dlopen( EXT_DATADIR + RString("/") + RString(PRODUCT_FAMILY).MakeLower() + "/" + "GtkModule.so", RTLD_NOW );
++		std::string sProductFamily = PRODUCT_FAMILY;
++		std::transform(sProductFamily.begin(), sProductFamily.end(), sProductFamily.begin(), ::tolower);
++		Handle = dlopen( (EXT_DATADIR + std::string("/") + sProductFamily + "/" + "GtkModule.so").c_str(), RTLD_NOW );
 +	#else
-+ 		Handle = dlopen( RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so", RTLD_NOW );
++ 		Handle = dlopen( (RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so").c_str(), RTLD_NOW );
 +	#endif
  	if( Handle == nullptr )
  		return fmt::sprintf( "dlopen(): %s", dlerror() );
  
-diff -ru --new-file stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp
+diff -ru stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp
 --- stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-03-31 02:49:52.000000000 +0300
-+++ stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-06-13 00:48:24.913726362 +0300
++++ stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-06-13 02:09:21.457666751 +0300
 @@ -1,4 +1,5 @@
  #include "global.h"
 +#include "ProductInfo.h"
