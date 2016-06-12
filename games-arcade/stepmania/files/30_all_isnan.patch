@@ -1,0 +1,24 @@
+diff -ru stepmania-5.1.0a2.old/src/Sprite.cpp stepmania-5.1.0a2/src/Sprite.cpp
+--- stepmania-5.1.0a2.old/src/Sprite.cpp	2016-03-31 02:49:52.000000000 +0300
++++ stepmania-5.1.0a2/src/Sprite.cpp	2016-06-13 01:30:08.144630322 +0300
+@@ -1185,7 +1185,7 @@
+ 		for( int i=0; i<8; ++i )
+ 		{
+ 			coords[i]= FArg(i+1);
+-			if( isnan(coords[i]) )
++			if( std::isnan(coords[i]) )
+ 			{
+ 				coords[i]= 0.0f;
+ 			}
+diff -ru stepmania-5.1.0a2.old/src/StreamDisplay.cpp stepmania-5.1.0a2/src/StreamDisplay.cpp
+--- stepmania-5.1.0a2.old/src/StreamDisplay.cpp	2016-03-31 02:49:52.000000000 +0300
++++ stepmania-5.1.0a2/src/StreamDisplay.cpp	2016-06-13 01:30:49.414227674 +0300
+@@ -141,7 +141,7 @@
+ 	float fLifeMultiplier = THEME->GetMetricF("LifeMeterBar","LifeMultiplier");
+ #endif
+ 	DEBUG_ASSERT( fPercent >= 0.0f && fPercent <= 1.0f * fLifeMultiplier );
+-	if( isnan(fPercent) )
++	if( std::isnan(fPercent) )
+ 	{
+ 		DEBUG_ASSERT_M( 0, "fPercent is NaN" );
+ 		fPercent = 1;
