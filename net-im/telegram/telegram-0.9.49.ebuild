@@ -41,6 +41,8 @@ inherit l10n
 
 CHECKREQS_DISK_BUILD='800M'
 
+S=${WORKDIR}/tdesktop-${PV}
+
 tg_dir="${S}/Telegram"
 tg_pro="${tg_dir}/Telegram.pro"
 
