@@ -7,7 +7,7 @@ inherit cmake-utils toolchain-funcs
 
 DESCRIPTION="Robomongo — is a shell-centric crossplatform MongoDB management tool."
 
-ROBOSHELL_COMMIT="798c6c93c10f5ff1cb4f4ba9d0488ecb756a8685"
+ROBOSHELL_COMMIT="0d3d4aacc239c507f660bb4295217df92d9cfe79"
 
 MY_PV=${PV/_/-}
 HOMEPAGE="http://www.robomongo.org/"
