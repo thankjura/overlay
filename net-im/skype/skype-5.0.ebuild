@@ -35,8 +35,7 @@ src_unpack() {
 }
 
 src_install() {
-	mv usr/bin/skypeforlinux usr/bin/skype
 	mv * "${D}" || die
-	fperms 755 /usr/bin/skype
+	fperms 755 /usr/bin/skypeforlinux
 	fperms 755 /usr/share/skypeforlinux/skypeforlinux
 }
