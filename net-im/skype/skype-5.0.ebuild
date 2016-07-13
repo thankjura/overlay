@@ -4,7 +4,7 @@
 
 EAPI=5
 
-inherit eutils gnome2-utils pax-utils
+inherit eutils gnome2-utils pax-utils unpacker
 
 DESCRIPTION="P2P Internet Telephony (VoiceIP) client"
 HOMEPAGE="http://www.skype.com/"
@@ -28,29 +28,15 @@ RDEPEND="
 	x11-libs/libXv[abi_x86_32(-)]
 "
 
+S=${WORKDIR}
+
 src_unpack() {
-	default
-	mkdir "${P}"
-	tar -xf data.tar.xz -C "${S}" || die
+	unpack_deb ${A}
 }
 
 src_install() {
-
-	into /usr
-	dobin "usr/bin/skypeforlinux"
-	fowners root:audio usr/bin/skypeforlinux
-
-	insinto /usr/share/
-	doins -r usr/share/skypeforlinux
-	fperms 755 usr/share/skypeforlinux/skypeforlinux
-	exeinto /usr/share/skypeforlinux
-	doexe usr/share/skypeforlinux/skypeforlinux
-
-	newicon -s 256 usr/share/pixmaps/skypeforlinux.png skypeforlinux.png
-
-	domenu usr/share/applications/skypeforlinux.desktop
-}
-
-pkg_postrm() {
-	gnome2_icon_cache_update
+	mv usr/bin/skypeforlinux usr/bin/skype
+	mv * "${D}" || die
+	fperms 755 /usr/bin/skype
+	fperms 755 /usr/share/skypeforlinux/skypeforlinux
 }
