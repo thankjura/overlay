@@ -39,3 +39,7 @@ src_install() {
 	fperms 755 /usr/bin/skypeforlinux
 	fperms 755 /usr/share/skypeforlinux/skypeforlinux
 }
+
+pkg_postrm() {
+	gnome2_icon_cache_update
+}
