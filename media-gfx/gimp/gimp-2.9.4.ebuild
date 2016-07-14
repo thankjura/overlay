@@ -39,7 +39,7 @@ RDEPEND=">=dev-libs/glib-2.30.2:2
 	x11-themes/hicolor-icon-theme
 	>=media-libs/babl-0.1.18
 	>=media-libs/gegl-0.3.8:0.3[cairo]
-	>=media-libs/libmypaint-1.3.0
+	>=media-libs/libmypaint-1.2.99
 	>=dev-libs/glib-2.43
 	aalib? ( media-libs/aalib )
 	alsa? ( media-libs/alsa-lib )
@@ -87,7 +87,6 @@ pkg_setup() {
 	G2CONF="--enable-default-binary \
 		--disable-silent-rules \
 		$(use_with !aqua x) \
-		--without-libmypaint \
 		$(use_with aalib aa) \
 		$(use_with alsa) \
 		$(use_enable altivec) \
@@ -115,8 +114,6 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch ${FILESDIR}/fix_configure.patch
-
 	eautoreconf  # If you remove this: remove dev-util/gtk-doc-am from DEPEND, too
 
 	gnome2_src_prepare
@@ -135,6 +132,11 @@ _clean_up_locales() {
 
 src_test() {
 	Xemake check
+}
+
+src_compile() {
+	addpredict /dev/nvidiactl
+	default
 }
 
 src_install() {
