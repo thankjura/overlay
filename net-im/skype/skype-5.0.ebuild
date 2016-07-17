@@ -12,7 +12,7 @@ SRC_URI="https://repo.skype.com/latest/skypeforlinux-64-alpha.deb"
 
 LICENSE="skype-4.0.0.7-copyright BSD MIT RSA W3C regexp-UofT no-source-code"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~amd64"
 IUSE=""
 
 RDEPEND="
