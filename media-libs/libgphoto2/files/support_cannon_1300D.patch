@@ -1,0 +1,13 @@
+diff -ru libgphoto2-2.5.10.old/camlibs/ptp2/library.c libgphoto2-2.5.10/camlibs/ptp2/library.c
+--- libgphoto2-2.5.10.old/camlibs/ptp2/library.c	2016-03-19 13:40:32.000000000 +0300
++++ libgphoto2-2.5.10/camlibs/ptp2/library.c	2016-07-30 18:42:23.514266071 +0300
+@@ -1818,6 +1818,9 @@
+ 	/* Andre Crone <andre@elysia.nl */
+ 	{"Canon:EOS 5DS R",			0x04a9, 0x32af, PTP_CAP|PTP_CAP_PREVIEW},
+ 
++	/* Barney Livingston <barney.livingston@lobsterpictures.tv> */
++	{"Canon:EOS 1300D",			0x04a9, 0x32b4, PTP_CAP|PTP_CAP_PREVIEW},
++
+ 	/* Konica-Minolta PTP cameras */
+ 	{"Konica-Minolta:DiMAGE A2 (PTP mode)",        0x132b, 0x0001, 0},
+ 	{"Konica-Minolta:DiMAGE Z2 (PictBridge mode)", 0x132b, 0x0007, 0},
