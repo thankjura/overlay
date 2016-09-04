@@ -10,22 +10,19 @@ DESCRIPTION="P2P Internet Telephony (VoiceIP) client"
 HOMEPAGE="http://www.skype.com/"
 SRC_URI="https://repo.skype.com/latest/skypeforlinux-64-alpha.deb"
 
-LICENSE="skype-4.0.0.7-copyright BSD MIT RSA W3C regexp-UofT no-source-code"
+LICENSE=""
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE=""
 
 RDEPEND="
-	virtual/ttf-fonts
-	dev-qt/qtcore:4[abi_x86_32(-)]
-	dev-qt/qtdbus:4[abi_x86_32(-)]
-	dev-qt/qtgui:4[accessibility,abi_x86_32(-)]
-	dev-qt/qtwebkit:4[-exceptions,abi_x86_32(-)]
-	media-libs/alsa-lib[abi_x86_32(-)]
-	x11-libs/libX11[abi_x86_32(-)]
-	x11-libs/libXext[abi_x86_32(-)]
-	x11-libs/libXScrnSaver[abi_x86_32(-)]
-	x11-libs/libXv[abi_x86_32(-)]
+	dev-libs/atk
+	x11-libs/cairo
+	net-print/cups
+	sys-apps/dbus
+	dev-libs/expat
+	gnome-base/gconf
+	gnome-base/libgnome-keyring
 "
 
 S=${WORKDIR}
