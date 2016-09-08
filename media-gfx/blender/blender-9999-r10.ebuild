@@ -9,7 +9,7 @@ BLENDGIT_URI="http://git.blender.org"
 BLENDER_REPO_URI="${BLENDGIT_URI}/blender.git"
 BLENDER_ADDONS_URI="${BLENDGIT_URI}/blender-addons.git"
 BLENDER_ADDONS_CONTRIB_URI="${BLENDGIT_URI}/blender-addons-contrib.git"
-BLENDER_TRANSLATIONS_URI="${BLENDGIT_URI}/blender-translations.git"
+BLENDER_TRANSLATIONS_URI="git://git.blender.org/blender-translations.git"
 
 inherit cmake-utils eutils python-single-r1 gnome2-utils fdo-mime pax-utils git-2 versionator toolchain-funcs flag-o-matic
 
@@ -29,7 +29,7 @@ IUSE_CODEC="+openal sdl jack avi +ffmpeg sndfile +quicktime"
 IUSE_COMPRESSION="-lzma +lzo"
 IUSE_MODIFIERS="+fluid +smoke +boolean +remesh oceansim +decimate"
 IUSE_LIBS="osl +openvdb +opensubdiv +opencolorio +openimageio collada +alembic"
-IUSE_GPU="+opengl -opengl3 +cuda -sm_21 -sm_30 -sm_35 -sm_50"
+IUSE_GPU="+opengl -opengl3 +cuda -sm_21 -sm_30 -sm_35 -sm_50 -sm_61"
 IUSE="${IUSE_BUILD} ${IUSE_COMPILER} ${IUSE_SYSTEM} ${IUSE_IMAGE} ${IUSE_CODEC} ${IUSE_COMPRESSION} ${IUSE_MODIFIERS} ${IUSE_LIBS} ${IUSE_GPU}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -145,7 +145,7 @@ pkg_setup() {
 		fi
 	fi
 
-	if ! use sm_30 && ! use sm_35 && ! use sm_50; then
+	if ! use sm_30 && ! use sm_35 && ! use sm_50 && ! use sm_61; then
 		if use cuda; then
 			ewarn "You have not chosen a CUDA kernel. It takes an extreamly long time"
 			ewarn "to compile all the CUDA kernels. Check http://www.nvidia.com/object/cuda_gpus.htm"
@@ -161,8 +161,8 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch "${FILESDIR}"/01-${PN}-2.68-doxyfile.patch \
-		"${FILESDIR}"/06-${PN}-2.68-fix-install-rules.patch \
+	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
+		"${FILESDIR}"/${PN}-2.68-fix-install-rules.patch \
 		"${FILESDIR}"/sequencer_extra_actions-3.8.patch.bz2 \
 		"${FILESDIR}"/01_include_addon_contrib_in_release
 
@@ -233,6 +233,13 @@ src_configure() {
 				CUDA_ARCH="${CUDA_ARCH};sm_50"
 			else
 				CUDA_ARCH="sm_50"
+			fi
+		fi
+		if use sm_61; then
+			if [[ -n "${CUDA_ARCH}" ]] ; then
+				CUDA_ARCH="${CUDA_ARCH};sm_61"
+			else
+				CUDA_ARCH="sm_61"
 			fi
 		fi
 
