@@ -19,7 +19,7 @@ HOMEPAGE="http://www.blender.org/"
 EGIT_REPO_URI="${BLENDER_REPO_URI}"
 
 LICENSE="|| ( GPL-2 BL )"
-SLOT="9999"
+SLOT="0"
 KEYWORDS="~amd64"
 IUSE_BUILD="+blender game-engine +addons contrib +nls -ndof +cycles freestyle -player"
 IUSE_COMPILER="openmp sse sse2"
