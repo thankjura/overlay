@@ -39,7 +39,7 @@ SLOT="0"
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64 ~x86"
 IUSE_MODIFIERS="+fluid +smoke +boolean +remesh +oceansim +decimate"
-IUSE_GPU="+opengl +cuda -sm_20 -sm_21 -sm_30 -sm_35 -sm_50 -sm_51"
+IUSE_GPU="+opengl +cuda -sm_20 -sm_21 -sm_30 -sm_35 -sm_50 -sm_51 -sm_61"
 IUSE="${IUSE_MODIFIERS} ${IUSE_GPU} +boost +bullet colorio cycles +dds debug doc +elbeem ffmpeg fftw +game-engine jack jpeg2k libav ndof nls openal openimageio +opennl openmp +openexr player redcode sdl sndfile cpu_flags_x86_sse cpu_flags_x86_sse2 tiff c++0x opensubdiv"
 
 LANGS="en ar bg ca cs de el es es_ES fa fi fr he hr hu id it ja ky ne nl pl pt pt_BR ru sr sr@latin sv tr uk zh_CN zh_TW"
@@ -189,6 +189,13 @@ src_configure() {
 				CUDA_ARCH="${CUDA_ARCH};sm_51"
 			else
 				CUDA_ARCH="sm_51"
+			fi
+		fi
+		if use sm_61; then
+			if [[ -n "${CUDA_ARCH}" ]] ; then
+				CUDA_ARCH="${CUDA_ARCH};sm_61"
+			else
+				CUDA_ARCH="sm_61"
 			fi
 		fi
 
