@@ -20,7 +20,7 @@ IUSE="doc +openvdb-compression X"
 
 DEPEND="
 	sys-libs/zlib
-	>=dev-libs/boost-1.56.0
+	>=dev-libs/boost-1.61.0[python]
 	media-libs/openexr
 	>=dev-cpp/tbb-3.0
 	>=dev-util/cppunit-1.10
@@ -37,10 +37,9 @@ RDEPEND="${RDEPEND}"
 
 S="${WORKDIR}"/openvdb
 
-PYTHON_VERSION="3.5"
+PYTHON_VERSION="3.5m"
 
 src_prepare() {
-	epatch "${FILESDIR}"/numpy_api.patch
 	epatch "${FILESDIR}"/pyOpenVDBModule.cc.patch
 	epatch "${FILESDIR}"/openvdb.patch
 	epatch "${FILESDIR}"/use_svg.patch
@@ -84,8 +83,8 @@ src_compile() {
 	LIBOPENVDB_RPATH= \
 	PYTHON_INCL_DIR="${prefix}/include/python${PYTHON_VERSION}" \
 	PYCONFIG_INCL_DIR="${prefix}/include/python${PYTHON_VERSION}" \
-	NUMPY_INCL_DIR="${prefix}/$(get_libdir)/python${PYTHON_VERSION}/site-packages/numpy/core/include/numpy" \
-	BOOST_PYTHON_LIB="-lboost_python-${PYTHON_VERSION}" \
+	NUMPY_INCL_DIR="${prefix}/$(get_libdir)/python3.5/site-packages/numpy/core/include/numpy" \
+	BOOST_PYTHON_LIB="-lboost_python-3.5" \
 	rpath=no shared=yes || die "emake failed"
 }
 
