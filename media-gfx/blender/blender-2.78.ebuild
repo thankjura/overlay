@@ -92,7 +92,6 @@ pkg_setup() {
 src_prepare() {
 	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
 	       "${FILESDIR}"/${PN}-2.68-fix-install-rules.patch \
-	       "${FILESDIR}"/${PN}-2.77-sse2.patch \
 	       "${FILESDIR}"/${PN}-2.77-C++0x-build-fix.patch
 
 	# we don't want static glew, but it's scattered across
