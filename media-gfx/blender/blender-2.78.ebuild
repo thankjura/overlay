@@ -16,9 +16,12 @@ SRC_URI="http://download.blender.org/source/${P}.tar.gz"
 SLOT="0"
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64 ~x86"
+
+IUSE_CUDA="cuda sm_21 sm_30 sm_35 sm_50 sm_61"
+
 IUSE="+boost +bullet collada colorio cycles +dds debug doc +elbeem ffmpeg fftw +game-engine \
             jemalloc jpeg2k libav man ndof nls openal openimageio openmp +openexr player sdl \
-            sndfile cpu_flags_x86_sse cpu_flags_x86_sse2 test tiff c++0x valgrind jack"
+            sndfile cpu_flags_x86_sse cpu_flags_x86_sse2 test tiff c++0x valgrind jack ${IUSE_CUDA}"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	player? ( game-engine )
 	cycles? ( boost openexr tiff openimageio )
@@ -64,6 +67,9 @@ RDEPEND="${PYTHON_DEPS}
 	sndfile? ( media-libs/libsndfile )
 	tiff? ( media-libs/tiff:0 )
 	valgrind? ( dev-util/valgrind )
+	cycles? (
+		cuda? ( dev-util/nvidia-cuda-toolkit )
+	)
 "
 DEPEND="${RDEPEND}
 	>=dev-cpp/eigen-3.2.8:3
@@ -121,6 +127,7 @@ src_configure() {
 		-DWITH_SYSTEM_OPENJPEG=ON
 		-DWITH_SYSTEM_EIGEN3=ON
 		-DWITH_SYSTEM_LZO=ON
+		-DWITH_IMAGE_HDR=ON
 		$(cmake-utils_use_with boost BOOST)
 		$(cmake-utils_use_with bullet BULLET)
 		$(cmake-utils_use_with ffmpeg CODEC_FFMPEG)
@@ -154,6 +161,61 @@ src_configure() {
 		$(camke-utils_use_with jemalloc MEM_JEMALLOC)
 		$(cmake-utils_use_with valgrind MEM_VALGRIND)
 	)
+	
+	local CUDA_ARCH=""
+
+	if use cuda; then
+		if use sm_21; then
+			if [[ -n "${CUDA_ARCH}" ]] ; then
+				CUDA_ARCH="${CUDA_ARCH};sm_21"
+			else
+				CUDA_ARCH="sm_21"
+			fi
+		fi
+		if use sm_30; then
+			if [[ -n "${CUDA_ARCH}" ]] ; then
+				CUDA_ARCH="${CUDA_ARCH};sm_30"
+			else
+				CUDA_ARCH="sm_30"
+			fi
+		fi
+		if use sm_35; then
+			if [[ -n "${CUDA_ARCH}" ]] ; then
+				CUDA_ARCH="${CUDA_ARCH};sm_35"
+			else
+				CUDA_ARCH="sm_35"
+			fi
+		fi
+		if use sm_50; then
+			if [[ -n "${CUDA_ARCH}" ]] ; then
+				CUDA_ARCH="${CUDA_ARCH};sm_50"
+			else
+				CUDA_ARCH="sm_50"
+			fi
+		fi
+		if use sm_61; then
+			if [[ -n "${CUDA_ARCH}" ]] ; then
+				CUDA_ARCH="${CUDA_ARCH};sm_61"
+			else
+				CUDA_ARCH="sm_61"
+			fi
+		fi
+
+		#If a kernel isn't selected then all of them are built by default
+		if [ -n "${CUDA_ARCH}" ] ; then
+			mycmakeargs+=(			
+				-DCYCLES_CUDA_BINARIES_ARCH=${CUDA_ARCH}
+			)
+		fi
+		mycmakeargs+=(
+			-DWITH_CYCLES_CUDA=ON
+			-DWITH_CYCLES_CUDA_BINARIES=ON
+			-DCUDA_INCLUDES=/opt/cuda/include
+			-DCUDA_LIBRARIES=/opt/cuda/lib64
+			-DCUDA_NVCC=/opt/cuda/bin/nvcc
+		)
+	fi
+
 	cmake-utils_src_configure
 }
 
