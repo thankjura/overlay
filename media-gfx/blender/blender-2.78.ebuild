@@ -1,76 +1,105 @@
-# Copyright 2015 Julian Ospald <hasufell@posteo.de>
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 PYTHON_COMPAT=( python3_5 )
 
-inherit multilib fdo-mime gnome2-utils cmake-utils eutils python-single-r1 versionator \
-	   flag-o-matic toolchain-funcs pax-utils check-reqs
+inherit fdo-mime gnome2-utils cmake-utils python-single-r1 \
+	flag-o-matic toolchain-funcs pax-utils check-reqs versionator
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org"
 
 SRC_URI="http://download.blender.org/source/${P}.tar.gz"
 
+# Blender can have letters in the version string,
+# so strip of the letter if it exists.
+MY_PV="$(get_version_component_range 1-2)"
+
 SLOT="0"
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64 ~x86"
+IUSE="+boost +bullet +dds +elbeem +game-engine +openexr collada colorio \
+	cuda cycles debug doc ffmpeg fftw headless jack jemalloc jpeg2k libav \
+	llvm man ndof nls openal opencl openimageio openmp opensubdiv openvdb \
+	openvdb-compression osl player sdl sndfile test tiff valgrind"
 
-IUSE_CUDA="cuda sm_21 sm_30 sm_35 sm_50 sm_61"
-
-IUSE="+boost +bullet collada colorio cycles +dds debug doc +elbeem ffmpeg fftw +game-engine \
-            jemalloc jpeg2k libav man ndof nls openal openimageio openmp +openexr player sdl \
-            sndfile cpu_flags_x86_sse cpu_flags_x86_sse2 test tiff c++0x valgrind jack ${IUSE_CUDA}"
+# OpenCL and nVidia performance is rubbish with Blender
+# If you have nVidia, use CUDA.
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
-	player? ( game-engine )
+	player? ( game-engine !headless )
+	cuda? ( cycles !opencl )
 	cycles? ( boost openexr tiff openimageio )
+	colorio? ( boost )
+	openvdb? ( boost )
+	opensubdiv? ( cuda )
 	nls? ( boost )
+	openal? ( boost )
+	opencl? ( cycles )
+	osl? ( cycles llvm )
 	game-engine? ( boost )
-	^^ ( ffmpeg libav )"
+	?? ( ffmpeg libav )"
 
-RDEPEND="${PYTHON_DEPS}
-	dev-libs/lzo:2
-	>=dev-python/numpy-1.10.1[${PYTHON_USEDEP}]
-	dev-python/requests[${PYTHON_USEDEP}]
-	>=media-libs/freetype-2.0:2
-	media-libs/glew
-	media-libs/libpng:0
-	media-libs/libsamplerate
-	sci-libs/ldl
-	sys-libs/zlib
-	virtual/glu
-	virtual/jpeg:0
-	virtual/libintl
-	virtual/opengl
-	x11-libs/libX11
-	x11-libs/libXi
-	x11-libs/libXxf86vm
-	boost? ( >=dev-libs/boost-1.60[nls?,threads(+)] )
+# Since not using OpenCL with nVidia, depend on ATI binary
+# blobs as Cycles with OpenCL does not work with any open
+# source drivers.
+OPTIONAL_DEPENDS="
+	boost? ( >=dev-libs/boost-1.62:=[nls?,threads(+)] )
 	collada? ( >=media-libs/opencollada-1.6.18 )
 	colorio? ( >=media-libs/opencolorio-1.0.9-r2 )
-	ffmpeg? ( >=media-video/ffmpeg-2.8.6:0=[x264,mp3,encode,theora,jpeg2k?] )
+	cuda? ( dev-util/nvidia-cuda-toolkit )
+	ffmpeg? ( media-video/ffmpeg:0=[x264,mp3,encode,theora,jpeg2k?] )
 	libav? ( >=media-video/libav-11.3:0=[x264,mp3,encode,theora,jpeg2k?] )
-	fftw? ( sci-libs/fftw:3.0 )
+	fftw? ( sci-libs/fftw:3.0= )
+	!headless? (
+		x11-libs/libX11
+		x11-libs/libXi
+		x11-libs/libXxf86vm
+	)
 	jack? ( media-sound/jack-audio-connection-kit )
 	jemalloc? ( dev-libs/jemalloc )
 	jpeg2k? ( media-libs/openjpeg:0 )
+	llvm? ( sys-devel/llvm )
 	ndof? (
 		app-misc/spacenavd
 		dev-libs/libspnav
 	)
 	nls? ( virtual/libiconv )
-	openal? ( >=media-libs/openal-1.6.372 )
+	openal? ( media-libs/openal )
 	openimageio? ( >=media-libs/openimageio-1.6.9 )
-	openexr? ( media-libs/ilmbase >=media-libs/openexr-2.2.0 )
+	opencl? ( x11-drivers/ati-drivers:* )
+	openexr? (
+		media-libs/ilmbase
+		>=media-libs/openexr-2.2.0
+	)
+	opensubdiv? ( media-libs/opensubdiv[cuda=,opencl=] )
+	openvdb? (
+		media-gfx/openvdb[${PYTHON_USEDEP},openvdb-compression=]
+		dev-cpp/tbb
+	)
+	openvdb-compression? ( >=dev-libs/c-blosc-1.5.2 )
+	osl? ( media-libs/osl )
 	sdl? ( media-libs/libsdl2[sound,joystick] )
 	sndfile? ( media-libs/libsndfile )
 	tiff? ( media-libs/tiff:0 )
-	valgrind? ( dev-util/valgrind )
-	cycles? (
-		cuda? ( dev-util/nvidia-cuda-toolkit )
-	)
-"
+	valgrind? ( dev-util/valgrind )"
+
+RDEPEND="${PYTHON_DEPS}
+	dev-libs/lzo:2
+	>=dev-python/numpy-1.10.1[${PYTHON_USEDEP}]
+	dev-python/requests[${PYTHON_USEDEP}]
+	media-libs/freetype
+	media-libs/glew
+	media-libs/libpng:0
+	media-libs/libsamplerate
+	sys-libs/zlib
+	virtual/glu
+	virtual/jpeg:0
+	virtual/libintl
+	virtual/opengl
+	${OPTIONAL_DEPENDS}"
+
 DEPEND="${RDEPEND}
 	>=dev-cpp/eigen-3.2.8:3
 	doc? (
@@ -78,6 +107,9 @@ DEPEND="${RDEPEND}
 		dev-python/sphinx[latex]
 	)
 	nls? ( sys-devel/gettext )"
+
+PATCHES=( "${FILESDIR}"/${P}-C++11-build-fix.patch
+	  "${FILESDIR}"/${P}-fix-install-rules.patch )
 
 pkg_pretend() {
 	if use openmp && ! tc-has-openmp; then
@@ -96,9 +128,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
-	       "${FILESDIR}"/${PN}-2.68-fix-install-rules.patch \
-	       "${FILESDIR}"/${PN}-2.77-C++0x-build-fix.patch
+	default
 
 	# we don't want static glew, but it's scattered across
 	# thousand files
@@ -106,6 +136,11 @@ src_prepare() {
 	sed -i \
 		-e '/-DGLEW_STATIC/d' \
 		$(find . -type f -name "CMakeLists.txt") || die
+	
+	# Disable MS Windows help generation. The variable doesn't do what it
+	# it sounds like.
+	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" \
+	    -i doc/doxygen/Doxyfile || die
 }
 
 src_configure() {
@@ -113,6 +148,9 @@ src_configure() {
 	# shadows, see bug #276338 for reference
 	append-flags -funsigned-char
 	append-lfs-flags
+	# Makefile says not to use --as-needed as it breaks on certain distros.
+	# On Gentoo it causes bug #533514 with certain versions of GLibC
+	append-ldflags $(no-as-needed)
 
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_PREFIX=/usr
@@ -127,95 +165,49 @@ src_configure() {
 		-DWITH_SYSTEM_OPENJPEG=ON
 		-DWITH_SYSTEM_EIGEN3=ON
 		-DWITH_SYSTEM_LZO=ON
-		-DWITH_IMAGE_HDR=ON
-		$(cmake-utils_use_with boost BOOST)
-		$(cmake-utils_use_with bullet BULLET)
-		$(cmake-utils_use_with ffmpeg CODEC_FFMPEG)
-		$(cmake-utils_use_with sndfile CODEC_SNDFILE)
-		$(cmake-utils_use_with c++0x CPP11)
-		$(cmake-utils_use_with cycles CYCLES)
-		$(cmake-utils_use_with fftw FFTW3)
-		$(cmake-utils_use_with game-engine GAMEENGINE)
-		$(cmake-utils_use_with dds IMAGE_DDS)
-		$(cmake-utils_use_with openexr IMAGE_OPENEXR)
-		$(cmake-utils_use_with jpeg2k IMAGE_OPENJPEG)
-		$(cmake-utils_use_with tiff IMAGE_TIFF)
-		$(cmake-utils_use_with ndof INPUT_NDOF)
-		$(cmake-utils_use_with nls INTERNATIONAL)
-		$(cmake-utils_use_with jack JACK)
-		$(cmake-utils_use_with elbeem MOD_FLUID)
-		$(cmake-utils_use_with fftw MOD_OCEANSIM)
-		$(cmake-utils_use_with openal OPENAL)
-		$(cmake-utils_use_with colorio OPENCOLORIO)
-		$(cmake-utils_use_with collada OPENCOLLADA)
-		$(cmake-utils_use_with openimageio OPENIMAGEIO)
-		$(cmake-utils_use_with openmp OPENMP)
-		$(cmake-utils_use_with player PLAYER)
-		$(cmake-utils_use_with sdl SDL)
-		$(cmake-utils_use_with cpu_flags_x86_sse RAYOPTIMIZATION)
-		$(cmake-utils_use_with cpu_flags_x86_sse2 SSE2)
-		$(cmake-utils_use_with debug CXX_GUARDEDALLOC)
-		$(cmake-utils_use_with debug ASSERT_ABORT)
-		$(cmake-utils_use_with test GTESTS)
-		$(cmake-utils_use_with man DOC_MANPAGE)
-		$(camke-utils_use_with jemalloc MEM_JEMALLOC)
-		$(cmake-utils_use_with valgrind MEM_VALGRIND)
+		-DWITH_C11=ON
+		-DWITH_CXX11=ON
+		-DWITH_BOOST=$(usex boost)
+		-DWITH_BULLET=$(usex bullet)
+		-DWITH_CODEC_FFMPEG=$(usex ffmpeg)
+		-DWITH_CODEC_SNDFILE=$(usex sndfile)
+		-DWITH_CUDA=$(usex cuda)
+		-DWITH_CYCLES_DEVICE_CUDA=$(usex cuda TRUE FALSE)
+		-DWITH_CYCLES=$(usex cycles)
+		-DWITH_CYCLES_OSL=$(usex osl)
+		-DWITH_LLVM=$(usex llvm)
+		-DWITH_FFTW3=$(usex fftw)
+		-DWITH_GAMEENGINE=$(usex game-engine)
+		-DWITH_HEADLESS=$(usex headless)
+		-DWITH_X11=$(usex !headless)
+		-DWITH_IMAGE_DDS=$(usex dds)
+		-DWITH_IMAGE_OPENEXR=$(usex openexr)
+		-DWITH_IMAGE_OPENJPEG=$(usex jpeg2k)
+		-DWITH_IMAGE_TIFF=$(usex tiff)
+		-DWITH_INPUT_NDOF=$(usex ndof)
+		-DWITH_INTERNATIONAL=$(usex nls)
+		-DWITH_JACK=$(usex jack)
+		-DWITH_MOD_FLUID=$(usex elbeem)
+		-DWITH_MOD_OCEANSIM=$(usex fftw)
+		-DWITH_OPENAL=$(usex openal)
+		-DWITH_OPENCL=$(usex opencl)
+		-DWITH_CYCLES_DEVICE_OPENCL=$(usex opencl TRUE FALSE)
+		-DWITH_OPENCOLORIO=$(usex colorio)
+		-DWITH_OPENCOLLADA=$(usex collada)
+		-DWITH_OPENIMAGEIO=$(usex openimageio)
+		-DWITH_OPENMP=$(usex openmp)
+		-DWITH_OPENSUBDIV=$(usex opensubdiv)
+		-DWITH_OPENVDB=$(usex openvdb)
+		-DWITH_OPENVDB_BLOSC=$(usex openvdb-compression)
+		-DWITH_PLAYER=$(usex player)
+		-DWITH_SDL=$(usex sdl)
+		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
+		-DWITH_ASSERT_ABORT=$(usex debug)
+		-DWITH_GTESTS=$(usex test)
+		-DWITH_DOC_MANPAGE=$(usex man)
+		-DWITH_MEM_JEMALLOC=$(usex jemalloc)
+		-DWITH_MEM_VALGRIND=$(usex valgrind)
 	)
-	
-	local CUDA_ARCH=""
-
-	if use cuda; then
-		if use sm_21; then
-			if [[ -n "${CUDA_ARCH}" ]] ; then
-				CUDA_ARCH="${CUDA_ARCH};sm_21"
-			else
-				CUDA_ARCH="sm_21"
-			fi
-		fi
-		if use sm_30; then
-			if [[ -n "${CUDA_ARCH}" ]] ; then
-				CUDA_ARCH="${CUDA_ARCH};sm_30"
-			else
-				CUDA_ARCH="sm_30"
-			fi
-		fi
-		if use sm_35; then
-			if [[ -n "${CUDA_ARCH}" ]] ; then
-				CUDA_ARCH="${CUDA_ARCH};sm_35"
-			else
-				CUDA_ARCH="sm_35"
-			fi
-		fi
-		if use sm_50; then
-			if [[ -n "${CUDA_ARCH}" ]] ; then
-				CUDA_ARCH="${CUDA_ARCH};sm_50"
-			else
-				CUDA_ARCH="sm_50"
-			fi
-		fi
-		if use sm_61; then
-			if [[ -n "${CUDA_ARCH}" ]] ; then
-				CUDA_ARCH="${CUDA_ARCH};sm_61"
-			else
-				CUDA_ARCH="sm_61"
-			fi
-		fi
-
-		#If a kernel isn't selected then all of them are built by default
-		if [ -n "${CUDA_ARCH}" ] ; then
-			mycmakeargs+=(			
-				-DCYCLES_CUDA_BINARIES_ARCH=${CUDA_ARCH}
-			)
-		fi
-		mycmakeargs+=(
-			-DWITH_CYCLES_CUDA=ON
-			-DWITH_CYCLES_CUDA_BINARIES=ON
-			-DCUDA_INCLUDES=/opt/cuda/include
-			-DCUDA_LIBRARIES=/opt/cuda/lib64
-			-DCUDA_NVCC=/opt/cuda/bin/nvcc
-		)
-	fi
-
 	cmake-utils_src_configure
 }
 
@@ -223,6 +215,10 @@ src_compile() {
 	cmake-utils_src_compile
 
 	if use doc; then
+		# Workaround for binary drivers.
+		local cards=( /dev/ati/card* /dev/nvidia* )
+		for card in "${cards[@]}"; do addpredict "${card}"; done
+
 		einfo "Generating Blender C/C++ API docs ..."
 		cd "${CMAKE_USE_DIR}"/doc/doxygen || die
 		doxygen -u Doxyfile || die
@@ -230,7 +226,7 @@ src_compile() {
 
 		cd "${CMAKE_USE_DIR}" || die
 		einfo "Generating (BPY) Blender Python API docs ..."
-		"${BUILD_DIR}"/bin/blender --background --python doc/python_api/sphinx_doc_gen.py -noaudio || die "blender failed."
+		"${BUILD_DIR}"/bin/blender --background --python doc/python_api/sphinx_doc_gen.py -noaudio || die "sphinx failed."
 
 		cd "${CMAKE_USE_DIR}"/doc/python_api || die
 		sphinx-build sphinx-in BPY_API || die "sphinx failed."
@@ -249,28 +245,26 @@ src_test() {
 }
 
 src_install() {
-	local i
-
 	# Pax mark blender for hardened support.
 	pax-mark m "${CMAKE_BUILD_DIR}"/bin/blender
 
 	if use doc; then
-		docinto "API/python"
-		dohtml -r "${CMAKE_USE_DIR}"/doc/python_api/BPY_API/*
+		docinto "html/API/python"
+		dodoc -r "${CMAKE_USE_DIR}"/doc/python_api/BPY_API/*
 
-		docinto "API/blender"
-		dohtml -r "${CMAKE_USE_DIR}"/doc/doxygen/html/*
+		docinto "html/API/blender"
+		dodoc -r "${CMAKE_USE_DIR}"/doc/doxygen/html/*
 	fi
 
-	# fucked up cmake will relink binary for no reason
 	emake -C "${CMAKE_BUILD_DIR}" DESTDIR="${D}" install/fast
 
 	# fix doc installdir
-	dohtml "${CMAKE_USE_DIR}"/release/text/readme.html
+	docinto "html"
+	dodoc "${CMAKE_USE_DIR}"/release/text/readme.html
 	rm -r "${ED%/}"/usr/share/doc/blender || die
 
-	python_fix_shebang "${ED%/}"/usr/bin/blender-thumbnailer.py
-	python_optimize "${ED%/}"/usr/share/blender/${PV}/scripts
+	python_fix_shebang "${ED%/}/usr/bin/blender-thumbnailer.py"
+	python_optimize "${ED%/}/usr/share/blender/${MY_PV}/scripts"
 }
 
 pkg_preinst() {
@@ -301,4 +295,10 @@ pkg_postinst() {
 pkg_postrm() {
 	gnome2_icon_cache_update
 	fdo-mime_desktop_database_update
+
+	ewarn ""
+	ewarn "You may want to remove the following directory."
+	ewarn "~/.config/${PN}/${MY_PV}/cache/"
+	ewarn "It may contain extra render kernels not tracked by portage"
+	ewarn ""
 }
