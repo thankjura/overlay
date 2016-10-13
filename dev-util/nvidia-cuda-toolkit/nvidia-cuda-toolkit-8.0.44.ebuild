@@ -4,150 +4,142 @@
 
 EAPI=6
 
-inherit cuda eutils flag-o-matic portability toolchain-funcs unpacker versionator
+inherit check-reqs cuda toolchain-funcs unpacker versionator
 
 MYD=$(get_version_component_range 1-2)
 
-DESCRIPTION="NVIDIA CUDA Software Development Kit"
+DESCRIPTION="NVIDIA CUDA Toolkit (compiler and friends)"
 HOMEPAGE="https://developer.nvidia.com/cuda-zone"
 SRC_URI="https://developer.nvidia.com/compute/cuda/${MYD}/prod/local_installers/cuda_${PV}_linux-run -> cuda_${PV}_linux.run"
+SLOT="0/${PV}"
+LICENSE="NVIDIA-CUDA"
+KEYWORDS="-* ~amd64 ~amd64-linux"
+IUSE="debugger doc eclipse profiler"
 
-LICENSE="CUDPP"
-SLOT="0"
-KEYWORDS="~amd64 ~amd64-linux"
-IUSE="+cuda debug +doc +examples opencl"
+DEPEND=""
+RDEPEND="${DEPEND}
+	>=sys-devel/gcc-4.7[cxx]
+	>=x11-drivers/nvidia-drivers-367.44[uvm]
+	debugger? (
+		sys-libs/libtermcap-compat
+		sys-libs/ncurses[tinfo]
+		)
+	eclipse? ( >=virtual/jre-1.6 )
+	profiler? ( >=virtual/jre-1.6 )"
 
-RDEPEND="
-	~dev-util/nvidia-cuda-toolkit-${PV}
-	media-libs/freeglut
-	examples? (
-		media-libs/freeimage
-		media-libs/glew:=
-		virtual/mpi
-		>=x11-drivers/nvidia-drivers-367.44[uvm]
-		)"
-DEPEND="${RDEPEND}"
+S="${WORKDIR}"
 
-RESTRICT="test"
+QA_PREBUILT="opt/cuda/*"
 
-S=${WORKDIR}/samples
-
-QA_EXECSTACK=(
-	opt/cuda/sdk/0_Simple/cdpSimplePrint/cdpSimplePrint
-	opt/cuda/sdk/0_Simple/cdpSimpleQuicksort/cdpSimpleQuicksort
-	opt/cuda/sdk/bin/x86_64/linux/release/cdpSimplePrint
-	opt/cuda/sdk/bin/x86_64/linux/release/cdpSimpleQuicksort
-	)
-
-src_unpack() {
-	# We first need to unpack the cuda_${PV}_linux.run file
-	# which includes the cuda-samples*run file.
-	unpacker
-	unpacker run_files/cuda-samples*run
-}
+CHECKREQS_DISK_BUILD="3500M"
 
 pkg_setup() {
-	if use cuda || use opencl; then
-		cuda_pkg_setup
-	fi
+	# We don't like to run cuda_pkg_setup as it depends on us
+	check-reqs_pkg_setup
+}
+
+src_unpack() {
+	unpacker
+	unpacker run_files/cuda-linux*.run
 }
 
 src_prepare() {
-	export RAWLDFLAGS="$(raw-ldflags)"
-#	epatch "${FILESDIR}"/${P}-asneeded.patch
+	local cuda_supported_gcc
+
+	cuda_supported_gcc="4.7 4.8 4.9 5.3"
 
 	sed \
-		-e 's:-O2::g' \
-		-e 's:-O3::g' \
-		-e "/LINK/s:gcc:$(tc-getCC) ${LDFLAGS}:g" \
-		-e "/LINK/s:g++:$(tc-getCXX) ${LDFLAGS}:g" \
-		-e "/CC/s:gcc:$(tc-getCC):g" \
-		-e "/GCC/s:g++:$(tc-getCXX):g" \
-		-e "/NVCC /s|\(:=\).*|:= ${EPREFIX}/opt/cuda/bin/nvcc|g" \
-		-e "/ CFLAGS/s|\(:=\)|\1 ${CFLAGS}|g" \
-		-e "/ CXXFLAGS/s|\(:=\)|\1 ${CXXFLAGS}|g" \
-		-e "/NVCCFLAGS/s|\(:=\)|\1 ${NVCCFLAGS} |g" \
-		-e 's:-Wimplicit::g' \
-		-e "s|../../common/lib/linux/\$(OS_ARCH)/libGLEW.a|$($(tc-getPKG_CONFIG) --libs glew)|g" \
-		-e "s|../../common/lib/\$(OSLOWER)/libGLEW.a|$($(tc-getPKG_CONFIG) --libs glew)|g" \
-		-e "s|../../common/lib/\$(OSLOWER)/\$(OS_ARCH)/libGLEW.a|$($(tc-getPKG_CONFIG) --libs glew)|g" \
-		-i $(find . -type f -name "Makefile") || die
+		-e "s:CUDA_SUPPORTED_GCC:${cuda_supported_gcc}:g" \
+		"${FILESDIR}"/cuda-config.in > "${T}"/cuda-config || die
 
-#		-e "/ALL_LDFLAGS/s|:=|:= ${RAWLDFLAGS} |g" \
-	find common/inc/GL -delete || die
-	find . -type f -name "*.a" -delete || die
-
-	eapply_user
-}
-
-src_compile() {
-	use examples || return
-	local myopts verbose="verbose=1"
-	use debug && myopts+=" dbg=1"
-	export FAKEROOTKEY=1 # Workaround sandbox issue in #462602
-	emake \
-		cuda-install="${EPREFIX}/opt/cuda" \
-		CUDA_PATH="${EPREFIX}/opt/cuda/" \
-		MPI_GCC=10 \
-		${myopts} ${verbose}
-}
-
-src_test() {
-	local _dir _subdir
-
-	addwrite /dev/nvidiactl
-	addwrite /dev/nvidia0
-
-	for _dir in {0..9}*; do
-		pushd ${_dir} > /dev/null
-		for _subdir in *; do
-			emake -C ${_subdir} run
-		done
-		popd > /dev/null
-	done
+	default
 }
 
 src_install() {
-	local i j f t crap=""
+	local i j
+	local remove="doc jre run_files install-linux.pl "
+	local cudadir=/opt/cuda
+	local ecudadir="${EPREFIX}"${cudadir}
 
 	if use doc; then
-		ebegin "Installing docs ..."
-			find -type f -name readme.txt -o -name "*.pdf" | while read docfile
-			do
-				treecopy ${docfile} "${ED%/}"/usr/share/doc/${PF}/
-			done
-			find "${ED%/}"/usr/share/doc/${PF}/ -type f -name readme.txt | sed -e "s:${ED}::" |while read docfile
-			do
-				docompress -x ${docfile}
-			done
-		eend
+		DOCS+=( doc/pdf/. )
+		HTML_DOCS+=( doc/html/. )
+	fi
+	einstalldocs
+
+	mv doc/man/man3/{,cuda-}deprecated.3 || die
+	doman doc/man/man*/*
+
+	use debugger || remove+=" bin/cuda-gdb extras/Debugger extras/cuda-gdb-${PV}.src.tar.gz"
+	if ! use profiler && ! use eclipse; then
+		remove+=" libnsight"
 	fi
 
-	crap+=" *.txt Samples.htm*"
+	remove+=" cuda-installer.pl"
 
-	ebegin "Cleaning before installation..."
-		for i in ${crap}; do
-			if [[ -e ${i} ]]; then
-				rm ${i}  || die
-			fi
+	if use profiler; then
+		# hack found in install-linux.pl
+		for j in nvvp nsight; do
+			cat > bin/${j} <<- EOF || die
+				#!${EPREFIX}/bin/sh
+				LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:${ecudadir}/lib:${ecudadir}/lib64 \
+					UBUNTU_MENUPROXY=0 LIBOVERLAY_SCROLLBAR=0 \
+					${ecudadir}/lib${j}/${j} -vm ${EPREFIX}/usr/bin/java
+			EOF
+			chmod a+x bin/${j} || die
 		done
-		find -type f \( -name "*.o" -o -name "*.pdf" -o -name "readme.txt" \) -delete || die
-	eend
+	else
+		use eclipse || remove+=" libnvvp"
+		remove+=" extras/CUPTI"
+	fi
 
-	ebegin "Moving files..."
-		find -type f . | while read f
-		do
-			local t="$(dirname ${f})"
-			if [[ ${t/obj\/} != ${t} || ${t##*.} == a ]]; then
-				continue
-			fi
-			if [[ -x ${f} ]]; then
-				exeinto /opt/cuda/sdk/${t}
-				doexe ${f}
-			else
-				insinto /opt/cuda/sdk/${t}
-				doins ${f}
-			fi
-		done
-	eend
+	for i in ${remove}; do
+		ebegin "Cleaning ${i}..."
+		if [[ -e ${i} ]]; then
+			find ${i} -delete || die
+			eend
+		else
+			eend $1
+		fi
+	done
+
+	dodir ${cudadir}
+	mv * "${ED}"${cudadir} || die
+
+	cat > "${T}"/99cuda <<- EOF || die
+		PATH=${ecudadir}/bin$(use profiler && echo ":${ecudadir}/libnvvp")
+		ROOTPATH=${ecudadir}/bin
+		LDPATH=${ecudadir}/lib64:${ecudadir}/lib:${ecudadir}/nvvm/lib64
+	EOF
+	doenvd "${T}"/99cuda
+
+	use profiler && \
+		make_wrapper nvprof "${EPREFIX}"${cudadir}/bin/nvprof "." ${ecudadir}/lib64:${ecudadir}/lib
+
+	dobin "${T}"/cuda-config
+}
+
+pkg_postinst_check() {
+	local a b
+	a="$(version_sort $(cuda-config -s))"; a=( $a )
+	# greatest supported version
+	b=${a[${#a[@]}-1]}
+
+	# if gcc and if not gcc-version is at least greatesst supported
+	if tc-is-gcc && \
+		! version_is_at_least gcc-version ${b}; then
+			ewarn ""
+			ewarn "gcc >= ${b} will not work with CUDA"
+			ewarn "Make sure you set an earlier version of gcc with gcc-config"
+			ewarn "or append --compiler-bindir= pointing to a gcc bindir like"
+			ewarn "--compiler-bindir=${EPREFIX}/usr/*pc-linux-gnu/gcc-bin/gcc${b}"
+			ewarn "to the nvcc compiler flags"
+			ewarn ""
+	fi
+}
+
+pkg_postinst() {
+	if [[ ${MERGE_TYPE} != binary ]]; then
+		pkg_postinst_check
+	fi
 }
