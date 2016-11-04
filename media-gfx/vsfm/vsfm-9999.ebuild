@@ -26,7 +26,7 @@ RDEPEND="${DEPEND}"
 PDEPEND="
 	media-libs/graclus
 	media-libs/pba
-	media-gfx/pmvs
+	media-gfx/cmvs
 	media-gfx/siftgpu
 	media-gfx/PoissonRecon"
 
