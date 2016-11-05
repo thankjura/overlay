@@ -41,5 +41,6 @@ src_compile() {
 }
 
 src_install() {
-	dobin "${WORKDIR}"/cmvs/program/main/pmvs2 "${WORKDIR}"/cmvs/program/main/cmvs "${WORKDIR}"/cmvs/program/main/genOption
+	exeinto /opt/vsfm
+	doexe "${WORKDIR}"/cmvs/program/main/pmvs2 "${WORKDIR}"/cmvs/program/main/cmvs "${WORKDIR}"/cmvs/program/main/genOption
 }

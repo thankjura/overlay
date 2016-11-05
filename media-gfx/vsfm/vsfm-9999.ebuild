@@ -33,9 +33,11 @@ PDEPEND="
 S="${WORKDIR}/vsfm"
 
 src_install() {
-	dobin "${S}"/bin/VisualSFM
-	mkdir -p "${D}"/usr/bin/log
-	chmod 777 "${D}"/usr/bin/log
+	mkdir -p ${D}/opt/vsfm/log
+	chmod 777 ${D}/opt/vsfm/log
+	exeinto /opt/vsfm/
+	doexe "${S}"/bin/VisualSFM
+	dobin "${FILESDIR}"/VisualSFM
 	newicon "${FILESDIR}"/"${PN}".png "${PN}".png
 	make_desktop_entry VisualSFM Graphics
 }
