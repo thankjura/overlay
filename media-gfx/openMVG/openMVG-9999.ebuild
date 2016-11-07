@@ -14,7 +14,7 @@ LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~amd64"
 
-IUSE="openmp opencv -shared-libs -doc"
+IUSE="openmp opencv -shared-libs +neato -doc"
 
 RDEPEND=">=sci-libs/ceres-solver-1.11
 	media-libs/libpng:0/16
@@ -24,6 +24,7 @@ RDEPEND=">=sci-libs/ceres-solver-1.11
 	sci-libs/lemon[coin]
 	media-libs/tiff
 	sys-libs/zlib
+	neato? ( media-gfx/graphviz )
 	"
 
 DEPEND="${RDEPEND}"

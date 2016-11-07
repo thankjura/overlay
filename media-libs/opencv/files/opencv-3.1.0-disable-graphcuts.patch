@@ -1,0 +1,12 @@
+--- a/modules/cudalegacy/src/graphcuts.cpp	2015-12-18 16:02:16.000000000 +0100
++++ b/modules/cudalegacy/src/graphcuts.cpp	2016-11-01 12:43:24.135333968 +0100
+@@ -42,7 +42,8 @@
+ 
+ #include "precomp.hpp"
+ 
+-#if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
++// GraphCut has been removed in NPP 8.0
++#if !defined (HAVE_CUDA) || defined (CUDA_DISABLER) || (CUDART_VERSION >= 8000)
+ 
+ void cv::cuda::graphcut(GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, Stream&) { throw_no_cuda(); }
+ void cv::cuda::graphcut(GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, GpuMat&, Stream&) { throw_no_cuda(); }
