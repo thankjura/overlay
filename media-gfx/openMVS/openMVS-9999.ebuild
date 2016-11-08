@@ -35,7 +35,7 @@ src_configure() {
 	mycmakeargs="${mycmakeargs}
 		-DCMAKE_BUILD_TYPE=RELEASE
 		-DVCG_DIR=${WORKDIR}/vcglib
-
+		-DOpenMVS_USE_CUDA=OFF
 		"
 	cmake-utils_src_configure
 }
