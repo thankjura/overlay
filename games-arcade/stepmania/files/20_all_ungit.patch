@@ -1,12 +1,12 @@
-diff -ru stepmania-5.1.0a.old/CMake/SMDefs.cmake stepmania-5.1.0a/CMake/SMDefs.cmake
---- stepmania-5.1.0a.old/CMake/SMDefs.cmake	2015-10-31 01:43:03.000000000 +0300
-+++ stepmania-5.1.0a/CMake/SMDefs.cmake	2016-03-05 18:40:26.397734194 +0300
-@@ -4,7 +4,7 @@
- set(SM_VERSION_PATCH 0)
- set(SM_VERSION_TRADITIONAL "${SM_VERSION_MAJOR}.${SM_VERSION_MINOR}.${SM_VERSION_PATCH}")
- 
--execute_process(COMMAND git rev-parse --short HEAD
-+execute_process(COMMAND echo e7539c8
-   WORKING_DIRECTORY "${SM_ROOT_DIR}"
-   OUTPUT_VARIABLE SM_VERSION_GIT_HASH
-   RESULT_VARIABLE ret
+diff -ru stepmania-5.1.0a3.old/CMake/SMDefs.cmake stepmania-5.1.0a3/CMake/SMDefs.cmake
+--- stepmania-5.1.0a3.old/CMake/SMDefs.cmake	2016-09-05 03:57:59.000000000 +0300
++++ stepmania-5.1.0a3/CMake/SMDefs.cmake	2016-11-19 17:10:26.985822581 +0300
+@@ -15,7 +15,7 @@
+   set(SM_VERSION_FULL "${SM_VERSION_MAJOR}.${SM_VERSION_MINOR}-${SM_VERSION_GIT_HASH}")
+   set(SM_VERSION_GIT "${SM_VERSION_MAJOR}.${SM_VERSION_MINOR}-${SM_VERSION_GIT_HASH}")
+ else()
+-  execute_process(COMMAND git rev-parse --short HEAD
++  execute_process(COMMAND echo 361573f
+     WORKING_DIRECTORY "${SM_ROOT_DIR}"
+     OUTPUT_VARIABLE SM_VERSION_GIT_HASH
+     RESULT_VARIABLE ret

@@ -8,15 +8,15 @@ inherit games cmake-utils eutils
 
 TOMMATH_VER="1.0"
 TOMCRYPT_VER="1.16"
-CPPFORMAT_VER="2.0.0"
+FMT_VER="2.0.1"
 GTEST_VER="ff07a5de0e81580547f1685e101194ed1a4fcd56"
 
 DESCRIPTION="Stepmania 5 sm-ssc branch"
 HOMEPAGE="https://github.com/stepmania/stepmania"
-SRC_URI="https://github.com/stepmania/stepmania/archive/v${PV}2.tar.gz
-		 https://github.com/libtom/libtomcrypt/archive/${TOMCRYPT_VER}.tar.gz -> libtomcrypt-${TOMCRYPT_VER}.tar.gz 
-		 https://github.com/libtom/libtommath/archive/v${TOMMATH_VER}.tar.gz -> libtommath-${TOMMATH_VER}.tar.gz
-		 https://github.com/cppformat/cppformat/archive/${CPPFORMAT_VER}.tar.gz -> cppformat-${CPPFORMAT_VER}.tar.gz
+SRC_URI="https://github.com/stepmania/stepmania/archive/v${PV}3.tar.gz
+		 https://github.com/stepmania/libtomcrypt/archive/${TOMCRYPT_VER}.tar.gz -> libtomcrypt-${TOMCRYPT_VER}.tar.gz 
+		 https://github.com/stepmania/libtommath/archive/v${TOMMATH_VER}.tar.gz -> libtommath-${TOMMATH_VER}.tar.gz
+		 https://github.com/stepmania/fmt/archive/${FMT_VER}.tar.gz -> fmt-${FMT_VER}.tar.gz
 		 https://github.com/google/googletest/archive/${GTEST_VER}.zip -> googletest-${GTEST_VER}.zip"
 
 # EGIT_REPO_URI="git://github.com/stepmania/stepmania.git"
@@ -26,7 +26,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="debug X gtk +jpeg +mad +vorbis +network +ffmpeg sse2"
 
-S="${WORKDIR}/stepmania-5.1.0a2"
+S="${WORKDIR}/stepmania-5.1.0a3"
 
 DEPEND="gtk? ( x11-libs/gtk+:2 )
 	media-libs/alsa-lib
@@ -71,7 +71,7 @@ src_prepare() {
 	#rmdir ${S}/extern/googletest
 	mv ${WORKDIR}/libtomcrypt-${TOMCRYPT_VER} ${S}/extern/tomcrypt
 	mv ${WORKDIR}/libtommath-${TOMMATH_VER} ${S}/extern/tommath
-	mv ${WORKDIR}/cppformat-${CPPFORMAT_VER} ${S}/extern/cppformat
+	mv ${WORKDIR}/fmt-${FMT_VER} ${S}/extern/cppformat
 	mv ${WORKDIR}/googletest-${GTEST_VER} ${S}/extern/googletest
 }
 
