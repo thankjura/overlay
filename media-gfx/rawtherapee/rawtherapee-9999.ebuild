@@ -9,7 +9,7 @@ inherit cmake-utils toolchain-funcs git-r3 flag-o-matic
 DESCRIPTION="A powerful cross-platform raw image processing program"
 HOMEPAGE="http://www.rawtherapee.com/"
 EGIT_REPO_URI="https://github.com/Beep6581/RawTherapee.git"
-EGIT_BRANCH="gtk3"
+EGIT_BRANCH="gtk3-bugfix"
 
 LICENSE="GPL-3"
 SLOT="0"
