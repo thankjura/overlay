@@ -24,7 +24,7 @@ SRC_URI="https://github.com/stepmania/stepmania/archive/v${PV}3.tar.gz
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="debug X gtk +jpeg +mad +vorbis +network +ffmpeg sse2"
+IUSE="debug X gtk +jpeg +mad +vorbis +network sse2"
 
 S="${WORKDIR}/stepmania-5.1.0a3"
 
@@ -34,7 +34,7 @@ DEPEND="gtk? ( x11-libs/gtk+:2 )
 	vorbis? ( media-libs/libvorbis )
 	media-libs/libpng
 	jpeg? ( virtual/jpeg )
-	ffmpeg? ( >=virtual/ffmpeg-0.5 )
+	>=virtual/ffmpeg-0.5
 	virtual/glu
 	x11-libs/libXrandr
 	media-libs/glew
@@ -78,8 +78,8 @@ src_prepare() {
 src_configure() {
 	mycmakeargs="
 	-DCMAKE_INSTALL_PREFIX=${GAMES_PREFIX_OPT}
-	-DWITH_SYSTEM_FFMPEG:BOOL='1'
 	-DWITH_SYSTEM_PCRE:BOOL='1'
+	-DWITH_SYSTEM_FFMPEG:BOOL='1'
 	-DWITH_UNIT_TESTS=OFF
 	"
 	cmake-utils_src_configure
