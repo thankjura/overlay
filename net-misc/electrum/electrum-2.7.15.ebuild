@@ -36,6 +36,7 @@ RDEPEND="
 	dev-python/jsonrpclib[${PYTHON_USEDEP}]
 	dev-python/setuptools[${PYTHON_USEDEP}]
 	dev-python/PyQt4[X,${PYTHON_USEDEP}]
+	qrcode? ( media-gfx/zbar[python,v4l,${PYTHON_USEDEP}] )
 "
 
 S="${WORKDIR}/${MY_P}"
