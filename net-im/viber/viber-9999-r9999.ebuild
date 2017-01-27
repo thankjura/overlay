@@ -16,7 +16,6 @@ S="${WORKDIR}"
 src_unpack() {
 	default_src_unpack
 	unpack ./data.tar.xz
-	epatch "${FILESDIR}/viber-9999-desktop.patch"
 }
 
 src_install(){
