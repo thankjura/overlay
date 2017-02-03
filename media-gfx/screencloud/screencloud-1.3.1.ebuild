@@ -23,6 +23,7 @@ DEPEND="
 	dev-qt/qtmultimedia:5
 	dev-libs/quazip
 	dev-python/PythonQt
+	dev-qt/qtconcurrent:5
 "
 
 src_prepare() {
