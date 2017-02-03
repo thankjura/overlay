@@ -4,11 +4,12 @@
 
 EAPI=6
 
-inherit eutils
+inherit eutils rpm
 
 DESCRIPTION="JOXI another screenshot program for linux"
 HOMEPAGE="http://joxi.ru"
-SRC_URI="http://joxi.ru/48AnNXSj7oLyAO?d=1 -> joxi-amd64.deb"
+SRC_URI="http://joxi.ru/K8238OSJ9l75AO?d=1 -> joxi-amd64.deb"
+#SRC_URI="http://joxi.ru/JMAje0S4x7Ge2e?d=1 -> joxi-amd64.rpm"
 #SRC_URI="http://dl.joxi.ru/linux/joxi-amd64.deb"
 
 LICENSE="JOXI"
@@ -36,6 +37,7 @@ S="${WORKDIR}"
 
 src_unpack() {
     unpack ${A}
+#    rpm_src_unpack ${A}
     unpack ./data.tar.xz
 }
 
