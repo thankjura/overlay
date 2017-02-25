@@ -20,7 +20,8 @@ IUSE="doc cpu_flags_x86_sse cpu_flags_x86_sse2 test"
 RDEPEND=">=dev-libs/glib-2.28
 	media-libs/libpng:0=
 	sys-libs/zlib:="
-DEPEND="${RDEPEND}
+DEPEND="${PYTHON_DEPS}
+	${RDEPEND}
 	doc? (
 		app-doc/doxygen
 		dev-python/docutils
