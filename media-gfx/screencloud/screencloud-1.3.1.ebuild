@@ -4,7 +4,7 @@
 
 EAPI=6
 CMAKE_MIN_VERSION="3.0"
-PYTHON_COMPAT=( python{2_6,2_7,3_3,3_4,3_5} )
+PYTHON_COMPAT=( python{2_6,2_7,3_3,3_4,3_5,3_6} )
 
 inherit cmake-utils gnome2-utils eutils python-r1
 
