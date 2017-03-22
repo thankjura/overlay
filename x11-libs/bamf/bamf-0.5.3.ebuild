@@ -5,7 +5,7 @@
 EAPI=5
 
 PYTHON_COMPAT=( python{2_6,2_7} )
-VALA_MIN_API_VERSION=0.20
+VALA_MIN_API_VERSION=0.26
 VALA_USE_DEPEND=vapigen
 
 inherit vala autotools-utils python-r1
@@ -28,7 +28,7 @@ RDEPEND="
 	x11-libs/libX11
 	>=x11-libs/libwnck-3.4.7:3"
 DEPEND="${RDEPEND}
-	$(vala_depend)
+	${vala_depend}
 	${PYTHON_DEPS}
 	dev-libs/libxml2[python]
 	dev-libs/libxslt[python]

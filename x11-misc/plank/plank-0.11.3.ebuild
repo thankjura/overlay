@@ -2,12 +2,12 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=5
+EAPI=6
 
 VALA_MIN_API_VERSION=0.26
 VALA_USE_DEPEND=vapigen
 
-inherit vala autotools-utils
+inherit vala autotools gnome2 virtualx
 
 DESCRIPTION="Dock panel famious docky"
 HOMEPAGE="https://launchpad.net/plank"
@@ -36,4 +36,11 @@ DOCS=( AUTHORS COPYRIGHT )
 src_prepare() {
 	NOCONFIGURE=1 REQUIRED_PKG_CONFIG_VERSION=0.1 ./autogen.sh
 	vala_src_prepare
+	default
+}
+
+src_test() {
+	# FIXME: this should be handled at eclass level
+    "${EROOT}${GLIB_COMPILE_SCHEMAS}" --allow-any-name "${S}/data" || die
+    GSETTINGS_SCHEMA_DIR="${S}/data" virtx emake check
 }
