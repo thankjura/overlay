@@ -22,8 +22,9 @@ DEPEND="
 	dev-qt/qtx11extras:5
 	dev-qt/qtmultimedia:5
 	dev-libs/quazip
-	dev-python/PythonQt
+	dev-python/PythonQt[${PYTHON_USEDEP}]
 	dev-qt/qtconcurrent:5
+	dev-python/pycrypto[${PYTHON_USEDEP}]
 "
 
 src_prepare() {
