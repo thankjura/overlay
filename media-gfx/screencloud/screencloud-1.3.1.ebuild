@@ -36,3 +36,20 @@ src_prepare() {
 	    PYTHON_LIBS="$(python_get_LIBS)"
 	cmake-utils_src_prepare
 }
+
+src_configure() {
+	local mycmakeargs=(
+		-DCONSUMER_KEY_SCREENCLOUD=${CONSUMER_KEY_SCREENCLOUD}
+		-DCONSUMER_SECRET_SCREENCLOUD=${CONSUMER_SECRET_SCREENCLOUD}
+	)
+	cmake-utils_src_configure
+}
+
+pkg_postinst() {
+	ewarn
+	ewarn "If you have login to screencloud.net"
+	ewarn "visit https://screencloud.net/oauth/register"
+	ewarn "and set enviroment: "
+	ewarn "CONSUMER_KEY_SCREENCLOUD and CONSUMER_SECRET_SCREENCLOUD"
+	ewarn
+}
