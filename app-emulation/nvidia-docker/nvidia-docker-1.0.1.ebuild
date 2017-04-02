@@ -16,3 +16,11 @@ DEPEND="
 	app-emulation/docker
 "
 RDEPEND="${DEPEND}"
+
+src_compile() {
+	emake prefix="/usr"
+}
+
+src_install() {
+	emake prefix="${D}/usr" install
+}
