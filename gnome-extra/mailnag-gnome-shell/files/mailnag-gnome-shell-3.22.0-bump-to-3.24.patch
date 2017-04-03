@@ -1,0 +1,10 @@
+diff -ru mailnag-gnome-shell-3.22.0.old/metadata.json mailnag-gnome-shell-3.22.0/metadata.json
+--- mailnag-gnome-shell-3.22.0.old/metadata.json	2016-10-06 20:31:10.000000000 +0300
++++ mailnag-gnome-shell-3.22.0/metadata.json	2017-04-03 16:10:47.669124486 +0300
+@@ -1,5 +1,5 @@
+ {
+-	"shell-version": ["3.16", "3.18", "3.20", "3.22"],
++	"shell-version": ["3.16", "3.18", "3.20", "3.22", "3.24"],
+ 	"uuid": "mailnag@pulb.github.com",
+ 	"settings-schema": "org.gnome.shell.extensions.mailnag",
+ 	"gettext-domain": "mailnag-gnome-shell",

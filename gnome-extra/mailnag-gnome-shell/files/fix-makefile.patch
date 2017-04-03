@@ -1,0 +1,12 @@
+diff -ru mailnag-gnome-shell-3.22.0.old/Makefile mailnag-gnome-shell-3.22.0/Makefile
+--- mailnag-gnome-shell-3.22.0.old/Makefile	2016-10-06 20:31:10.000000000 +0300
++++ mailnag-gnome-shell-3.22.0/Makefile	2017-04-03 16:06:17.654124518 +0300
+@@ -8,7 +8,7 @@
+ SCHEMASDIR = share/glib-2.0/schemas
+ PROGRAMS = aggregate-avatars
+ 
+-prefix = /usr
++prefix = ?/usr
+ 
+ $(PROGRAMS): $(FILES)
+ 	$(CC) --pkg $(LIBS) $(FILES)
