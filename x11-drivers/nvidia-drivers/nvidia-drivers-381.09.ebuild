@@ -32,7 +32,7 @@ KEYWORDS="-* ~amd64 ~x86 ~amd64-fbsd ~x86-fbsd"
 RESTRICT="bindist mirror"
 EMULTILIB_PKG="true"
 
-IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib pax_kernel static-libs +tools uvm wayland +X"
+IUSE="acpi compat +driver gtk3 kernel_FreeBSD kernel_linux +kms multilib pax_kernel static-libs +tools uvm wayland +X vulkan"
 REQUIRED_USE="
 	tools? ( X )
 	static-libs? ( tools )
@@ -41,6 +41,7 @@ REQUIRED_USE="
 COMMON="
 	app-eselect/eselect-opencl
 	kernel_linux? ( >=sys-libs/glibc-2.6.1 )
+	vulkan? ( >=media-libs/vulkan-loader-1.0.42 )
 	tools? (
 		dev-libs/atk
 		dev-libs/glib:2
