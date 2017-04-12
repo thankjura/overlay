@@ -13,22 +13,14 @@ EGIT_BRANCH="dev"
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="~amd64"
-IUSE="bzip2 gtk2 openmp"
+KEYWORDS="~amd64 ~x86"
+IUSE="bzip2 openmp"
 
 RDEPEND="bzip2? ( app-arch/bzip2 )
-	gtk2? (
-		>=x11-libs/gtk+-2.24.18:2
-		>=dev-cpp/gtkmm-2.12:2.4
-		>=dev-cpp/glibmm-2.16:2
-		media-libs/libcanberra[gtk]
-	)
-	!gtk2? (
-		>=x11-libs/gtk+-3.16:3
-		>=dev-cpp/gtkmm-3.16:3.0
-		>=dev-cpp/glibmm-2.44:2
-		media-libs/libcanberra[gtk3]
-	)
+	x11-libs/gtk+:3
+	dev-libs/expat
+	dev-libs/libsigc++:2
+	media-libs/libcanberra[gtk3]
 	media-libs/tiff:0
 	media-libs/libpng:0
 	media-libs/libiptcdata
@@ -38,37 +30,33 @@ RDEPEND="bzip2? ( app-arch/bzip2 )
 	virtual/jpeg:0"
 DEPEND="${RDEPEND}
 	app-arch/xz-utils
-	virtual/pkgconfig"
-
-pkg_setup() {
-	if use gtk2 ; then
-		EGIT_BRANCH="master"
-	fi
-}
+	virtual/pkgconfig
+	dev-cpp/gtkmm:3.0"
 
 pkg_pretend() {
 	if use openmp ; then
 		tc-has-openmp || die "Please switch to an openmp compatible compiler"
 	fi
-	# build requires -std=c++11
-	if [[ ${MERGE_TYPE} != binary ]]; then
-		if ! test-flag-CXX -std=c++11; then
-			eerror "${P} requires C++11-capable C++ compiler. Your current compiler"
-			eerror "does not seem to support -std=c++11 option. Please upgrade your compiler"
-			eerror "to gcc-4.7 or an equivalent version supporting C++11."
-			die "Currently active compiler does not support -std=c++11"
-		fi
+	# https://bugs.gentoo.org/show_bug.cgi?id=606896#c2
+	# https://github.com/vivo75/vivovl/issues/2
+	if [[ $(get-flag -O3) != "-O3" ]] ; then
+		ewarn "upstream suggest using {C,CXX}FLAGS+=\"-O3\" for better performances"
+		ewarn "see bug#606896#c2"
+		ewarn "take a look at https://wiki.gentoo.org/wiki//etc/portage/package.env"
+		ewarn "for suggestion on how to change environment for a single package"
 	fi
 }
 
 src_configure() {
+	filter-flags -ffast-math
 	local mycmakeargs=(
-		$(cmake-utils_use openmp OPTION_OMP)
-		$(cmake-utils_use_with bzip2 BZIP)
+		-DOPTION_OMP=$(usex openmp)
+		-DBZIP=$(usex bzip2)
 		-DDOCDIR=/usr/share/doc/${PF}
 		-DCREDITSDIR=/usr/share/${PN}
 		-DLICENCEDIR=/usr/share/${PN}
 		-DCACHE_NAME_SUFFIX=""
+		-DCMAKE_CXX_FLAGS="-std=c++11"
 	)
 	cmake-utils_src_configure
 }
