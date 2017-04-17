@@ -1,12 +1,11 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 EAPI=6
 GNOME2_LA_PUNT="yes"
-PYTHON_COMPAT=( python{2_7,3_4,3_5,3_6} )
+PYTHON_COMPAT=( python{3_4,3_5} )
 
-inherit autotools eutils gnome2 multilib python-r1 virtualx
+inherit autotools eutils gnome2 multilib python-single-r1 virtualx
 
 DESCRIPTION="A GObject plugins library"
 HOMEPAGE="https://developer.gnome.org/libpeas/stable/"
@@ -16,7 +15,7 @@ SLOT="0"
 KEYWORDS="~alpha ~amd64 ~arm ~ia64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-fbsd ~amd64-linux ~x86-linux"
 
 IUSE="+gtk glade jit lua +python"
-REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} ?? ( $(python_gen_useflags 'python3*') ) )"
+REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
 RDEPEND="
 	>=dev-libs/glib-2.38:2
@@ -41,6 +40,10 @@ DEPEND="${RDEPEND}
 "
 # eautoreconf needs gobject-introspection-common, gnome-common
 
+pkg_setup() {
+	use python && python-single-r1_pkg_setup
+}
+
 src_prepare() {
 	# Gentoo uses unversioned lua - lua.pc instad of lua5.1.pc, /usr/bin/lua instead of /usr/bin/lua5.1
 	eapply "${FILESDIR}"/${PN}-1.14.0-lua.pc.patch
@@ -56,31 +59,14 @@ src_configure() {
 		$(use_enable gtk)
 		--disable-static
 
-		# possibly overriden below
-		--disable-python{2,3}
-		--disable-lua5.1
-		--disable-luajit
+		# py2 not supported anymore
+		--disable-python2
+		$(use_enable python python3)
+
+		# lua
+		$(use_enable lua lua5.1)
+		$(use_enable $(usex jit lua jit) luajit)
 	)
-
-	if use lua ; then
-		if use jit ; then
-			myconf+=( --enable-lua5.1 --enable-luajit )
-		else
-			myconf+=( --enable-lua5.1 )
-		fi
-	fi
-
-	python_configure() {
-		local v
-		python_is_python3 && v=3 || v=2
-		myconf+=(
-			"--enable-python${v}"
-			# it is just 'PYTHON' for py3 in the build system
-			"PYTHON${v#3}=${PYTHON}"
-			"PYTHON${v}_CONFIG=$(python_get_PYTHON_CONFIG)"
-		)
-	}
-	use python && python_foreach_impl python_configure
 
 	gnome2_src_configure "${myconf[@]}"
 }
