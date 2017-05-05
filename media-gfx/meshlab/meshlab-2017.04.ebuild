@@ -4,12 +4,15 @@
 
 EAPI=5
 
-inherit eutils versionator multilib
+inherit eutils multilib
+
+MESHLAB_COMMIT="410316f8db7bf0f5a626ed0b227aafe0e2482ab3"
+VCG_COMMIT="aada1502e45cdcf63282ae9e4bebc8b00cd1a02e"
 
 DESCRIPTION="A mesh processing system"
 HOMEPAGE="http://meshlab.sourceforge.net/"
-MY_PV="$(delete_all_version_separators ${PV})"
-SRC_URI="mirror://sourceforge/project/${PN}/${PN}/MeshLab%20v${PV}/MeshLabSrc_AllInc_v${MY_PV}.tgz"
+SRC_URI="https://github.com/cnr-isti-vclab/meshlab/archive/${MESHLAB_COMMIT}.zip -> meshlab-${MESHLAB_COMMIT}.zip
+		https://github.com/cnr-isti-vclab/vcglib/archive/${VCG_COMMIT}.zip -> vcglib-${VCG_COMMIT}.zip"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -17,9 +20,9 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 DEPEND="dev-cpp/eigen:3
 	dev-cpp/muParser
-	dev-qt/qtcore:4
-	dev-qt/qtopengl:4
-	dev-qt/qtxmlpatterns:4
+	dev-qt/qtcore:5
+	dev-qt/qtopengl:5
+	dev-qt/qtxmlpatterns:5
 	media-libs/glew
 	media-libs/qhull
 	=media-libs/lib3ds-1*
@@ -29,20 +32,32 @@ DEPEND="dev-cpp/eigen:3
 	sci-libs/mpir"
 RDEPEND="${DEPEND}"
 
-S="${WORKDIR}/meshlab/src"
+src_unpack() {
+	default
+	mv vcglib-${VCG_COMMIT} vcglib || die
+	mv meshlab-${MESHLAB_COMMIT} meshlab || die
+}
 
 src_prepare() {
 	cd "${WORKDIR}"
 	epatch ${FILESDIR}/*.patch
+	QT_SELECT=qt5
 }
 
+S="${WORKDIR}/${PN}/src"
+
 src_configure() {
-	qmake -recursive external/external.pro
-	qmake -recursive meshlab_full.pro
+	cd external
+	qmake -qt=5 external.pro -r
+	cd ../common
+	qmake -qt=5 common.pro -r
+	cd ../
+	qmake -qt=5 meshlab_full.pro -r
 }
 
 src_compile() {
 	cd external && emake
+	cd ../common && emake
 	cd .. && emake
 }
 
