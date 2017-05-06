@@ -2,9 +2,9 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: $
 
-EAPI=5
+EAPI=6
 
-#inherit git-2
+#inherit #git-2
 
 DESCRIPTION="A drop-down terminal emulator, written in vala"
 HOMEPAGE="https://github.com/linvinus/AltYo"
@@ -27,4 +27,6 @@ S="${WORKDIR}/AltYo-debian-${PV}-linvinus1"
 src_prepare() {
     local valac=$(find /usr/bin/valac-* | tail -n 1)
     sed "s|valac|$valac|g" -i Makefile
+	eapply ${FILESDIR}/fix_build.patch
+	default
 }
