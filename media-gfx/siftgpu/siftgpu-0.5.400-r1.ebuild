@@ -8,7 +8,10 @@ inherit eutils
 
 DESCRIPTION="A GPU Implementation of SIFT"
 HOMEPAGE="http://cs.unc.edu/~ccwu/siftgpu/"
-SRC_URI="http://wwwx.cs.unc.edu/~ccwu/cgi-bin/siftgpu.cgi -> SiftGPU-V400.zip"
+
+COMMIT="6f1bde2aef070c8a1cae8a779081e9c1319da192"
+
+SRC_URI="https://github.com/W-Floyd/SiftGPU/archive/${COMMIT}.zip -> SiftGPU-V400.zip"
 
 LICENSE="UNC"
 SLOT="0"
@@ -24,18 +27,26 @@ MAKEOPTS="-j1"
 
 S="${WORKDIR}/SiftGPU"
 
+src_unpack() {
+	default	
+	cd ${WORKDIR}
+	mv SiftGPU-6f1bde2aef070c8a1cae8a779081e9c1319da192 SiftGPU || die
+}
+
 src_prepare() {
+	export CUDA_INSTALL_PATH=/opt/cuda
+	export siftgpu_prefer_glut=1
 	if use cuda ; then
-		epatch "${FILESDIR}"/with-cuda.patch
+		export siftgpu_enable_cuda=1
 	else
-		epatch "${FILESDIR}"/no-cuda.patch
+		export siftgpu_enable_cuda=2
 	fi
 	rm -r include
 	sed -i -e's/siftgpu_prefer_glut = 0/siftgpu_prefer_glut = 1/' makefile
 }
 
 src_install() {
-	dobin "${S}"/bin/MultiThreadSIFT "${S}"/bin/SimpleSIFT "${S}"/bin/speed "${S}"/bin/TestWinGlut
+	dobin "${S}"/bin/MultiThreadSIFT "${S}"/bin/SimpleSIFT "${S}"/bin/speed
 	dolib "${S}"/bin/libsiftgpu.so
 	insinto /usr/include
 	doins "${S}"/bin/libsiftgpu.a
