@@ -9,7 +9,9 @@ inherit eutils cmake-utils git-r3
 DESCRIPTION="Clustering Views for Multi-view Stereo"
 HOMEPAGE="http://www.di.ens.fr/cmvs/"
 #SRC_URI="http://www.di.ens.fr/cmvs/cmvs-fix2.tar.gz"
-EGIT_REPO_URI="https://github.com/pmoulon/CMVS-PMVS.git"
+EGIT_REPO_URI="https://github.com/soulsheng/CMVS-PMVS.git"
+EGIT_BRANCH="master"
+EGIT_COMMIT="c175e00b2cc17d14f2a3421030c24f206326d49e"
 
 LICENSE="GPL-1"
 SLOT="0"
@@ -26,7 +28,7 @@ DEPEND="
 	virtual/jpeg:*"
 RDEPEND="${DEPEND}"
 
-S="${WORKDIR}/cmvs-9999/program/"
+S="${WORKDIR}/${P}/program/"
 
 src_install() {
 	exeinto /opt/vsfm
