@@ -20,7 +20,7 @@ MY_PV="2.80"
 
 SLOT="0"
 LICENSE="|| ( GPL-2 BL )"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS=""
 IUSE="+boost +bullet +dds +elbeem +game-engine +openexr collada colorio \
 	cuda cycles debug doc ffmpeg fftw headless jack jemalloc jpeg2k libav \
 	llvm man ndof nls openal openimageio openmp opensubdiv openvdb \
