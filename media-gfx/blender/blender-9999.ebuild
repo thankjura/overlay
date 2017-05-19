@@ -12,11 +12,11 @@ DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org"
 
 EGIT_REPO_URI="git://git.blender.org/blender.git"
-EGIT_BRANCH="blender2.8"
+#EGIT_BRANCH="blender2.8"
 
 # Blender can have letters in the version string,
 # so strip of the letter if it exists.
-MY_PV="2.80"
+MY_PV="2.78"
 
 SLOT="0"
 LICENSE="|| ( GPL-2 BL )"
