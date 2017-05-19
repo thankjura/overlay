@@ -70,7 +70,7 @@ REQUIRED_USE="tools? ( X )"
 
 QA_PREBUILT="opt/* usr/lib*"
 
-S=${WORKDIR}/
+S=${WORKDIR}
 
 pkg_pretend() {
 	if use amd64 && has_multilib_profile && \
@@ -155,15 +155,11 @@ pkg_setup() {
 
 src_prepare() {
 	# Please add a brief description for every added patch
-
 	if use kernel_linux; then
 		if kernel_is lt 2 6 9 ; then
 			eerror "You must build this against 2.6.9 or higher kernels."
 		fi
-		if kernel_is ge 4 10 ; then
-			eapply "${FILESDIR}"/${P}-"fs52243.patch"
-			eapply "${FILESDIR}"/${P}-"linux-4.10.patch"
-		fi
+		eapply "${FILESDIR}"/${P}-"linux-4.11.patch"
 		# If greater than 2.6.5 use M= instead of SUBDIR=
 #		convert_to_m "${NV_SRC}"/Makefile.kbuild
 	fi
