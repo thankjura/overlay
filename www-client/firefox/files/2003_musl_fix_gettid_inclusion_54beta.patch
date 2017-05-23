@@ -1,0 +1,14 @@
+Gentoo bug 616990
+Mozilla bug 1358214
+
+--- a/tools/profiler/core/platform.h	2017-04-11 00:15:19.000000000 -0400
++++ b/tools/profiler/core/platform.h	2017-04-29 10:34:50.731328126 -0400
+@@ -44,7 +44,7 @@
+ 
+ // We need a definition of gettid(), but glibc doesn't provide a
+ // wrapper for it.
+-#if defined(__GLIBC__)
++#if defined(__linux__)
+ #include <unistd.h>
+ #include <sys/syscall.h>
+ static inline pid_t gettid()

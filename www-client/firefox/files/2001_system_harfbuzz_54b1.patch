@@ -1,0 +1,172 @@
+diff -Naur firefox-54.0b1.orig/config/Makefile.in firefox-54.0b1/config/Makefile.in
+--- firefox-54.0b1.orig/config/Makefile.in	2017-04-18 14:22:36.000000000 +0200
++++ firefox-54.0b1/config/Makefile.in	2017-04-20 19:41:18.236050731 +0200
+@@ -41,6 +41,7 @@
+ 	$(PYTHON) -m mozbuild.action.preprocessor $(DEFINES) $(ACDEFINES) \
+ 		-DMOZ_TREE_CAIRO=$(MOZ_TREE_CAIRO) \
+ 		-DMOZ_TREE_PIXMAN=$(MOZ_TREE_PIXMAN) \
++		-DMOZ_SYSTEM_HARFBUZZ=$(MOZ_SYSTEM_HARFBUZZ) \
+ 		-DMOZ_SYSTEM_HUNSPELL=$(MOZ_SYSTEM_HUNSPELL) \
+ 		-DMOZ_SYSTEM_BZ2=$(MOZ_SYSTEM_BZ2) \
+ 		-DMOZ_SYSTEM_ZLIB=$(MOZ_SYSTEM_ZLIB) \
+diff -Naur firefox-54.0b1.orig/config/system-headers firefox-54.0b1/config/system-headers
+--- firefox-54.0b1.orig/config/system-headers	2017-04-18 14:22:36.000000000 +0200
++++ firefox-54.0b1/config/system-headers	2017-04-20 19:41:18.237050731 +0200
+@@ -1268,6 +1268,11 @@
+ libsn/sn-monitor.h
+ libsn/sn-util.h
+ #endif
++#if MOZ_SYSTEM_HARFBUZZ==1
++harfbuzz/hb-glib.h
++harfbuzz/hb-ot.h
++harfbuzz/hb.h
++#endif
+ #if MOZ_SYSTEM_HUNSPELL==1
+ hunspell.hxx
+ #endif
+diff -Naur firefox-54.0b1.orig/dom/base/moz.build firefox-54.0b1/dom/base/moz.build
+--- firefox-54.0b1.orig/dom/base/moz.build	2017-04-18 14:22:39.000000000 +0200
++++ firefox-54.0b1/dom/base/moz.build	2017-04-20 19:41:18.237050731 +0200
+@@ -487,6 +487,9 @@
+ if CONFIG['MOZ_X11']:
+     CXXFLAGS += CONFIG['TK_CFLAGS']
+ 
++if CONFIG['MOZ_SYSTEM_HARFBUZZ']:
++    CXXFLAGS += CONFIG['MOZ_HARFBUZZ_CFLAGS']
++
+ GENERATED_FILES += [
+     'PropertyUseCounterMap.inc',
+     'UseCounterList.h',
+diff -Naur firefox-54.0b1.orig/gfx/harfbuzz/README-mozilla firefox-54.0b1/gfx/harfbuzz/README-mozilla
+--- firefox-54.0b1.orig/gfx/harfbuzz/README-mozilla	2017-04-18 14:22:46.000000000 +0200
++++ firefox-54.0b1/gfx/harfbuzz/README-mozilla	2017-04-20 19:41:18.237050731 +0200
+@@ -19,3 +19,8 @@
+ 
+ If the collection of source files changes, manual updates to moz.build may be
+ needed, as we don't use the upstream makefiles.
++
++The in-tree copy may be omitted during build by --with-system-harfbuzz.
++Make sure to keep pkg-config version check within toolkit/moz.configure in sync
++with checkout version or increment latest tag by one if it's not based
++on upstream release.
+diff -Naur firefox-54.0b1.orig/gfx/moz.build firefox-54.0b1/gfx/moz.build
+--- firefox-54.0b1.orig/gfx/moz.build	2017-04-18 14:22:47.000000000 +0200
++++ firefox-54.0b1/gfx/moz.build	2017-04-20 19:44:54.249061186 +0200
+@@ -10,6 +10,9 @@
+ if CONFIG['MOZ_TREE_CAIRO']:
+     DIRS += ['cairo']
+ 
++if not CONFIG['MOZ_SYSTEM_HARFBUZZ']:
++    DIRS += ['harfbuzz/src']
++
+ DIRS += [
+     '2d',
+     'ycbcr',
+@@ -19,7 +22,6 @@
+     'gl',
+     'layers',
+     'graphite2/src',
+-    'harfbuzz/src',
+     'ots/src',
+     'thebes',
+     'ipc',
+diff -Naur firefox-54.0b1.orig/gfx/skia/generate_mozbuild.py firefox-54.0b1/gfx/skia/generate_mozbuild.py
+--- firefox-54.0b1.orig/gfx/skia/generate_mozbuild.py	2017-03-07 01:57:27.000000000 +0100
++++ firefox-54.0b1/gfx/skia/generate_mozbuild.py	2017-04-20 19:41:18.238050731 +0200
+@@ -143,6 +143,9 @@
+         '-Wno-unused-private-field',
+     ]
+ 
++if CONFIG['MOZ_SYSTEM_HARFBUZZ']:
++    CXXFLAGS += CONFIG['MOZ_HARFBUZZ_CFLAGS']
++
+ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('gtk2', 'gtk3', 'android'):
+     CXXFLAGS += CONFIG['MOZ_CAIRO_CFLAGS']
+     CXXFLAGS += CONFIG['CAIRO_FT_CFLAGS']
+diff -Naur firefox-54.0b1.orig/gfx/skia/moz.build firefox-54.0b1/gfx/skia/moz.build
+--- firefox-54.0b1.orig/gfx/skia/moz.build	2017-03-07 01:57:27.000000000 +0100
++++ firefox-54.0b1/gfx/skia/moz.build	2017-04-20 19:41:18.238050731 +0200
+@@ -753,6 +753,9 @@
+         '-Wno-unused-private-field',
+     ]
+ 
++if CONFIG['MOZ_SYSTEM_HARFBUZZ']:
++    CXXFLAGS += CONFIG['MOZ_HARFBUZZ_CFLAGS']
++
+ if CONFIG['MOZ_WIDGET_TOOLKIT'] in ('gtk2', 'gtk3', 'android'):
+     CXXFLAGS += CONFIG['MOZ_CAIRO_CFLAGS']
+     CXXFLAGS += CONFIG['CAIRO_FT_CFLAGS']
+diff -Naur firefox-54.0b1.orig/gfx/thebes/moz.build firefox-54.0b1/gfx/thebes/moz.build
+--- firefox-54.0b1.orig/gfx/thebes/moz.build	2017-04-18 14:22:47.000000000 +0200
++++ firefox-54.0b1/gfx/thebes/moz.build	2017-04-20 19:43:45.779057872 +0200
+@@ -276,6 +276,9 @@
+ 
+ DEFINES['GRAPHITE2_STATIC'] = True
+ 
++if CONFIG['MOZ_SYSTEM_HARFBUZZ']:
++    CXXFLAGS += CONFIG['MOZ_HARFBUZZ_CFLAGS']
++
+ if CONFIG['CLANG_CXX']:
+     # Suppress warnings from Skia header files.
+     SOURCES['gfxPlatform.cpp'].flags += ['-Wno-implicit-fallthrough']
+diff -Naur firefox-54.0b1.orig/intl/unicharutil/util/moz.build firefox-54.0b1/intl/unicharutil/util/moz.build
+--- firefox-54.0b1.orig/intl/unicharutil/util/moz.build	2017-04-18 14:22:48.000000000 +0200
++++ firefox-54.0b1/intl/unicharutil/util/moz.build	2017-04-20 19:47:37.630069093 +0200
+@@ -29,4 +29,7 @@
+         'ICUUtils.cpp',
+     ]
+ 
++if CONFIG['MOZ_SYSTEM_HARFBUZZ']:
++    CXXFLAGS += CONFIG['MOZ_HARFBUZZ_CFLAGS']
++
+ FINAL_LIBRARY = 'xul'
+diff -Naur firefox-54.0b1.orig/netwerk/dns/moz.build firefox-54.0b1/netwerk/dns/moz.build
+--- firefox-54.0b1.orig/netwerk/dns/moz.build	2017-04-18 14:22:39.000000000 +0200
++++ firefox-54.0b1/netwerk/dns/moz.build	2017-04-20 19:41:18.239050731 +0200
+@@ -69,6 +69,9 @@
+     '/netwerk/base',
+ ]
+ 
++if CONFIG['MOZ_SYSTEM_HARFBUZZ']:
++    CXXFLAGS += CONFIG['MOZ_HARFBUZZ_CFLAGS']
++
+ if CONFIG['ENABLE_INTL_API']:
+     DEFINES['IDNA2008'] = True
+     USE_LIBS += ['icu']
+diff -Naur firefox-54.0b1.orig/toolkit/library/moz.build firefox-54.0b1/toolkit/library/moz.build
+--- firefox-54.0b1.orig/toolkit/library/moz.build	2017-04-18 14:22:55.000000000 +0200
++++ firefox-54.0b1/toolkit/library/moz.build	2017-04-20 19:41:18.240050731 +0200
+@@ -228,6 +228,9 @@
+ if CONFIG['MOZ_SYSTEM_PNG']:
+     OS_LIBS += CONFIG['MOZ_PNG_LIBS']
+ 
++if CONFIG['MOZ_SYSTEM_HARFBUZZ']:
++    OS_LIBS += CONFIG['MOZ_HARFBUZZ_LIBS']
++
+ if CONFIG['MOZ_SYSTEM_HUNSPELL']:
+     OS_LIBS += CONFIG['MOZ_HUNSPELL_LIBS']
+ 
+diff -Naur firefox-54.0b1.orig/toolkit/moz.configure firefox-54.0b1/toolkit/moz.configure
+--- firefox-54.0b1.orig/toolkit/moz.configure	2017-04-18 14:22:56.000000000 +0200
++++ firefox-54.0b1/toolkit/moz.configure	2017-04-20 19:41:18.240050731 +0200
+@@ -343,6 +343,20 @@
+ add_old_configure_assignment('FT2_CFLAGS',
+                              delayed_getattr(ft2_info, 'cflags'))
+ 
++# HarfBuzz
++# ==============================================================
++option('--with-system-harfbuzz',
++       help="Use system harfbuzz (located with pkgconfig)")
++
++@depends('--with-system-harfbuzz')
++def check_for_harfbuzz(value):
++    return bool(value)
++
++system_harfbuzz = pkg_check_modules('MOZ_HARFBUZZ', 'harfbuzz >= 1.3.3',
++                                    when=check_for_harfbuzz)
++
++set_config('MOZ_SYSTEM_HARFBUZZ', depends_if(system_harfbuzz)(lambda _: True))
++
+ # Apple platform decoder support
+ # ==============================================================
+ @depends(toolkit)

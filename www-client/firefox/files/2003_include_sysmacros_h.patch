@@ -1,0 +1,40 @@
+# HG changeset patch
+# User Michał Górny <mgorny@gentoo.org>
+
+Include sys/sysmacros.h for major(), minor() when available
+
+Include sys/sysmacros.h explicitly as that will be required by future
+glibc versions to expose major() and minor() macros.
+
+Bug: https://bugzilla.mozilla.org/show_bug.cgi?id=1329798
+
+diff --git a/build/moz.configure/headers.configure b/build/moz.configure/headers.configure
+index 52ffa2f89..53ca44ca4 100644
+--- a/build/moz.configure/headers.configure
++++ b/build/moz.configure/headers.configure
+@@ -57,6 +57,10 @@ check_headers(
+ check_header('sys/queue.h',
+              when=non_msvc_compiler)
+ 
++# sys/sysmacros.h may be necessary for major()/minor() macros
++check_header('sys/sysmacros.h',
++             when=non_msvc_compiler)
++
+ check_headers(
+     'sys/types.h',
+     'netinet/in.h',
+diff --git a/xpcom/io/nsLocalFileUnix.cpp b/xpcom/io/nsLocalFileUnix.cpp
+index 6f13e2a7d..be7bf4de2 100644
+--- a/xpcom/io/nsLocalFileUnix.cpp
++++ b/xpcom/io/nsLocalFileUnix.cpp
+@@ -30,6 +30,9 @@
+ #define BLOCK_SIZE 1024 /* kernel block size */
+ #endif
+ #endif
++#if defined(HAVE_SYS_SYSMACROS_H)
++#include <sys/sysmacros.h>
++#endif
+ 
+ #include "xpcom-private.h"
+ #include "nsDirectoryServiceDefs.h"
+

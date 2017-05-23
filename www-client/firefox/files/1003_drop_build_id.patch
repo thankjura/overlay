@@ -1,0 +1,38 @@
+diff -Naur firefox-53.0b1.orig/js/src/old-configure.in firefox-53.0b1/js/src/old-configure.in
+--- firefox-53.0b1.orig/js/src/old-configure.in	2017-03-07 01:57:29.000000000 +0100
++++ firefox-53.0b1/js/src/old-configure.in	2017-03-08 18:45:17.190666535 +0100
+@@ -492,14 +492,6 @@
+                   AC_MSG_RESULT([no])
+                   LDFLAGS=$_SAVE_LDFLAGS)
+ 
+-    AC_MSG_CHECKING([for --build-id option to ld])
+-    _SAVE_LDFLAGS=$LDFLAGS
+-    LDFLAGS="$LDFLAGS -Wl,--build-id"
+-    AC_TRY_LINK(,,AC_MSG_RESULT([yes])
+-                  [NSPR_LDFLAGS="$NSPR_LDFLAGS -Wl,--build-id"],
+-                  AC_MSG_RESULT([no])
+-                  LDFLAGS=$_SAVE_LDFLAGS)
+-
+     _DEFINES_CFLAGS='-include $(topobjdir)/js/src/js-confdefs.h -DMOZILLA_CLIENT'
+     _USE_CPP_INCLUDE_FLAG=1
+ fi
+diff -Naur firefox-53.0b1.orig/old-configure.in firefox-53.0b1/old-configure.in
+--- firefox-53.0b1.orig/old-configure.in	2017-03-08 18:24:38.879606604 +0100
++++ firefox-53.0b1/old-configure.in	2017-03-08 18:44:49.937665216 +0100
+@@ -618,15 +618,7 @@
+                   AC_MSG_RESULT([no])
+                   LDFLAGS=$_SAVE_LDFLAGS)
+ 
+-    AC_MSG_CHECKING([for --build-id option to ld])
+-    _SAVE_LDFLAGS=$LDFLAGS
+-    LDFLAGS="$LDFLAGS -Wl,--build-id"
+-    AC_TRY_LINK(,,AC_MSG_RESULT([yes])
+-                  [NSPR_LDFLAGS="$NSPR_LDFLAGS -Wl,--build-id"],
+-                  AC_MSG_RESULT([no])
+-                  LDFLAGS=$_SAVE_LDFLAGS)
+-
+-    AC_MSG_CHECKING([for --ignore-unresolved-symbol option to ld])
++     AC_MSG_CHECKING([for --ignore-unresolved-symbol option to ld])
+     HAVE_LINKER_SUPPORT_IGNORE_UNRESOLVED=
+     _SAVE_LDFLAGS=$LDFLAGS
+     LDFLAGS="$LDFLAGS -Wl,--ignore-unresolved-symbol,environ"
