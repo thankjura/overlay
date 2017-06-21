@@ -7,7 +7,7 @@ inherit unpacker
 
 DESCRIPTION="Meet the best cryptocurrency mining pool & GUI miner"
 HOMEPAGE="https://minergate.com/"
-SRC_URI="https://download.minergate.com/deb -> ${P}.deb"
+SRC_URI="https://download.minergate.com/ubuntu -> ${P}.deb"
 
 LICENSE="custom"
 SLOT="0"
