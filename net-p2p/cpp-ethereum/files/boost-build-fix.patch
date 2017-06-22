@@ -1,0 +1,11 @@
+diff -ru cpp-ethereum-9999.old/cmake/ProjectBoost.cmake cpp-ethereum-9999/cmake/ProjectBoost.cmake
+--- cpp-ethereum-9999.old/cmake/ProjectBoost.cmake	2017-06-22 02:16:09.179526434 +0300
++++ cpp-ethereum-9999/cmake/ProjectBoost.cmake	2017-06-22 02:18:10.657522496 +0300
+@@ -30,6 +30,7 @@
+         variant=release
+         address-model=64
+         --with-chrono
++        --ignore-site-config
+         --with-date_time
+         --with-filesystem
+         --with-random
