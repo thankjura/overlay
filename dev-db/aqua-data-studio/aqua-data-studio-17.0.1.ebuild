@@ -28,6 +28,8 @@ pkg_nofetch() {
 	eerror "and move it to ${DISTDIR}"
 }
 
+S=${WORKDIR}/Aqua_Data_Studio_${PV}
+
 src_install() {
 	dodir /opt/${PN}	
 	cp -r * "${D}"/opt/${PN}/ || die "Install failed"
