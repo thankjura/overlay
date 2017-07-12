@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/dev-db/tora/tora-3.0.0_pre20140918.ebuild,v 1.5 2014/09/18 Exp $
 
-EAPI=5
+EAPI=6
 
 inherit cmake-utils eutils
 
@@ -46,6 +46,8 @@ DEPEND="
 	${RDEPEND}
 "
 
+PATCHES="${FILESDIR}/*.patch"
+
 pkg_setup() {
 	if [ -z "$ORACLE_HOME" ] ; then
 		eerror "ORACLE_HOME variable is not set."
@@ -70,7 +72,7 @@ src_prepare() {
 	grep -rlZ '$$ORIGIN' . | xargs -0 sed -i 's|:$$ORIGIN[^:"]*||' || \
 		die 'Removal of $$ORIGIN failed'
 	#
-	epatch_user
+	eapply_user
 }
 
 src_configure() {
@@ -83,14 +85,14 @@ src_configure() {
 		-DWANT_RPM=OFF
 		-DWANT_BUNDLE=OFF
 		-DWANT_BUNDLE_STANDALONE=OFF
-		$(cmake-utils_use_use pch)
+		-DUSE_PCH="$(usex pch)"
 		-DWANT_INTERNAL_QSCINTILLA=OFF
 		-DWANT_INTERNAL_LOKI=OFF
 		-DLOKI_LIBRARY="$(pkg-config --variable=libdir ferrisloki)/libferrisloki.so"
 		-DLOKI_INCLUDE_DIR="$(pkg-config --variable=includedir ferrisloki)/FerrisLoki"
-		$(cmake-utils_use qt5 QT5_BUILD)
-		$(cmake-utils_use_enable postgres PGSQL)
-		$(cmake-utils_use_want debug)
+		-DENABLE_QT5_BUILD="$(usex qt5)"
+		-DENABLE_PGSQL_="$(usex postgres)"
+		-DWANT_DEBUG_="$(usex debug)"
 		# path variables
 		-DTORA_DOC_DIR=share/doc/${PF}
 	)
