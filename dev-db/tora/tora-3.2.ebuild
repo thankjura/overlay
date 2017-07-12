@@ -25,11 +25,20 @@ LICENSE="GPL-2"
 
 RDEPEND="
 	dev-libs/ferrisloki
-	x11-libs/qscintilla
-	qt5? ( dev-qt/qtgui:5 dev-qt/qtsql:5[mysql?,postgres?] dev-qt/qtxmlpatterns:5 dev-qt/linguist:5 dev-qt/qtnetwork:5 dev-qt/qtsql:5 dev-qt/qtxml:5 )
+	x11-libs/qscintilla[qt5?]
+	qt5? (
+		dev-qt/qtgui:5
+		dev-qt/qtsql:5[mysql?,postgres?]
+		dev-qt/qtxmlpatterns:5
+		dev-qt/linguist:5
+		dev-qt/qtnetwork:5
+		dev-qt/qtsql:5
+		dev-qt/qtxml:5 
+	)
 	!qt5? ( dev-qt/qtgui:4 dev-qt/qtsql:4[mysql?,postgres?] dev-qt/qtxmlpatterns:4 )
 	=dev-db/oracle-instantclient-basic-11*
 	postgres? ( dev-db/postgresql )
+	dev-qt/linguist-tools
 "
 
 DEPEND="
