@@ -79,5 +79,6 @@ src_configure() {
 		-DETHSTRATUM=$(usex stratum)
 	)
 
+	append-cxxflags -std=c++11
 	cmake-utils_src_configure
 }
