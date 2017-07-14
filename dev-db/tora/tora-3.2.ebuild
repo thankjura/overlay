@@ -36,7 +36,7 @@ RDEPEND="
 		dev-qt/qtxml:5 
 	)
 	!qt5? ( dev-qt/qtgui:4 dev-qt/qtsql:4[mysql?,postgres?] dev-qt/qtxmlpatterns:4 )
-	=dev-db/oracle-instantclient-basic-11*
+	>=dev-db/oracle-instantclient-basic-11
 	postgres? ( dev-db/postgresql )
 	dev-qt/linguist-tools
 "
@@ -72,7 +72,7 @@ src_prepare() {
 	grep -rlZ '$$ORIGIN' . | xargs -0 sed -i 's|:$$ORIGIN[^:"]*||' || \
 		die 'Removal of $$ORIGIN failed'
 	#
-	eapply_user
+	default
 }
 
 src_configure() {
