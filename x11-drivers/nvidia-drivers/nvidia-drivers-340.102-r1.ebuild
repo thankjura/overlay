@@ -151,7 +151,9 @@ src_prepare() {
 		if kernel_is lt 2 6 9 ; then
 			eerror "You must build this against 2.6.9 or higher kernels."
 		fi
-		eapply "${FILESDIR}"/${P}-"linux-4.11.patch"
+		eapply "${FILESDIR}"/"linux-4.10.patch"
+		eapply "${FILESDIR}"/"linux-4.11.patch"
+		eapply "${FILESDIR}"/"linux-4.12.patch"
 
 		# If greater than 2.6.5 use M= instead of SUBDIR=
 #		convert_to_m "${NV_SRC}"/Makefile.kbuild
