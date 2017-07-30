@@ -1,15 +1,15 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
-EAPI=5
+EAPI=6
 
-inherit cmake-utils toolchain-funcs git-r3 flag-o-matic
+inherit cmake-utils toolchain-funcs flag-o-matic
 
 DESCRIPTION="A powerful cross-platform raw image processing program"
 HOMEPAGE="http://www.rawtherapee.com/"
-EGIT_REPO_URI="https://github.com/Beep6581/RawTherapee.git"
-EGIT_BRANCH="dev"
+
+MY_P=${P/_rc/-rc}
+SRC_URI="http://rawtherapee.com/shared/source/${MY_P}.tar.xz"
 
 LICENSE="GPL-3"
 SLOT="0"
@@ -32,6 +32,8 @@ DEPEND="${RDEPEND}
 	app-arch/xz-utils
 	virtual/pkgconfig
 	dev-cpp/gtkmm:3.0"
+
+S="${WORKDIR}/${MY_P}"
 
 pkg_pretend() {
 	if use openmp ; then
@@ -56,7 +58,7 @@ src_configure() {
 		-DCREDITSDIR=/usr/share/${PN}
 		-DLICENCEDIR=/usr/share/${PN}
 		-DCACHE_NAME_SUFFIX=""
-		-DCMAKE_CXX_FLAGS="-std=c++11 -O3"
+		-DCMAKE_CXX_FLAGS="-std=c++11"
 	)
 	cmake-utils_src_configure
 }
