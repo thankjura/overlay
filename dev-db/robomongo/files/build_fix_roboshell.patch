@@ -1,0 +1,11 @@
+diff -ru robomongo-shell-865d2fb5686852e00c5cc814627b9993404a03c1.old/src/mongo/SConscript robomongo-shell-865d2fb5686852e00c5cc814627b9993404a03c1/src/mongo/SConscript
+--- robomongo-shell-865d2fb5686852e00c5cc814627b9993404a03c1.old/src/mongo/SConscript	2017-07-04 16:29:25.000000000 +0300
++++ robomongo-shell-865d2fb5686852e00c5cc814627b9993404a03c1/src/mongo/SConscript	2017-08-03 00:38:45.367935737 +0300
+@@ -32,7 +32,6 @@
+         'db',
+         'dbtests',
+         'executor',
+-        'installer',
+         'logger',
+         'platform',
+         'rpc',
