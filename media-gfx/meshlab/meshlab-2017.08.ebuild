@@ -6,12 +6,12 @@ EAPI=5
 
 inherit eutils multilib
 
-MESHLAB_COMMIT="410316f8db7bf0f5a626ed0b227aafe0e2482ab3"
+MESHLAB_COMMIT="70b9dd7fc4a9d4044f486e3044572ca5cd0fefb6"
 VCG_COMMIT="aada1502e45cdcf63282ae9e4bebc8b00cd1a02e"
 
 DESCRIPTION="A mesh processing system"
 HOMEPAGE="http://meshlab.sourceforge.net/"
-SRC_URI="https://github.com/cnr-isti-vclab/meshlab/archive/${MESHLAB_COMMIT}.zip -> meshlab-${MESHLAB_COMMIT}.zip
+SRC_URI="https://github.com/cnr-isti-vclab/meshlab/archive/${MESHLAB_COMMIT}.zip -> meshlab-${PV}.zip
 		https://github.com/cnr-isti-vclab/vcglib/archive/${VCG_COMMIT}.zip -> vcglib-${VCG_COMMIT}.zip"
 
 LICENSE="GPL-2"
