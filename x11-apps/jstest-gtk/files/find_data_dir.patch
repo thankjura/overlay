@@ -1,0 +1,37 @@
+diff -Nurb /tmp/jstest/a/src/main.cpp /tmp/jstest/b/src/main.cpp
+--- /tmp/jstest/a/src/main.cpp	2016-11-09 17:15:16.024622360 +0100
++++ /tmp/jstest/b/src/main.cpp	2016-11-09 18:25:28.995928460 +0100
+@@ -200,12 +200,31 @@
+     char* c_prefix = br_find_exe_dir(NULL);
+     if (!c_prefix)
+     {
+-      throw std::runtime_error("Error: Couldn't find prefix");
++      throw std::runtime_error("Error: Couldn't find exe dir");
+     }
+     else
+     {
+-      std::string prefix = c_prefix;
++      char* c_exe = br_find_exe(NULL);
++      if (!c_exe)
++      {
++        free(c_prefix);
++        throw std::runtime_error("Error: Couldn't find executable path");
++      }
++      char* c_data_prefix = br_find_data_dir(NULL);
++      if (!c_data_prefix)
++      {
++        free(c_prefix);
++        free(c_exe);
++        throw std::runtime_error("Error: Couldn't find data dir");
++      }
++
++      std::string prefix = c_data_prefix;
++      prefix += (c_exe + strlen(c_prefix));
++
+       free(c_prefix);
++      free(c_exe);
++      free(c_data_prefix);
++
+       return prefix + "/data/";
+     }
+   }
