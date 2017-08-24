@@ -25,6 +25,7 @@ DEPEND="
 	virtual/glu
 	media-libs/libpng
 	dev-lang/mono
+	dev-dotnet/gtk-sharp
 	sys-apps/fakeroot
 "
 RDEPEND="${DEPEND}"
