@@ -1,0 +1,19 @@
+--- a/src/software/SfMViewer/document.h	2017-08-28 20:37:11.786476894 +0300
++++ b/src/software/SfMViewer/document.h	2017-08-28 20:36:42.599477841 +0300
+@@ -13,6 +13,7 @@
+ #include "openMVG/cameras/Camera_IO.hpp"
+ #include "openMVG/tracks/tracks.hpp"
+ using namespace openMVG;
++using namespace cameras;
+ 
+ #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
+ 
+@@ -110,7 +111,7 @@
+             sStream >> sImageName >> w >> h >> sCamName >> znear >> zfar;
+             // Read the corresponding camera
+             PinholeCamera cam;
+-            if (!openMVG::load(stlplus::folder_append_separator(sDirectoryCam) + sCamName, cam))
++            if (!cameras::load(stlplus::folder_append_separator(sDirectoryCam) + sCamName, cam))
+             {
+               std::cerr << "Cannot read camera" << std::endl;
+               return false;
