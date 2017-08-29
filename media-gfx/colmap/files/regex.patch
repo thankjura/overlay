@@ -1,7 +1,7 @@
 diff -ru colmap-9999.old/CMakeLists.txt colmap-9999/CMakeLists.txt
---- colmap-9999.old/CMakeLists.txt	2017-08-29 17:25:07.789049045 +0300
-+++ colmap-9999/CMakeLists.txt	2017-08-29 17:53:13.426994389 +0300
-@@ -57,7 +57,6 @@
+--- colmap-9999.old/CMakeLists.txt	2017-08-29 18:52:52.745878329 +0300
++++ colmap-9999/CMakeLists.txt	2017-08-29 19:04:00.682856672 +0300
+@@ -58,7 +58,6 @@
  find_package(Boost COMPONENTS
               program_options
               filesystem
@@ -9,23 +9,19 @@ diff -ru colmap-9999.old/CMakeLists.txt colmap-9999/CMakeLists.txt
               system
               unit_test_framework
               REQUIRED)
-Только в colmap-9999: CMakeLists.txt.orig
 diff -ru colmap-9999.old/src/util/bitmap.cc colmap-9999/src/util/bitmap.cc
---- colmap-9999.old/src/util/bitmap.cc	2017-08-29 17:25:07.495049055 +0300
-+++ colmap-9999/src/util/bitmap.cc	2017-08-29 17:52:06.774996550 +0300
-@@ -16,10 +16,10 @@
- 
- #include "util/bitmap.h"
- 
-+#include <regex>
+--- colmap-9999.old/src/util/bitmap.cc	2017-08-29 18:52:52.443878339 +0300
++++ colmap-9999/src/util/bitmap.cc	2017-08-29 19:03:48.155857078 +0300
+@@ -19,7 +19,7 @@
  #include <unordered_map>
  
  #include <boost/filesystem/operations.hpp>
 -#include <boost/regex.hpp>
++#include <regex>
  
  #include "base/camera_database.h"
  #include "ext/VLFeat/imopv.h"
-@@ -269,9 +269,9 @@
+@@ -276,9 +276,9 @@
    std::string focal_length_35mm_str;
    if (ReadExifTag(FIMD_EXIF_EXIF, "FocalLengthIn35mmFilm",
                    &focal_length_35mm_str)) {
@@ -35,10 +31,10 @@ diff -ru colmap-9999.old/src/util/bitmap.cc colmap-9999/src/util/bitmap.cc
 +    const std::regex regex(".*?([0-9.]+).*?mm.*?");
 +    std::cmatch result;
 +    if (std::regex_search(focal_length_35mm_str.c_str(), result, regex)) {
-       const double focal_length_35 = boost::lexical_cast<double>(result[1]);
+       const double focal_length_35 = std::stod(result[1]);
        if (focal_length_35 > 0) {
          *focal_length = focal_length_35 / 35.0 * max_size;
-@@ -286,9 +286,9 @@
+@@ -293,9 +293,9 @@
  
    std::string focal_length_str;
    if (ReadExifTag(FIMD_EXIF_EXIF, "FocalLength", &focal_length_str)) {
@@ -48,10 +44,10 @@ diff -ru colmap-9999.old/src/util/bitmap.cc colmap-9999/src/util/bitmap.cc
 +    std::regex regex(".*?([0-9.]+).*?mm");
 +    std::cmatch result;
 +    if (std::regex_search(focal_length_str.c_str(), result, regex)) {
-       const double focal_length_mm = boost::lexical_cast<double>(result[1]);
+       const double focal_length_mm = std::stod(result[1]);
  
        // Lookup sensor width in database.
-@@ -312,11 +312,11 @@
+@@ -319,11 +319,11 @@
            ReadExifTag(FIMD_EXIF_EXIF, "FocalPlaneXResolution", &x_res_str) &&
            ReadExifTag(FIMD_EXIF_EXIF, "FocalPlaneResolutionUnit",
                        &res_unit_str)) {
@@ -59,15 +55,15 @@ diff -ru colmap-9999.old/src/util/bitmap.cc colmap-9999/src/util/bitmap.cc
 -        if (boost::regex_search(pixel_x_dim_str.c_str(), result, regex)) {
 +        regex = std::regex(".*?([0-9.]+).*?");
 +        if (std::regex_search(pixel_x_dim_str.c_str(), result, regex)) {
-           const double pixel_x_dim = boost::lexical_cast<double>(result[1]);
+           const double pixel_x_dim = std::stod(result[1]);
 -          regex = boost::regex(".*?([0-9.]+).*?/.*?([0-9.]+).*?");
 -          if (boost::regex_search(x_res_str.c_str(), result, regex)) {
 +          regex = std::regex(".*?([0-9.]+).*?/.*?([0-9.]+).*?");
 +          if (std::regex_search(x_res_str.c_str(), result, regex)) {
-             const double x_res = boost::lexical_cast<double>(result[2]) /
-                                  boost::lexical_cast<double>(result[1]);
+             const double x_res = std::stod(result[2]) / std::stod(result[1]);
              // Use PixelXDimension instead of actual width of image, since
-@@ -343,9 +343,9 @@
+             // the image might have been resized, but the EXIF data preserved.
+@@ -349,9 +349,9 @@
  bool Bitmap::ExifLatitude(double* latitude) {
    std::string str;
    if (ReadExifTag(FIMD_EXIF_GPS, "GPSLatitude", &str)) {
@@ -77,10 +73,10 @@ diff -ru colmap-9999.old/src/util/bitmap.cc colmap-9999/src/util/bitmap.cc
 +    const std::regex regex(".*?([0-9.]+):([0-9.]+):([0-9.]+).*?");
 +    std::cmatch result;
 +    if (std::regex_search(str.c_str(), result, regex)) {
-       const double hours = boost::lexical_cast<double>(result[1]);
-       const double minutes = boost::lexical_cast<double>(result[2]);
-       const double seconds = boost::lexical_cast<double>(result[3]);
-@@ -359,9 +359,9 @@
+       const double hours = std::stod(result[1]);
+       const double minutes = std::stod(result[2]);
+       const double seconds = std::stod(result[3]);
+@@ -365,9 +365,9 @@
  bool Bitmap::ExifLongitude(double* longitude) {
    std::string str;
    if (ReadExifTag(FIMD_EXIF_GPS, "GPSLongitude", &str)) {
@@ -90,10 +86,10 @@ diff -ru colmap-9999.old/src/util/bitmap.cc colmap-9999/src/util/bitmap.cc
 +    const std::regex regex(".*?([0-9.]+):([0-9.]+):([0-9.]+).*?");
 +    std::cmatch result;
 +    if (std::regex_search(str.c_str(), result, regex)) {
-       const double hours = boost::lexical_cast<double>(result[1]);
-       const double minutes = boost::lexical_cast<double>(result[2]);
-       const double seconds = boost::lexical_cast<double>(result[3]);
-@@ -375,9 +375,9 @@
+       const double hours = std::stod(result[1]);
+       const double minutes = std::stod(result[2]);
+       const double seconds = std::stod(result[3]);
+@@ -381,9 +381,9 @@
  bool Bitmap::ExifAltitude(double* altitude) {
    std::string str;
    if (ReadExifTag(FIMD_EXIF_GPS, "GPSAltitude", &str)) {
@@ -103,6 +99,6 @@ diff -ru colmap-9999.old/src/util/bitmap.cc colmap-9999/src/util/bitmap.cc
 +    const std::regex regex(".*?([0-9.]+).*?/.*?([0-9.]+).*?");
 +    std::cmatch result;
 +    if (std::regex_search(str.c_str(), result, regex)) {
-       *altitude = boost::lexical_cast<double>(result[1]) /
-                   boost::lexical_cast<double>(result[2]);
+       *altitude = std::stod(result[1]) / std::stod(result[2]);
        return true;
+     }

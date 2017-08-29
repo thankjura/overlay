@@ -1,0 +1,11 @@
+diff -ru src.old/meshlab_full.pro src/meshlab_full.pro
+--- src.old/meshlab_full.pro	2016-12-23 13:24:59.000000000 +0300
++++ src/meshlab_full.pro	2017-08-29 15:56:32.298221400 +0300
+@@ -43,6 +43,7 @@
+                 meshlabplugins/filter_mls \
+                 meshlabplugins/filter_photosynth \
+                 meshlabplugins/filter_plymc \
++                meshlabplugins/filter_poisson \
+                 meshlabplugins/filter_screened_poisson \
+                 meshlabplugins/filter_qhull \
+                 meshlabplugins/filter_quality \
