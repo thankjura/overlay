@@ -30,9 +30,14 @@ DEPEND="dev-cpp/gflags
 
 RDEPEND="${DEPEND}"
 
+COLMAP_PATH="/opt/colmap"
+
 src_prepare() {
 	eapply ${FILESDIR}/nvm-export.patch
 	eapply ${FILESDIR}/regex.patch
+
+	sed -i "s:\$COLMAP_EXE_PATH:${COLMAP_PATH}:" src/base/undistortion.cc || die
+
 	cmake-utils_src_prepare
 }
 
@@ -46,7 +51,7 @@ src_configure() {
 		-DCUDA_TOOLKIT_ROOT_DIR=/opt/cuda
 		-DTESTS_ENABLED=OFF
 		-DCMAKE_BUILD_TYPE=Release
-		-DCMAKE_INSTALL_PREFIX=/usr
+		-DCMAKE_INSTALL_PREFIX=/opt/colmap
 		-DCUDA_NVCC_FLAGS="--compiler-options -fPIC"
 	)
 
@@ -55,12 +60,13 @@ src_configure() {
 
 src_install() {
 	addwrite /dev/nvidia0
-
 	cmake-utils_src_install
-	insinto /usr/share/${PN}
+	insinto ${COLMAP_PATH}
 	for vocab_tree in ${DISTDIR}/vocabulary-tree-*.bin ; do
 		newins ${vocab_tree} ${vocab_tree##*/}
 	done
-
-	make_desktop_entry colmap "Colmap"
+	
+	dosym ${COLMAP_PATH}/bin/colmap /usr/bin/${PN}
+	newicon ${FILESDIR}/${PN}.png ${PN}.png
+	make_desktop_entry ${PN} "Colmap"
 }
