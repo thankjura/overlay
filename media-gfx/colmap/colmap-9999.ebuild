@@ -36,7 +36,7 @@ src_prepare() {
 	eapply ${FILESDIR}/nvm-export.patch
 	eapply ${FILESDIR}/regex.patch
 
-	sed -i "s:\$COLMAP_EXE_PATH:${COLMAP_PATH}:" src/base/undistortion.cc || die
+	sed -i "s:\$COLMAP_EXE_PATH:${COLMAP_PATH}/bin:" src/base/undistortion.cc || die
 
 	cmake-utils_src_prepare
 }
