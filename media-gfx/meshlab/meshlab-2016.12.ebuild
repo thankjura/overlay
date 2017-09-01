@@ -23,7 +23,9 @@ DEPEND="dev-cpp/muParser
 	=media-libs/lib3ds-1*
 	sci-libs/levmar
 	virtual/glu
-	sci-libs/mpir"
+	sci-libs/mpir
+	dev-qt/qtxmlpatterns:5
+"
 RDEPEND="${DEPEND}"
 
 S="${WORKDIR}/${P}/src"
