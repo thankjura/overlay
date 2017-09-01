@@ -1,7 +1,8 @@
-Только в stepmania-5.1.0a2/autoconf/m4: ax_define_dir.m4
-diff -ru stepmania-5.1.0a2.old/configure.ac stepmania-5.1.0a2/configure.ac
---- stepmania-5.1.0a2.old/configure.ac	2016-06-13 02:08:04.211545713 +0300
-+++ stepmania-5.1.0a2/configure.ac	2016-06-13 02:09:21.440666505 +0300
+Только в stepmania-5.9999/autoconf/m4: ax_define_dir.m4
+Только в stepmania-5.9999: b
+diff -ru stepmania-5.9999.old/configure.ac stepmania-5.9999/configure.ac
+--- stepmania-5.9999.old/configure.ac	2017-09-01 23:39:28.166695461 +0300
++++ stepmania-5.9999/configure.ac	2017-09-01 23:42:31.079379085 +0300
 @@ -195,6 +195,11 @@
  	CXXFLAGS="$CXXFLAGS -msse2"
  fi
@@ -14,73 +15,30 @@ diff -ru stepmania-5.1.0a2.old/configure.ac stepmania-5.1.0a2/configure.ac
  AC_ARG_WITH(prof, AS_HELP_STRING([--with-prof],[Enable profiling]), with_prof=$withval, with_prof=no)
  if test "$with_prof" = "yes"; then
  	test "$DEFAULT_CFLAGS" = "yes" && CFLAGS="$CFLAGS -pg"
-diff -ru stepmania-5.1.0a2.old/src/arch/ArchHooks/ArchHooks_Unix.cpp stepmania-5.1.0a2/src/arch/ArchHooks/ArchHooks_Unix.cpp
---- stepmania-5.1.0a2.old/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-03-31 02:49:52.000000000 +0300
-+++ stepmania-5.1.0a2/src/arch/ArchHooks/ArchHooks_Unix.cpp	2016-06-13 02:14:40.695298142 +0300
-@@ -379,15 +379,29 @@
- 	 * (Deprecated; use rootfs.) */
- 	FILEMAN->Mount( "dir", "/proc", "/proc" );
- #endif
-+	// Get Lower case product family
-+	std::string sProductFamily = PRODUCT_FAMILY;
-+    std::transform(sProductFamily.begin(), sProductFamily.end(), sProductFamily.begin(), ::tolower);
- 
- 	std::string Root;
- 	struct stat st;
-+
-+#if defined(EXT_DATADIR)
-+	// Search folders at EXT_DATADIR
-+	std::string ext_dir = EXT_DATADIR + std::string("/") + sProductFamily;
-+	if( !stat(ext_dir + "/Packages", &st) && st.st_mode&S_IFDIR )
-+		Root = ext_dir;
-+	else if( !stat(ext_dir  + "/Songs", &st) && st.st_mode&S_IFDIR )
-+		Root = ext_dir;
-+#else
-+
- 	if( !stat((sDirOfExecutable + "/Packages").c_str(), &st) && st.st_mode&S_IFDIR )
- 		Root = sDirOfExecutable;
- 	else if( !stat((sDirOfExecutable + "/Songs").c_str(), &st) && st.st_mode&S_IFDIR )
- 		Root = sDirOfExecutable;
- 	else if( !stat((RageFileManagerUtil::sInitialWorkingDirectory + "/Songs").c_str(), &st) && st.st_mode&S_IFDIR )
- 		Root = RageFileManagerUtil::sInitialWorkingDirectory;
-+#endif
- 	else
- 		RageException::Throw( "%s", COULDNT_FIND_SONGS.GetValue().c_str() );
- 
-diff -ru stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
---- stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-03-31 02:49:52.000000000 +0300
-+++ stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2016-06-13 02:17:58.953173194 +0300
+Только в stepmania-5.9999: configure.ac.orig
+Только в stepmania-5.9999/src/arch/ArchHooks: ArchHooks_Unix.cpp.orig
+Только в stepmania-5.9999/src/arch/ArchHooks: ArchHooks_Unix.cpp.rej
+diff -ru stepmania-5.9999.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp stepmania-5.9999/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp
+--- stepmania-5.9999.old/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2017-09-01 23:39:28.789684400 +0300
++++ stepmania-5.9999/src/arch/LoadingWindow/LoadingWindow_Gtk.cpp	2017-09-01 23:42:31.080379067 +0300
 @@ -1,4 +1,5 @@
  #include "global.h"
 +#include "ProductInfo.h"
  #include "RageLog.h"
  #include "RageFileManager.h"
  #include "RageUtil.h"
-@@ -29,7 +30,13 @@
- {
- 	ASSERT( Handle == nullptr );
- 
--	Handle = dlopen( (RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so").c_str(), RTLD_NOW );
-+	#if defined(EXT_DATADIR)
-+		std::string sProductFamily = PRODUCT_FAMILY;
-+		std::transform(sProductFamily.begin(), sProductFamily.end(), sProductFamily.begin(), ::tolower);
-+		Handle = dlopen( (EXT_DATADIR + std::string("/") + sProductFamily + "/" + "GtkModule.so").c_str(), RTLD_NOW );
-+	#else
-+ 		Handle = dlopen( (RageFileManagerUtil::sDirOfExecutable + "/" + "GtkModule.so").c_str(), RTLD_NOW );
-+	#endif
- 	if( Handle == nullptr )
- 		return fmt::sprintf( "dlopen(): %s", dlerror() );
- 
-diff -ru stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp
---- stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-03-31 02:49:52.000000000 +0300
-+++ stepmania-5.1.0a2/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2016-06-13 02:09:21.457666751 +0300
+Только в stepmania-5.9999/src/arch/LoadingWindow: LoadingWindow_Gtk.cpp.orig
+Только в stepmania-5.9999/src/arch/LoadingWindow: LoadingWindow_Gtk.cpp.rej
+diff -ru stepmania-5.9999.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp stepmania-5.9999/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp
+--- stepmania-5.9999.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2017-09-01 23:39:28.789684400 +0300
++++ stepmania-5.9999/src/arch/LoadingWindow/LoadingWindow_GtkModule.cpp	2017-09-01 23:42:31.080379067 +0300
 @@ -1,4 +1,5 @@
  #include "global.h"
 +#include "ProductInfo.h"
  #include "LoadingWindow_GtkModule.h"
  #include "RageUtil.h"
  #include "RageSurface.h"
-@@ -15,7 +16,18 @@
+@@ -15,7 +16,19 @@
  extern "C" const char *Init( int *argc, char ***argv )
  {
  	// Need to use external library to load this image. Native loader seems broken :/
@@ -96,6 +54,7 @@ diff -ru stepmania-5.1.0a2.old/src/arch/LoadingWindow/LoadingWindow_GtkModule.cp
 +#else
  	const gchar *splash_image_path = "Data/splash.png";
 +#endif
++
  	GtkWidget *vbox;
  
  	gtk_disable_setlocale();
