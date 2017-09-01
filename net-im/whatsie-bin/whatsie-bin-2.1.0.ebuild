@@ -49,6 +49,8 @@ src_install(){
 	doins -r * || die
 	fperms +x /opt/whatsie/whatsie || die
 	fperms +x /opt/whatsie/libnode.so || die
+
+	dosym /opt/whatsie/whatsie /usr/bin/whatsie
 }
 
 pkg_postinst(){
