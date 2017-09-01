@@ -16,5 +16,9 @@ IUSE=""
 
 EGIT_REPO_URI="https://github.com/davidgfnet/whatsapp-purple.git"
 
-DEPEND="net-im/pidgin"
+DEPEND="
+	net-im/pidgin
+	dev-libs/protobuf
+	media-libs/freeimage
+"
 RDEPEND="${DEPEND}"
