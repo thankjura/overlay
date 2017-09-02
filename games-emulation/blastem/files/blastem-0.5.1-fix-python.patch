@@ -1,9 +1,0 @@
-diff -ru a/img2tiles.py b/img2tiles.py
---- a/img2tiles.py	2017-08-30 11:22:04.000000000 +0300
-+++ b/img2tiles.py	2017-09-03 01:17:07.291762318 +0300
-@@ -1,4 +1,4 @@
--#!/usr/bin/env python
-+#!/usr/bin/env python2
- from PIL import Image
- 
- def gchannel(Val):
