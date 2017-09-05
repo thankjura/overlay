@@ -1,0 +1,59 @@
+diff -ru openvdb-4.0.2.old/cmake/FindILMBase.cmake openvdb-4.0.2/cmake/FindILMBase.cmake
+--- openvdb-4.0.2.old/cmake/FindILMBase.cmake	2017-07-31 21:16:32.000000000 +0300
++++ openvdb-4.0.2/cmake/FindILMBase.cmake	2017-09-03 22:39:01.459268382 +0300
+@@ -56,16 +56,15 @@
+ OPTION ( ILMBASE_NAMESPACE_VERSIONING "Namespace versioning of libraries" ON )
+ 
+ IF ( ILMBASE_FOUND )
++  IF ( ILMBASE_NAMESPACE_VERSIONING )
++    FILE ( STRINGS "${ILMBASE_LOCATION}/include/OpenEXR/IlmBaseConfig.h" _ilmbase_version_major_string REGEX "#define ILMBASE_VERSION_MAJOR ")
++    STRING ( REGEX REPLACE "#define ILMBASE_VERSION_MAJOR" "" _ilmbase_version_major_unstrip "${_ilmbase_version_major_string}")
++    STRING ( STRIP "${_ilmbase_version_major_unstrip}" ILMBASE_VERSION_MAJOR )
+ 
+-  FILE ( STRINGS "${ILMBASE_LOCATION}/include/OpenEXR/IlmBaseConfig.h" _ilmbase_version_major_string REGEX "#define ILMBASE_VERSION_MAJOR ")
+-  STRING ( REGEX REPLACE "#define ILMBASE_VERSION_MAJOR" "" _ilmbase_version_major_unstrip "${_ilmbase_version_major_string}")
+-  STRING ( STRIP "${_ilmbase_version_major_unstrip}" ILMBASE_VERSION_MAJOR )
+-
+-  FILE ( STRINGS "${ILMBASE_LOCATION}/include/OpenEXR/IlmBaseConfig.h" _ilmbase_version_minor_string REGEX "#define ILMBASE_VERSION_MINOR ")
+-  STRING ( REGEX REPLACE "#define ILMBASE_VERSION_MINOR" "" _ilmbase_version_minor_unstrip "${_ilmbase_version_minor_string}")
+-  STRING ( STRIP "${_ilmbase_version_minor_unstrip}" ILMBASE_VERSION_MINOR )
++    FILE ( STRINGS "${ILMBASE_LOCATION}/include/OpenEXR/IlmBaseConfig.h" _ilmbase_version_minor_string REGEX "#define ILMBASE_VERSION_MINOR ")
++    STRING ( REGEX REPLACE "#define ILMBASE_VERSION_MINOR" "" _ilmbase_version_minor_unstrip "${_ilmbase_version_minor_string}")
++    STRING ( STRIP "${_ilmbase_version_minor_unstrip}" ILMBASE_VERSION_MINOR )
+ 
+-  IF ( ILMBASE_NAMESPACE_VERSIONING )
+ 	SET ( IEX_LIBRARY_NAME       Iex-${ILMBASE_VERSION_MAJOR}_${ILMBASE_VERSION_MINOR}       )
+ 	SET ( IEXMATH_LIBRARY_NAME   IexMath-${ILMBASE_VERSION_MAJOR}_${ILMBASE_VERSION_MINOR}   )
+ 	SET ( ILMTHREAD_LIBRARY_NAME IlmThread-${ILMBASE_VERSION_MAJOR}_${ILMBASE_VERSION_MINOR} )
+diff -ru openvdb-4.0.2.old/cmake/FindOpenEXR.cmake openvdb-4.0.2/cmake/FindOpenEXR.cmake
+--- openvdb-4.0.2.old/cmake/FindOpenEXR.cmake	2017-07-31 21:16:32.000000000 +0300
++++ openvdb-4.0.2/cmake/FindOpenEXR.cmake	2017-09-03 22:37:25.693271487 +0300
+@@ -52,19 +52,20 @@
+ 
+ IF ( OPENEXR_FOUND )
+ 
+-  FILE ( STRINGS "${OPENEXR_LOCATION}/include/OpenEXR/OpenEXRConfig.h" _openexr_version_major_string REGEX "#define OPENEXR_VERSION_MAJOR ")
+-  STRING ( REGEX REPLACE "#define OPENEXR_VERSION_MAJOR" "" _openexr_version_major_unstrip "${_openexr_version_major_string}")
+-  STRING ( STRIP "${_openexr_version_major_unstrip}" OPENEXR_VERSION_MAJOR )
++  IF ( OPENEXR_NAMESPACE_VERSIONING )
++    FILE ( STRINGS "${OPENEXR_LOCATION}/include/OpenEXR/OpenEXRConfig.h" _openexr_version_major_string REGEX "#define OPENEXR_VERSION_MAJOR ")
++    STRING ( REGEX REPLACE "#define OPENEXR_VERSION_MAJOR" "" _openexr_version_major_unstrip "${_openexr_version_major_string}")
++    STRING ( STRIP "${_openexr_version_major_unstrip}" OPENEXR_VERSION_MAJOR )
+ 
+-  FILE ( STRINGS "${OPENEXR_LOCATION}/include/OpenEXR/OpenEXRConfig.h" _openexr_version_minor_string REGEX "#define OPENEXR_VERSION_MINOR ")
+-  STRING ( REGEX REPLACE "#define OPENEXR_VERSION_MINOR" "" _openexr_version_minor_unstrip "${_openexr_version_minor_string}")
+-  STRING ( STRIP "${_openexr_version_minor_unstrip}" OPENEXR_VERSION_MINOR )
++    FILE ( STRINGS "${OPENEXR_LOCATION}/include/OpenEXR/OpenEXRConfig.h" _openexr_version_minor_string REGEX "#define OPENEXR_VERSION_MINOR ")
++    STRING ( REGEX REPLACE "#define OPENEXR_VERSION_MINOR" "" _openexr_version_minor_unstrip "${_openexr_version_minor_string}")
++    STRING ( STRIP "${_openexr_version_minor_unstrip}" OPENEXR_VERSION_MINOR )
+   
+-  MESSAGE ( STATUS "Found OpenEXR v${OPENEXR_VERSION_MAJOR}.${OPENEXR_VERSION_MINOR} at ${OPENEXR_LOCATION}" )
++    MESSAGE ( STATUS "Found OpenEXR v${OPENEXR_VERSION_MAJOR}.${OPENEXR_VERSION_MINOR} at ${OPENEXR_LOCATION}" )
+ 
+-  IF ( OPENEXR_NAMESPACE_VERSIONING )
+ 	SET ( ILMIMF_LIBRARY_NAME IlmImf-${OPENEXR_VERSION_MAJOR}_${OPENEXR_VERSION_MINOR} )
+   ELSE ( OPENEXR_NAMESPACE_VERSIONING )
++    MESSAGE ( STATUS "Found OpenEXR at ${OPENEXR_LOCATION}" )
+ 	SET ( ILMIMF_LIBRARY_NAME IlmImf )
+   ENDIF ( OPENEXR_NAMESPACE_VERSIONING )
+ 	

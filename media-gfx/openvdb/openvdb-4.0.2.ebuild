@@ -43,10 +43,8 @@ DEPEND="${RDEPEND}
 	)"
 
 PATCHES=(
-	"${FILESDIR}"/${P}-make-docs-optional.patch
-	"${FILESDIR}"/${P}-build-docs-once.patch
 	"${FILESDIR}"/${P}-namespace-fixes.patch
-	"${FILESDIR}"/${P}-python-module-install-dir-fix.patch
+	"${FILESDIR}"/${P}-boost-1.65-fixes.patch
 )
 
 src_configure() {
