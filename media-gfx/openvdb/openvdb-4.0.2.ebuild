@@ -43,8 +43,10 @@ DEPEND="${RDEPEND}
 	)"
 
 PATCHES=(
-	"${FILESDIR}"/${P}-namespace-fixes.patch
+	#"${FILESDIR}"/${P}-namespace-fixes.patch
 	"${FILESDIR}"/${P}-boost-1.65-fixes.patch
+	"${FILESDIR}"/${P}-use-pkg-config.patch
+	"${FILESDIR}"/${P}-use-gnuinstalldirs.patch
 )
 
 src_configure() {
