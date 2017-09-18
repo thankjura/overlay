@@ -9,8 +9,8 @@ DESCRIPTION="A 3D game engine by Epic Games which can be used non-commercially f
 HOMEPAGE="https://github.com/EpicGames/UnrealEngine"
 #SRC_URI="https://github.com/EpicGames/UnrealEngine/archive/${PV}-release.tar.gz -> ${P}.tar.gz"
 EGIT_REPO_URI="https://github.com/EpicGames/UnrealEngine.git"
-EGIT_BRANCH="master"
-EGIT_COMMIT="163e3403a9de73d6fad9aca99f2fed49fc433b34"
+EGIT_BRANCH="4.18"
+#EGIT_COMMIT="163e3403a9de73d6fad9aca99f2fed49fc433b34"
 
 LICENSE="UnrealEngine"
 SLOT="0"
