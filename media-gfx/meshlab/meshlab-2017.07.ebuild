@@ -5,12 +5,13 @@ EAPI=6
 
 inherit eutils
 
-VCGLIB_VER="1.0.1"
+MESHLAB_COMMIT="70b9dd7fc4a9d4044f486e3044572ca5cd0fefb6"
+VCGLIB_COMMIT="7d1431f314f2f309bfb4bae68ba0751e6e8b5fd4"
 
 DESCRIPTION="Open source system for processing and editing 3D triangular meshes"
 HOMEPAGE="http://www.meshlab.net/"
-SRC_URI="https://github.com/cnr-isti-vclab/meshlab/archive/v${PV}.tar.gz -> ${P}.tar.gz
-		https://github.com/cnr-isti-vclab/vcglib/archive/v${VCGLIB_VER}.tar.gz -> vcglib-${VCGLIB_VER}.tar.gz"
+SRC_URI="https://github.com/cnr-isti-vclab/meshlab/archive/${MESHLAB_COMMIT}.tar.gz -> ${P}.tar.gz
+		https://github.com/cnr-isti-vclab/vcglib/archive/${VCGLIB_COMMIT}.tar.gz -> vcglib-${VCGLIB_COMMIT}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
@@ -29,15 +30,15 @@ DEPEND="dev-cpp/muParser
 "
 RDEPEND="${DEPEND}"
 
-S="${WORKDIR}/${P}/src"
+S="${WORKDIR}/${PN}-${MESHLAB_COMMIT}/src"
 
 src_prepare() {
 	rm -fr src/external/{inc,lib}
-	mv plugins_experimental/io_TXT/io_txt.pro plugins_experimental/io_TXT/io_TXT.pro || die
 	eapply ${FILESDIR}/${PV}/*.patch
-	mv ${WORKDIR}/vcglib-${VCGLIB_VER} ${WORKDIR}/vcglib
+	mv ${WORKDIR}/vcglib-${VCGLIB_COMMIT} ${WORKDIR}/vcglib
 	cd ${WORKDIR}/vcglib
 	eapply ${FILESDIR}/vcglib_import_bundle_out.patch
+	eapply ${FILESDIR}/vcglib_iostream.patch
 	default
 }
 

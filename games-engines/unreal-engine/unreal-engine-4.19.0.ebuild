@@ -8,7 +8,6 @@ inherit git-r3
 DESCRIPTION="A 3D game engine by Epic Games which can be used non-commercially for free."
 HOMEPAGE="https://github.com/EpicGames/UnrealEngine"
 #SRC_URI="https://github.com/EpicGames/UnrealEngine/archive/${PV}-release.tar.gz -> ${P}.tar.gz"
-EVCS_OFFLINE=1
 EGIT_REPO_URI="https://github.com/EpicGames/UnrealEngine.git"
 EGIT_BRANCH="master"
 EGIT_COMMIT="163e3403a9de73d6fad9aca99f2fed49fc433b34"
