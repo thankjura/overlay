@@ -39,6 +39,7 @@ src_compile() {
 }
 
 src_install() {
+	newicon Engine/Source/Programs/UnrealVS/Resources/Preview.png UE4Editor.png
 	dodir /opt/UnrealEngine/Engine/DerivedDataCache
 	dodir /opt/UnrealEngine/Engine/Intermediate
 	mv Engine/{Binaries,Build,Config,Content,Documentation,Extras,Plugins,Programs,Saved,Shaders,Source} ${D}opt/UnrealEngine/Engine
@@ -51,7 +52,6 @@ src_install() {
 
 	dosym /opt/UnrealEngine/Engine/Binaries/Linux/UE4Editor /usr/bin/UE4Editor
 
-	newicon Engine/Source/Programs/UnrealVS/Resources/Preview.png UE4Editor.png
 	dodoc LICENSE.md README.md
 	make_desktop_entry UE4Editor UE4Editor UE4Editor "Development" "Path=/opt/UnrealEngine/Engine"
 }
