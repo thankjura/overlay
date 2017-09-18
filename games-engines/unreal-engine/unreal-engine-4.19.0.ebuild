@@ -3,7 +3,7 @@
 
 EAPI=6
 
-inherit git-r3
+inherit eutils git-r3
 
 DESCRIPTION="A 3D game engine by Epic Games which can be used non-commercially for free."
 HOMEPAGE="https://github.com/EpicGames/UnrealEngine"
