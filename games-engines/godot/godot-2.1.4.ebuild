@@ -26,6 +26,7 @@ SLOT="0"
 IUSE="+freetype +llvm +openssl +png pulseaudio theora udev +vorbis +xml"
 
 DEPEND="
+		sys-devel/clang
 		>=app-arch/bzip2-1.0.6-r6
 		>=app-arch/lz4-0_p120
 		>=app-arch/xz-utils-5.0.8
