@@ -13,14 +13,13 @@ if [[ ${PV} == 9999 ]]; then
 
 	EGIT_REPO_URI="https://github.com/godotengine/godot.git"
 	SRC_URI=""
-	KEYWORDS=""
 else
 	SRC_URI="https://github.com/godotengine/godot/archive/${PV}-stable.tar.gz -> ${P}.tar.gz"
 	RESTRICT="primaryuri"
-	KEYWORDS="~amd64 ~x86"
 	S="${WORKDIR}/${PN}-${PV}-stable"
 fi
 
+KEYWORDS="~amd64 ~x86"
 LICENSE="MIT"
 SLOT="0"
 IUSE="+freetype +llvm +openssl +png pulseaudio theora udev +vorbis +xml"
