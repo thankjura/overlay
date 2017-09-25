@@ -49,7 +49,8 @@ RDEPEND="dev-libs/atk[${MULTILIB_USEDEP}]
 	x11-libs/libXrandr[${MULTILIB_USEDEP}]
 	x11-libs/libXrender[${MULTILIB_USEDEP}]
 	x11-libs/libXtst[${MULTILIB_USEDEP}]
-	x11-libs/pango[${MULTILIB_USEDEP}]"
+	x11-libs/pango[${MULTILIB_USEDEP}]
+	media-libs/libv4l"
 
 src_unpack() {
 	rpm_src_unpack ${A}
