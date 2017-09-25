@@ -88,20 +88,24 @@ src_install() {
 	dobin bin/godot.*
 	if [[ "${ARCH}" == "amd64" ]]; then
 		if use llvm; then
-			make_desktop_entry godot.x11.tools.64.llvm Godot
+			dosym /usr/bin/godot.x11.tools.64.llvm /usr/bin/godot
+			make_desktop_entry godot Godot
 			with_desktop_entry=1
 		else
-			make_desktop_entry godot.x11.tools.64 Godot
+			dosym /usr/bin/godot.x11.tools.64 /usr/bin/godot
+			make_desktop_entry godot Godot
 			with_desktop_entry=1
 		fi
 	fi
 
 	if [[ "${ARCH}" == "x86" ]]; then
 		if use llvm; then
-			make_desktop_entry godot.x11.tools.32.llvm Godot
+			dosym /usr/bin/godot.x11.tools.32.llvm /usr/bin/godot
+			make_desktop_entry godot Godot
 			with_desktop_entry=1
 		else
-			make_desktop_entry godot.x11.tools.32 Godot
+			dosym /usr/bin/godot.x11.tools.32 /usr/bin/godot
+			make_desktop_entry godot Godot
 			with_desktop_entry=1
 		fi
 	fi

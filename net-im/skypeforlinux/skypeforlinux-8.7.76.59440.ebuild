@@ -65,23 +65,8 @@ src_prepare() {
 }
 
 src_install() {
-	insinto /opt/skypeforlinux/locales
-	doins usr/share/skypeforlinux/locales/*.pak
-
-	insinto /opt/skypeforlinux/resources/app.asar.unpacked/node_modules/keytar/build/Release
-	doins usr/share/skypeforlinux/resources/app.asar.unpacked/node_modules/keytar/build/Release/keytar.node
-
-	insinto /opt/skypeforlinux/resources
-	doins usr/share/skypeforlinux/resources/*.asar
-
-	insinto /opt/skypeforlinux
-	doins usr/share/skypeforlinux/*.pak
-	doins usr/share/skypeforlinux/*.bin
-	doins usr/share/skypeforlinux/*.dat
-	doins usr/share/skypeforlinux/version
-	exeinto /opt/skypeforlinux
-	doexe usr/share/skypeforlinux/*.so
-	doexe usr/share/skypeforlinux/skypeforlinux
+	insinto /opt/skypeforlinux/
+	doins -r usr/share/skypeforlinux/*
 
 	into /opt
 	dobin usr/bin/skypeforlinux
@@ -89,6 +74,8 @@ src_install() {
 	dodoc -r usr/share/doc/skypeforlinux/.
 
 	doicon usr/share/pixmaps/skypeforlinux.png
+
+	fperms a+x /opt/skypeforlinux/skypeforlinux
 
 	local res
 	for res in 16 32 256 512; do
