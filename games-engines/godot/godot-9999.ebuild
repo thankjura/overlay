@@ -22,7 +22,7 @@ fi
 KEYWORDS="~amd64 ~x86"
 LICENSE="MIT"
 SLOT="0"
-IUSE="+freetype +llvm +openssl +png pulseaudio theora udev +vorbis +xml"
+IUSE="+freetype +llvm +openssl +png +tools pulseaudio theora udev +vorbis +xml"
 
 DEPEND="
 		sys-devel/clang
@@ -76,6 +76,7 @@ src_configure() {
 		use_llvm=$(usex llvm)
 		vorbis=$(usex vorbis)
 		xml=$(usex xml)
+		tools=$(usex tools)
 	)
 }
 
