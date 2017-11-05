@@ -85,7 +85,7 @@ src_configure() {
 
 src_install() {
 	cmake-utils_src_install
-	make_wrapper ${PN} ${GAMES_PREFIX_OPT}/${PN}-5.1/${PN}
+	make_wrapper ${PN} ${GAMES_PREFIX_OPT}/${PN}-5.2/${PN}
 	newicon "Themes/default/Graphics/Common window icon.png" ${PN}.png
 	make_desktop_entry ${PN} Stepmania ${PN}
 }
