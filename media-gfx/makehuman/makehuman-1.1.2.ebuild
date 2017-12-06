@@ -27,8 +27,8 @@ RDEPEND="${DEPEND}"
 
 B=${WORKDIR}/build
 src_prepare() {	
-	ln -sf ${S}/blendertools/makeclothes ${S}/blendertools/makewalk/makeclothes
-	ln -sf ${S}/blendertools/maketarget ${S}/blendertools/makewalk/maketarget
+	rm ${S}/blendertools/makewalk/makeclothes
+	rm ${S}/blendertools/makewalk/maketarget
 	eapply_user
 }
 
