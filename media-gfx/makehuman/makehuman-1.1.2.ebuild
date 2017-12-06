@@ -29,6 +29,7 @@ B=${WORKDIR}/build
 src_prepare() {	
 	rm ${S}/blendertools/makewalk/makeclothes
 	rm ${S}/blendertools/makewalk/maketarget
+	eapply ${FILESDIR}/${P}-fix-numpy-1.13.patch
 	eapply_user
 }
 
