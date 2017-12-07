@@ -1,0 +1,65 @@
+diff -ru makehuman-1.1.2.old/makehuman/plugins/9_export_fbx/encode_bin.py makehuman-1.1.2/makehuman/plugins/9_export_fbx/encode_bin.py
+--- makehuman-1.1.2.old/makehuman/plugins/9_export_fbx/encode_bin.py	2017-12-07 17:30:11.312399053 +0300
++++ makehuman-1.1.2/makehuman/plugins/9_export_fbx/encode_bin.py	2017-12-07 17:34:04.289690514 +0300
+@@ -130,12 +130,7 @@
+         self.props.append(data)
+ 
+     def add_string_unicode(self, data):
+-        assert(isinstance(data, str))
+-        data = data.encode('utf8')
+-        data = pack('<I', len(data)) + data
+-
+-        self.props_type.append(data_types.STRING)
+-        self.props.append(data)
++        return self.add_string(data)
+ 
+     def _add_array_helper(self, data, array_type, prop_type):
+         assert(isinstance(data, array.array))
+@@ -349,4 +344,4 @@
+ 
+         # unknown magic (always the same)
+         write(b'\0' * 120)
+-        write(b'\xf8\x5a\x8c\x6a\xde\xf5\xd9\x7e\xec\xe9\x0c\xe3\x75\x8f\x29\x0b')
+\ В конце файла нет новой строки
++        write(b'\xf8\x5a\x8c\x6a\xde\xf5\xd9\x7e\xec\xe9\x0c\xe3\x75\x8f\x29\x0b')
+diff -ru makehuman-1.1.2.old/makehuman/plugins/9_export_fbx/fbx_binary.py makehuman-1.1.2/makehuman/plugins/9_export_fbx/fbx_binary.py
+--- makehuman-1.1.2.old/makehuman/plugins/9_export_fbx/fbx_binary.py	2017-12-07 17:30:11.312399053 +0300
++++ makehuman-1.1.2/makehuman/plugins/9_export_fbx/fbx_binary.py	2017-12-07 17:35:06.675432935 +0300
+@@ -468,7 +468,7 @@
+ 
+ def fbx_data_material(objectsParent, key, id, properties):
+     fbx_mat = elem_data_single_int64(objectsParent, b"Material", id)
+-    fbx_mat.add_string(fbx_name_class(key))
++    fbx_mat.add_string(fbx_name_class(key.encode()))
+     fbx_mat.add_string(b"")
+ 
+     elem_data_single_int32(fbx_mat, b"Version", 102)
+@@ -577,7 +577,7 @@
+ 
+ def fbx_data_deformer(objectsParent, key, id, properties):
+     fbx_skin = elem_data_single_int64(objectsParent, b"Deformer", id)
+-    fbx_skin.add_string(fbx_name_class(key))
++    fbx_skin.add_string(fbx_name_class(key.encode()))
+     fbx_skin.add_string(b"Skin")
+ 
+     props = elem_properties(fbx_skin)
+@@ -591,7 +591,7 @@
+ def fbx_data_subdeformer(objectsParent, key, id, indices, weights, bindmat, bindinv):
+     # Create the cluster.
+     fbx_clstr = elem_data_single_int64(objectsParent, b"Deformer", id)
+-    fbx_clstr.add_string(fbx_name_class(key))
++    fbx_clstr.add_string(fbx_name_class(key.encode()))
+     fbx_clstr.add_string(b"Cluster")
+ 
+     elem_data_single_int32(fbx_clstr, b"Version", FBX_DEFORMER_CLUSTER_VERSION)
+diff -ru makehuman-1.1.2.old/makehuman/plugins/9_export_fbx/fbx_utils_bin.py makehuman-1.1.2/makehuman/plugins/9_export_fbx/fbx_utils_bin.py
+--- makehuman-1.1.2.old/makehuman/plugins/9_export_fbx/fbx_utils_bin.py	2017-12-07 17:30:11.313399033 +0300
++++ makehuman-1.1.2/makehuman/plugins/9_export_fbx/fbx_utils_bin.py	2017-12-07 17:36:03.637285640 +0300
+@@ -575,6 +575,6 @@
+ 
+ def fbx_name_class(name, cls=None):
+     if cls is None:
+-        cls,name = name.split('::')
++        cls,name = name.split(b'::')
+     return FBX_NAME_CLASS_SEP.join((name, cls))
+ 

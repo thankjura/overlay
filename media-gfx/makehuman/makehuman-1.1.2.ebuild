@@ -11,7 +11,7 @@ DESCRIPTION="Parametrical modeling program for creating human bodies"
 HOMEPAGE="http://www.makehuman.org"
 EGIT_REPO_URI="https://github.com/makehumancommunity/makehuman.git"
 EGIT_BRANCH="AranuvirQt5"
-EGIT_COMMIT=a175c9b59c55318ef2c2e573ecd0d0282c594e6f
+EGIT_COMMIT=a4ef5e8ec0b8897538b816afcd52e14bccffdb9f
 
 LICENSE="AGPL3"
 SLOT="0"
@@ -27,9 +27,8 @@ RDEPEND="${DEPEND}"
 
 B=${WORKDIR}/build
 src_prepare() {	
-	rm ${S}/blendertools/makewalk/makeclothes
-	rm ${S}/blendertools/makewalk/maketarget
 	eapply ${FILESDIR}/${P}-fix-numpy-1.13.patch
+	eapply ${FILESDIR}/${P}-fix-python3-1.patch
 	eapply_user
 }
 
