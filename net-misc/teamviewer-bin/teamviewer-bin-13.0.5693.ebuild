@@ -46,6 +46,7 @@ RDEPEND="app-arch/snappy
          dev-qt/qtwidgets
          dev-qt/qtx11extras
          media-gfx/graphite2
+		 dev-qt/qtquickcontrols
          media-libs/freetype
          media-libs/harfbuzz
          media-libs/libjpeg-turbo
