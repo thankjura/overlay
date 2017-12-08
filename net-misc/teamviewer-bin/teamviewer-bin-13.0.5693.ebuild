@@ -3,8 +3,8 @@
 
 EAPI=6
 
-# Import eutils (required for newicon, make_desktop_entry)
-inherit eutils
+# Import eutils (newicon, make_desktop_entry), systemd (systemd_dounit), gnome2-utils (gnome2_icon_cache_update)
+inherit eutils systemd gnome2-utils
 
 # Determine major version (required to determine download URL)
 MY_MV=${PV/\.*}
@@ -41,12 +41,12 @@ RDEPEND="app-arch/snappy
          dev-qt/qtgui
          dev-qt/qtnetwork
          dev-qt/qtopengl
+         dev-qt/qtquickcontrols
          dev-qt/qtsql
          dev-qt/qtwebkit
          dev-qt/qtwidgets
          dev-qt/qtx11extras
          media-gfx/graphite2
-		 dev-qt/qtquickcontrols
          media-libs/freetype
          media-libs/harfbuzz
          media-libs/libjpeg-turbo
@@ -103,8 +103,9 @@ src_install() {
 		fperms 755 ${dst}/${lib}
 	done
 
-	# Install daemon init script
+	# Install daemon init script and systemd service
 	newinitd ${FILESDIR}/${MY_PN}d.init ${MY_PN}d
+	systemd_dounit tv_bin/script/teamviewerd.service
 
 	# Install dbus services
 	insinto /usr/share/dbus-1/services
@@ -139,23 +140,38 @@ src_install() {
 	dosym ${dst}/tv_bin/script/${MY_PN} /opt/bin/${MY_PN}
 
 	# Create application menu entry
-	make_desktop_entry ${MY_PN} ${MY_AN} ${MY_PN}
+	make_desktop_entry ${MY_PN} ${MY_AN} ${MY_AN}
 
 }
 
 
 pkg_postinst() {
 
-	# Notes for TeamViewer daemon
-	elog "Before using TeamViewer, you need to start its daemon:"
-	elog "# /etc/init.d/teamviewerd start"
-	elog ""
-	elog "You might want to add teamviewerd to the default runlevel:"
-	elog "# rc-update add teamviewerd default"
-	elog ""
+	# Update Gnome icon cache (needs to be called in both pkg_postinst and pkg_postrm)
+	gnome2_icon_cache_update
 
-	# Notes for command line options
+	# Elog notes
+	elog "Before using TeamViewer, you need to start its daemon:"
+	elog "OpenRC:"
+	elog "# /etc/init.d/teamviewerd start"
+	elog "Systemd:"
+	elog "# systemctl start teamviewerd.service"
+	elog ""
+	elog "You might want to automatically start the daemon at boot:"
+	elog "OpenRC:"
+	elog "# rc-update add teamviewerd default"
+	elog "Systemd:"
+	elog "# systemctl enable teamviewerd.service"
+	elog ""
 	elog "To display additional command line options simply run:"
 	elog "# teamviewer help"
+
+}
+
+
+pkg_postrm() {
+
+	# Update Gnome icon cache (needs to be called in both pkg_postinst and pkg_postrm)
+	gnome2_icon_cache_update
 
 }
