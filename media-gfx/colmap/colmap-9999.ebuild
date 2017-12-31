@@ -37,6 +37,7 @@ src_prepare() {
 	eapply ${FILESDIR}/regex.patch
 
 	sed -i "s:\$COLMAP_EXE_PATH:${COLMAP_PATH}/bin:" src/base/undistortion.cc || die
+	sed -i "s:\/usr\/lib:\/usr\/lib64:" src/base/undistortion.cc || die
 
 	cmake-utils_src_prepare
 }
@@ -44,7 +45,7 @@ src_prepare() {
 src_configure() {
 	addwrite /dev/nvidia-uvm
 	addwrite /dev/nvidiactl
-
+	
 	local mycmakeargs=(
 		-DCUDA_ENABLED=ON
 		-DCUDA_HOST_COMPILER=/opt/cuda/bin/gcc
@@ -56,6 +57,9 @@ src_configure() {
 	)
 
 	cmake-utils_src_configure
+	for i in `find ${BUILD_DIR} -name build.make`; do
+		sed -i "/\/usr\/lib\/libglog\.so/d" ${i};
+	done
 }
 
 src_install() {

@@ -1,0 +1,13 @@
+--- include/host_defines.h	2017-12-18 14:14:28.151154536 -0500
++++ include/host_defines.h	2017-12-18 14:17:01.927019796 -0500
+@@ -47,4 +47,10 @@
+  * Users Notice.
+  */
+ 
++#include <features.h>
++
++#if __GLIBC_PREREQ(2,26)
++# define _BITS_FLOATN_H
++#endif
++
+ #include "crt/host_defines.h"
