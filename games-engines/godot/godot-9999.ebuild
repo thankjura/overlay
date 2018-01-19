@@ -12,6 +12,7 @@ if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 
 	EGIT_REPO_URI="https://github.com/godotengine/godot.git"
+	#EGIT_COMMIT="6e2ed15ff14efe3063f66c182218f56e557bb468"
 	SRC_URI=""
 else
 	SRC_URI="https://github.com/godotengine/godot/archive/${PV}-stable.tar.gz -> ${P}.tar.gz"
@@ -63,7 +64,7 @@ RDEPEND="${DEPEND}"
 
 src_configure() {
 	MYSCONS=(
-		CC="$(tc-getCC)"
+		CXX=clang++
 		builtin_zlib=no
 		colored=yes
 		platform=x11
