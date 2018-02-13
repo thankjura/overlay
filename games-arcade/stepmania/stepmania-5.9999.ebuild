@@ -79,6 +79,7 @@ src_configure() {
 		-DWITH_JPEG=$(usex jpeg)
 		-DWITH_MP3=$(usex mp3)
 		-DWITH_OGG=$(usex vorbis)
+		-DWITH_MINIMAID=OFF
 	)
 	cmake-utils_src_configure
 }
