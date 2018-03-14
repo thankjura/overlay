@@ -3,14 +3,11 @@
 
 EAPI=6
 
-inherit eutils git-r3
+inherit eutils
 
 DESCRIPTION="A 3D game engine by Epic Games which can be used non-commercially for free."
 HOMEPAGE="https://github.com/EpicGames/UnrealEngine"
-#SRC_URI="https://github.com/EpicGames/UnrealEngine/archive/${PV}-release.tar.gz -> ${P}.tar.gz"
-EGIT_REPO_URI="https://github.com/EpicGames/UnrealEngine.git"
-EGIT_BRANCH="promoted"
-#EGIT_COMMIT="163e3403a9de73d6fad9aca99f2fed49fc433b34"
+SRC_URI="UnrealEngine-${PV}-release.tar.gz"
 
 LICENSE="UnrealEngine"
 SLOT="0"
@@ -28,8 +25,25 @@ RDEPEND="${DEPEND}"
 
 CHECKREQS_DISK_BUILD="34G"
 
+RESTRICT="fetch"
+
+pkg_nofetch() {
+	einfo "Please download \"${PV}-release.tar.gz\" from"
+	einfo
+	einfo
+	einfo "  https://github.com/EpicGames/UnrealEngine/releases/"
+	einfo
+	einfo " and save as UnrealEngine-${PV}-release.tar.gz in ${DISTDIR}"
+	einfo
+	einfo
+}
+
+S=${WORKDIR}/UnrealEngine-${PV}-release
+
 src_prepare() {
 	eapply ${FILESDIR}/fix_crash_on_open_setting_dialog.patch || die
+	eapply ${FILESDIR}/clang-6.patch || die
+	eapply ${FILESDIR}/clang-6-2.patch || die
 	eapply_user
 	./Setup.sh || die
 	./GenerateProjectFiles.sh || die

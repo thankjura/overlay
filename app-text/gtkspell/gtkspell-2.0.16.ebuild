@@ -3,7 +3,7 @@
 
 EAPI=4
 
-inherit eutils
+inherit eutils autotools
 
 DESCRIPTION="Spell checking widget for GTK"
 HOMEPAGE="http://gtkspell.sourceforge.net/"
@@ -26,8 +26,10 @@ DOCS=( AUTHORS ChangeLog README ) # NEWS file is empty
 
 src_prepare() {
 	epatch ${FILESDIR}/${P}-enchant-2.patch
+	epatch ${FILESDIR}/${P}-enchant-3.patch
 	# Fix intltoolize broken file, see upstream #577133
 	sed -i -e "s:'\^\$\$lang\$\$':\^\$\$lang\$\$:g" po/Makefile.in.in || die
+	eautoreconf
 }
 
 src_configure() {

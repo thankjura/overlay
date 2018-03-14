@@ -33,7 +33,7 @@ RDEPEND="${DEPEND}"
 COLMAP_PATH="/opt/colmap"
 
 src_prepare() {
-	eapply ${FILESDIR}/nvm-export.patch
+	#eapply ${FILESDIR}/nvm-export.patch
 	eapply ${FILESDIR}/regex.patch
 
 	sed -i "s:\$COLMAP_EXE_PATH:${COLMAP_PATH}/bin:" src/base/undistortion.cc || die
@@ -45,6 +45,7 @@ src_prepare() {
 src_configure() {
 	addwrite /dev/nvidia-uvm
 	addwrite /dev/nvidiactl
+	addwrite /dev/nvidia-uvm-tools
 	
 	local mycmakeargs=(
 		-DCUDA_ENABLED=ON
@@ -64,6 +65,7 @@ src_configure() {
 
 src_install() {
 	addwrite /dev/nvidia0
+	addwrite /dev/nvidia-uvm-tools
 	cmake-utils_src_install
 	insinto ${COLMAP_PATH}
 	for vocab_tree in ${DISTDIR}/vocabulary-tree-*.bin ; do
