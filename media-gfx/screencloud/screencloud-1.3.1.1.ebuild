@@ -8,9 +8,11 @@ PYTHON_COMPAT=( python{2_6,2_7,3_3,3_4,3_5,3_6} )
 
 inherit cmake-utils gnome2-utils eutils python-single-r1
 
+COMMIT="ad3727e1d5391899c783c94ffc2d537083f56309"
+
 DESCRIPTION="ScreenCloud is an easy to use screenshot sharing tool"
 HOMEPAGE="http://screencloud.net"
-SRC_URI="https://github.com/olav-st/screencloud/archive/v${PV}.tar.gz"
+SRC_URI="https://github.com/olav-st/screencloud/archive/${COMMIT}.zip -> ${P}.zip"
 
 LICENSE="GPL-2.0"
 SLOT="0"
