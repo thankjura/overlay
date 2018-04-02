@@ -33,7 +33,6 @@ DEPEND="
 S=${WORKDIR}/${PN}-${COMMIT}
 
 src_prepare() {
-	eapply $FILESDIR/fix-qt.patch || die
 	python_setup
 	export PYTHON_INCLUDE_DIRS="$(python_get_includedir)" \
 		PYTHON_INCLUDE_PATH="$(python_get_library_path)"\
