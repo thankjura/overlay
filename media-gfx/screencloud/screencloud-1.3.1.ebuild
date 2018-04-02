@@ -28,7 +28,7 @@ DEPEND="
 	dev-python/pycrypto[${PYTHON_USEDEP}]
 "
 
-src_repare() {
+src_prepare() {
 	eapply $FILESDIR/fix-qt.patch || die
 	python_setup
 	export PYTHON_INCLUDE_DIRS="$(python_get_includedir)" \
