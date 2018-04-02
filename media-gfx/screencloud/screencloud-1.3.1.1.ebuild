@@ -30,6 +30,8 @@ DEPEND="
 	dev-python/pycrypto[${PYTHON_USEDEP}]
 "
 
+S=${WORKDIR}/${PN}-${COMMIT}
+
 src_prepare() {
 	eapply $FILESDIR/fix-qt.patch || die
 	python_setup
@@ -44,6 +46,9 @@ src_configure() {
 	local mycmakeargs=(
 		-DCONSUMER_KEY_SCREENCLOUD=${CONSUMER_KEY_SCREENCLOUD}
 		-DCONSUMER_SECRET_SCREENCLOUD=${CONSUMER_SECRET_SCREENCLOUD}
+		-DQT_USE_QT5=ON
+		-DPYTHON_USE_PYTHON3=ON
+		-DCMAKE_BUILD_TYPE=Release
 	)
 	cmake-utils_src_configure
 }
