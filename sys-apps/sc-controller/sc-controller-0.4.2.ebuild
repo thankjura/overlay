@@ -19,7 +19,10 @@ KEYWORDS="~amd64 ~x86"
 IUSE="+evdev"
 
 RDEPEND="${PYTHON_DEPS}
-	dev-python/python-evdev[${PYTHON_USEDEP}]
+	evdev? ( 
+		dev-python/python-evdev[${PYTHON_USEDEP}]
+		dev-python/pyinotify[${PYTHON_USEDEP}]
+	)
 	dev-python/pycairo
 	dev-python/pylibacl
 	>=x11-libs/gtk+-3.10"
