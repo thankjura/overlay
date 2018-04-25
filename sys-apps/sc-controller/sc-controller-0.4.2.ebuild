@@ -30,11 +30,6 @@ DEPEND="${RDEPEND}"
 
 src_install() {
 	distutils-r1_src_install
-
-	# remove udev rules as we already cover these in steam-launcher
-	rm "${D}"/usr/lib/udev/rules.d/90-sc-controller.rules
-	rmdir "${D}"/usr/lib/udev/rules.d
-	rmdir "${D}"/usr/lib/udev
 }
 
 pkg_postinst() {
