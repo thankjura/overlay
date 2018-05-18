@@ -4,16 +4,15 @@
 EAPI=6
 PYTHON_COMPAT=( python2_7 )
 
-inherit versionator virtualx autotools eutils gnome2 multilib python-single-r1
+inherit virtualx autotools eutils gnome2 multilib python-single-r1 git-r3
 
 RESTRICT="mirror"
-MY_PV="${PV%_*}"
-MY_PV="${MY_PV/_rc/-RC}"
-MY_P="${PN}-${MY_PV}"
 
 DESCRIPTION="GNU Image Manipulation Program"
 HOMEPAGE="https://www.gimp.org/"
-SRC_URI="mirror://gimp/v$(get_version_component_range 1-2)/${MY_P}.tar.bz2"
+SRC_URI=""
+EGIT_REPO_URI="https://git.gnome.org/browse/gimp"
+EGIT_BRANCH="gtk3-port"
 LICENSE="GPL-3 LGPL-3"
 SLOT="2"
 KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~ppc ~ppc64 ~x86"
@@ -23,7 +22,7 @@ IUSE="alsa aalib altivec aqua debug doc openexr gnome postscript jpeg2k cpu_flag
 
 RDEPEND=">=dev-libs/glib-2.40.0:2
 	>=dev-libs/atk-2.2.0
-	>=x11-libs/gtk+-2.24.10:2
+	>=x11-libs/gtk+-3.22.9:3
 	dev-util/gtk-update-icon-cache
 	>=x11-libs/gdk-pixbuf-2.31:2
 	>=x11-libs/cairo-1.12.2
@@ -85,8 +84,6 @@ DOCS="AUTHORS ChangeLog* HACKING NEWS README*"
 
 REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
-S="${WORKDIR}/${MY_P}"
-
 pkg_setup() {
 	if use python; then
 		python-single-r1_pkg_setup
@@ -94,25 +91,15 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch "${FILESDIR}"/${PN}-2.9.8-cve-2017-17784.patch  # bug 641954
-	epatch "${FILESDIR}"/${PN}-2.8.22-cve-2017-17787.patch  # bug 641954
-
-	eapply_user
-
-	sed -i -e 's/== "xquartz"/= "xquartz"/' configure.ac || die #494864
-	sed 's:-DGIMP_DISABLE_DEPRECATED:-DGIMP_protect_DISABLE_DEPRECATED:g' -i configure.ac || die #615144
-	eautoreconf  # If you remove this: remove dev-util/gtk-doc-am from DEPEND, too
-
 	gnome2_src_prepare
-
-	sed 's:-DGIMP_protect_DISABLE_DEPRECATED:-DGIMP_DISABLE_DEPRECATED:g' -i configure || die #615144
-	fgrep -q GIMP_DISABLE_DEPRECATED configure || die #615144, self-test
+	eautoreconf
+	eapply_user
 }
 
 src_configure() {
 	local myconf=(
-		GEGL=${EPREFIX}/usr/bin/gegl-0.3
-		GDBUS_CODEGEN=${EPREFIX}/bin/false
+		GEGL=${EPREFIX}/usr/bin/gegl-0.4
+		#GDBUS_CODEGEN=${EPREFIX}/bin/false
 
 		--enable-default-binary
 		--disable-silent-rules
@@ -145,17 +132,6 @@ src_configure() {
 }
 
 src_compile() {
-	# Bugs #569738 and #591214
-	local nv
-	for nv in /dev/nvidia-uvm /dev/nvidiactl /dev/nvidia{0..9} ; do
-		# We do not check for existence as they may show up later
-		# https://bugs.gentoo.org/show_bug.cgi?id=569738#c21
-		addwrite "${nv}"
-	done
-	addwrite /dev/dri/  # bug #574038
-	addwrite /dev/ati/  # bug 589198
-	addwrite /proc/mtrr  # bug 589198
-
 	export XDG_DATA_DIRS=${EPREFIX}/usr/share  # bug 587004
 	gnome2_src_compile
 }
