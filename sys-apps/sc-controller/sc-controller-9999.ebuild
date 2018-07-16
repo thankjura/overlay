@@ -12,10 +12,11 @@ DESCRIPTION="User-mode driver and GTK3 based GUI for Steam Controller"
 HOMEPAGE="https://github.com/kozec/sc-controller/"
 
 EGIT_REPO_URI="https://github.com/kozec/sc-controller.git"
+#EGIT_COMMIT="5adab4fca31e448a003ca1e48ca3beec272f5f9b"
 
 LICENSE="GPL2"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~amd64"
 
 IUSE="+evdev"
 
