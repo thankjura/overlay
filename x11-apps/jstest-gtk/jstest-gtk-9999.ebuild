@@ -23,13 +23,10 @@ RDEPEND="dev-libs/libsigc++
 DEPEND="${RDEPEND}
 	dev-util/cmake"
 
-src_prepare() {
-	epatch "${FILESDIR}/find_data_dir.patch"
-	default
-}
 src_configure() {
 	cmake-utils_src_configure
 }
+
 src_install() {
 	dobin "${CMAKE_BUILD_DIR}"/${PN}
 	insinto /usr/share/${PN}

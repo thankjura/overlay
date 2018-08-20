@@ -16,7 +16,7 @@ EGIT_REPO_URI="https://github.com/kozec/sc-controller.git"
 
 LICENSE="GPL2"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS=""
 
 IUSE="+evdev"
 
