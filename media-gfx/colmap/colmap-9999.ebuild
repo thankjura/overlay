@@ -71,5 +71,5 @@ src_install() {
 	
 	dosym ${COLMAP_PATH}/bin/colmap /usr/bin/${PN}
 	newicon ${FILESDIR}/${PN}.png ${PN}.png
-	make_desktop_entry ${PN} "Colmap"
+	make_desktop_entry "${PN} gui" "Colmap"
 }
