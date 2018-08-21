@@ -5,7 +5,7 @@ EAPI=6
 
 inherit eutils git-r3 cmake-utils
 
-DESCRIPTION="Structure-from-Motion (SfM) and Multi-View Stereo (MVS) pipeline with a graphical and command-line interface."
+DESCRIPTION="SfM and MVS pipeline with a graphical and command-line interface."
 HOMEPAGE="https://colmap.github.io/"
 
 SRC_URI="https://demuc.de/colmap/vocab_tree-65536.bin -> vocabulary-tree-64K.bin
@@ -33,9 +33,6 @@ RDEPEND="${DEPEND}"
 COLMAP_PATH="/opt/colmap"
 
 src_prepare() {
-	#eapply ${FILESDIR}/nvm-export.patch
-	eapply ${FILESDIR}/regex.patch
-
 	sed -i "s:\$COLMAP_EXE_PATH:${COLMAP_PATH}/bin:" src/base/undistortion.cc || die
 	sed -i "s:\/usr\/lib:\/usr\/lib64:" src/base/undistortion.cc || die
 
