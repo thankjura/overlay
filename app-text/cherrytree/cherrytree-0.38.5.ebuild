@@ -30,7 +30,7 @@ DEPEND="${RDEPEND}
 	nls? ( sys-devel/gettext )
 "
 
-PLOCALES='cs de el es fr hy it ja lt nl pl pt_BR ru sl tr uk zh_CN'
+PLOCALES='cs de el es fi fr hy it ja lt nl pl pt_BR ru sl tr uk zh_CN'
 inherit l10n
 
 python_prepare_all() {
