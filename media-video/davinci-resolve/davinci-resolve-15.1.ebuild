@@ -43,9 +43,14 @@ src_install() {
 	dodoc "Linux_Installation_Instructions.pdf"
 	dodoc "DaVinci_Resolve_Manual.pdf"
 
-	mkdir -p ${D}/opt/resolve/DolbyVision
-	mkdir -p ${D}/opt/resolve/Media
-	mkdir -p ${D}/opt/resolve/configs
+	mkdir -p "${D}/opt/resolve/DolbyVision"
+	mkdir -p "${D}/opt/resolve/Media"
+	mkdir -p "${D}/opt/resolve/configs"
+	mkdir -p "${D}/opt/resolve/Resolve Disk Database"
+	mkdir -p "${D}/opt/resolve/Fairlight"
+	mkdir -p "${D}/opt/resolve/.crashreport"
+	mkdir -p "${D}/opt/resolve/.license"
+	mkdir -p "${D}/opt/resolve/.LUT"
 
 	insinto /opt/resolve
 	insopts -m644
@@ -64,11 +69,14 @@ src_install() {
 	cp -a rsf/default-config-linux.dat ${D}/opt/resolve/configs/config.dat
 	cp -a rsf/log-conf.xml ${D}/opt/resolve/configs/log-conf.xml
 	cp -a rsf/default_cm_config.bin ${D}/opt/resolve/DolbyVision/config.bin
-	fperms 0644 /opt/resolve/configs/config.dat
-	fperms 0644 /opt/resolve/configs/log-conf.xml
-	fperms 0755 /opt/resolve/DolbyVision/config.bin
-	fperms 0777 /opt/resolve/configs
-	fperms 0777 /opt/resolve/Media
+	fperms 0644 "/opt/resolve/configs/config.dat"
+	fperms 0644 "/opt/resolve/configs/log-conf.xml"
+	fperms 0755 "/opt/resolve/DolbyVision/config.bin"
+	fperms 0775 "/opt/resolve/configs"
+	fperms 0775 "/opt/resolve/Media"
+	fperms 0775 "/opt/resolve/Resolve Disk Database"
+	fperms 0775 "/opt/resolve/Fairlight"
+	fperms 0775 "/opt/resolve/LUT"
 
 	exeinto /opt/resolve/bin
 	doexe panels/DaVinciPanelDaemon
@@ -86,6 +94,9 @@ src_install() {
 	doexe rsf/oclBandwidthTest
 	doexe rsf/VstScanner
 
+	exeinto /opt/resolve/scripts
+	doexe rsf/script.getlogs.v4
+
 	tar xf panels/libusb-1.0.tgz -C ${D}/opt/resolve/bin
 	tar xf panels/dvpanel-framework-linux-x86_64.tgz -C ${D}/opt/resolve/libs
 	tar xf panels/dvpanel-utility-linux-x86_64.tgz -C ${D}/opt/resolve
@@ -96,6 +107,8 @@ src_install() {
 	done
 
 	unzip -qo rsf/fusion_presets.zip -d ${D}/opt/resolve
+	chmod -R 644 ${D}/opt/resolve/Fusion
+
 	gunzip -f ${D}/opt/resolve/LUT/trim_lut0.dpx.gz
 	# udev rules
 	echo 'SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="1edb", MODE="0666"' > 75-davincipanel.rules
