@@ -1,5 +1,4 @@
 #!/bin/bash
 mkdir -p /tmp/resolve/{logs,GPUCache}
 cd /opt/resolve
-export LD_LIBRARY_PATH=/opt/resolve/libs
-exec ./bin/resolve "\$@"
+./bin/resolve $@
