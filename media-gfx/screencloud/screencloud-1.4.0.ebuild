@@ -4,15 +4,13 @@
 
 EAPI=6
 CMAKE_MIN_VERSION="3.0"
-PYTHON_COMPAT=( python{2_6,2_7,3_3,3_4,3_5,3_6} )
+PYTHON_COMPAT=( python3_{4,5,6} )
 
 inherit cmake-utils gnome2-utils eutils python-single-r1
 
-COMMIT="ad3727e1d5391899c783c94ffc2d537083f56309"
-
 DESCRIPTION="ScreenCloud is an easy to use screenshot sharing tool"
 HOMEPAGE="http://screencloud.net"
-SRC_URI="https://github.com/olav-st/screencloud/archive/${COMMIT}.zip -> ${P}.zip"
+SRC_URI="https://github.com/olav-st/screencloud/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2.0"
 SLOT="0"
@@ -37,7 +35,7 @@ src_prepare() {
 	export PYTHON_INCLUDE_DIRS="$(python_get_includedir)" \
 		PYTHON_INCLUDE_PATH="$(python_get_library_path)"\
 		PYTHON_CFLAGS="$(python_get_CFLAGS)"\
-	    PYTHON_LIBS="$(python_get_LIBS)"
+		PYTHON_LIBS="$(python_get_LIBS)"
 	cmake-utils_src_prepare
 }
 
