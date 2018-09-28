@@ -4,9 +4,9 @@
 
 EAPI=6
 CMAKE_MIN_VERSION="3.0"
-PYTHON_COMPAT=( python3_{4,5,6} )
+PYTHON_COMPAT=( python{2_7,3_4,3_5,3_6} )
 
-inherit cmake-utils gnome2-utils eutils python-single-r1
+inherit cmake-utils python-single-r1 xdg-utils
 
 DESCRIPTION="ScreenCloud is an easy to use screenshot sharing tool"
 HOMEPAGE="http://screencloud.net"
@@ -21,40 +21,28 @@ DEPEND="
 	${PYTHON_DEPS}
 	dev-qt/qtsvg:5
 	dev-qt/qtx11extras:5
-	dev-qt/qtmultimedia:5
+	dev-qt/qtmultimedia:5[widgets]
 	dev-libs/quazip
 	dev-python/PythonQt[${PYTHON_USEDEP}]
 	dev-qt/qtconcurrent:5
 	dev-python/pycrypto[${PYTHON_USEDEP}]
 "
 
-S=${WORKDIR}/${PN}-${COMMIT}
-
-src_prepare() {
-	python_setup
-	export PYTHON_INCLUDE_DIRS="$(python_get_includedir)" \
-		PYTHON_INCLUDE_PATH="$(python_get_library_path)"\
-		PYTHON_CFLAGS="$(python_get_CFLAGS)"\
-		PYTHON_LIBS="$(python_get_LIBS)"
-	cmake-utils_src_prepare
-}
-
 src_configure() {
 	local mycmakeargs=(
-		-DCONSUMER_KEY_SCREENCLOUD=${CONSUMER_KEY_SCREENCLOUD}
-		-DCONSUMER_SECRET_SCREENCLOUD=${CONSUMER_SECRET_SCREENCLOUD}
 		-DQT_USE_QT5=ON
-		-DPYTHON_USE_PYTHON3=ON
+		-DPYTHON_USE_PYTHON3="$(usex python_single_target_python2_7 OFF ON)"
 		-DCMAKE_BUILD_TYPE=Release
+		-DCOLOR_OUTPUT:BOOL='ON'
+		-Wno-dev
 	)
 	cmake-utils_src_configure
 }
 
-pkg_postinst() {
-	ewarn
-	ewarn "If you have login to screencloud.net"
-	ewarn "visit https://screencloud.net/oauth/register"
-	ewarn "and set enviroment: "
-	ewarn "CONSUMER_KEY_SCREENCLOUD and CONSUMER_SECRET_SCREENCLOUD"
-	ewarn
+pkg_postinst(){
+	xdg_desktop_database_update
+}
+
+pkg_postrm(){
+	xdg_desktop_database_update
 }
