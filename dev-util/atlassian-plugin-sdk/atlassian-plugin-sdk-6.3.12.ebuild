@@ -23,12 +23,12 @@ S="${WORKDIR}"
 
 src_unpack(){
 	unpack "${A}"
-	unpack ./data.tar.gz
+	unpack ./data.tar.xz
 	rm *.tar.gz debian-binary
 }
 
 src_install(){
-	insinto /opt/atlassian/${PV}	
+	insinto /opt/atlassian/${PV}
 	doins -r usr/share/${P}/repository || die
 	doins -r usr/share/${P}/apache-maven-${MAVEN_VERSION} || die
 	exeinto /opt/atlassian/${PV}/bin
