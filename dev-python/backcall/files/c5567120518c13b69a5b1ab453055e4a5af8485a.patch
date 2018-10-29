@@ -1,0 +1,94 @@
+From c5567120518c13b69a5b1ab453055e4a5af8485a Mon Sep 17 00:00:00 2001
+From: Thomas Kluyver <thomas@kluyver.me.uk>
+Date: Sun, 31 Dec 2017 13:05:56 +0000
+Subject: [PATCH] Switch to Flit packaging
+
+---
+ MANIFEST.in          |  3 ---
+ backcall/__init__.py |  3 ++-
+ pyproject.toml       | 16 ++++++++++++++++
+ setup.py             | 27 ---------------------------
+ 4 files changed, 18 insertions(+), 31 deletions(-)
+ delete mode 100644 MANIFEST.in
+ create mode 100644 pyproject.toml
+ delete mode 100755 setup.py
+
+diff --git a/MANIFEST.in b/MANIFEST.in
+deleted file mode 100644
+index ebb58f2..0000000
+--- a/MANIFEST.in
++++ /dev/null
+@@ -1,3 +0,0 @@
+-recursive-include tests *
+-global-exclude __pycache__ *.pyc
+-include README.rst
+diff --git a/backcall/__init__.py b/backcall/__init__.py
+index 2a72553..cf64579 100644
+--- a/backcall/__init__.py
++++ b/backcall/__init__.py
+@@ -1,6 +1,7 @@
+ # -*- coding: utf-8 -*-
++"""Specifications for callback functions passed in to an API"""
+ from .backcall import callback_prototype
+ 
+ __author__ = 'Thomas Kluyver'
+ __email__ = 'takowl@gmail.com'
+-__version__ = '0.1.0'
+\ No newline at end of file
++__version__ = '0.1.0'
+diff --git a/pyproject.toml b/pyproject.toml
+new file mode 100644
+index 0000000..fb6defc
+--- /dev/null
++++ b/pyproject.toml
+@@ -0,0 +1,16 @@
++[build-system]
++requires = ["flit"]
++build-backend = "flit.buildapi"
++
++[tool.flit.metadata]
++module = "backcall"
++author = "Thomas Kluyver"
++author-email = "thomas@kluyver.me.uk"
++home-page = "https://github.com/takluyver/backcall"
++description-file = "README.rst"
++classifiers = [
++        'License :: OSI Approved :: BSD License',
++        'Programming Language :: Python :: 2',
++        'Programming Language :: Python :: 2.7',
++        'Programming Language :: Python :: 3',
++    ]
+diff --git a/setup.py b/setup.py
+deleted file mode 100755
+index fbe78ce..0000000
+--- a/setup.py
++++ /dev/null
+@@ -1,27 +0,0 @@
+-#!/usr/bin/env python
+-# -*- coding: utf-8 -*-
+-from distutils.core import setup
+-
+-readme = open('README.rst').read()
+-
+-setup(
+-    name='backcall',
+-    version='0.1.0',
+-    description='Specifications for callback functions passed in to an API',
+-    long_description=readme,
+-    author='Thomas Kluyver',
+-    author_email='takowl@gmail.com',
+-    url='https://github.com/takluyver/backcall',
+-    packages=['backcall'],
+-    license="BSD",
+-    classifiers=[
+-        'Development Status :: 2 - Pre-Alpha',
+-        'Intended Audience :: Developers',
+-        'License :: OSI Approved :: BSD License',
+-        'Natural Language :: English',
+-        'Programming Language :: Python :: 2',
+-        'Programming Language :: Python :: 2.7',
+-        'Programming Language :: Python :: 3',
+-        'Programming Language :: Python :: 3.3',
+-    ],
+-)
+\ No newline at end of file
