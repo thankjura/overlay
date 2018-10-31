@@ -20,6 +20,7 @@ IUSE=""
 
 DEPEND="
 	virtual/glu
+	dev-qt/qtscript:5
 "
 
 S="${WORKDIR}"
