@@ -17,12 +17,13 @@ EGIT_SUBMODULES=(
 	"extern/tomcrypt"
 	"extern/tommath"
 	"extern/libpng"
+	"extern/ffmpeg-git"
 )
 
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="debug +jpeg +mp3 +vorbis +ffmpeg sse2"
+IUSE="debug +jpeg +mp3 +vorbis sse2"
 
 DEPEND="x11-libs/gtk+:2
 	media-libs/alsa-lib
@@ -30,7 +31,6 @@ DEPEND="x11-libs/gtk+:2
 	vorbis? ( media-libs/libvorbis )
 	media-libs/libpng
 	jpeg? ( virtual/jpeg )
-	ffmpeg? ( >=virtual/ffmpeg-0.5 )
 	virtual/glu
 	x11-libs/libXrandr
 	media-libs/glew
@@ -49,7 +49,6 @@ remove_bundled_lib() {
 src_prepare() {
 	sed -i "s:../extern/pcre/pcre.h:pcre.h:" src/RageUtil.cpp
 	# Remove bundled libs, to know if they become forked as lua already is.
-	remove_bundled_lib "ffmpeg"
 	remove_bundled_lib "libjpeg"
 	remove_bundled_lib "libpng"
 	#remove_bundled_lib "libtomcrypt"
@@ -72,8 +71,8 @@ src_prepare() {
 src_configure() {
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_PREFIX=${GAMES_PREFIX_OPT}
-		-DWITH_SYSTEM_FFMPEG=ON
-		-DWITH_FFMPEG=$(usex ffmpeg)
+		-DWITH_SYSTEM_FFMPEG=OFF
+		-DWITH_FFMPEG=ON
 		-DWITH_UNIT_TESTS=OFF
 		-DWITH_SSE2=$(usex sse2)
 		-DWITH_JPEG=$(usex jpeg)
