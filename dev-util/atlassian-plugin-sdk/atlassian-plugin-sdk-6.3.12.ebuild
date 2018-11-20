@@ -8,7 +8,7 @@ DESCRIPTION="Development kit to build Atlassian plugins"
 HOMEPAGE="http://developer.atlassian.com"
 SRC_URI="https://sdkrepo.atlassian.com/deb-archive/${PN}_${PV}_all.deb"
 LICENSE="Apache-2.0"
-SLOT="6.3.12"
+SLOT="${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
