@@ -21,6 +21,7 @@ IUSE=""
 DEPEND="
 	virtual/glu
 	dev-qt/qtscript:5
+	dev-libs/libisoburn
 "
 
 S="${WORKDIR}"
@@ -33,7 +34,7 @@ pkg_nofetch() {
 
 src_unpack() {
 	default
-	"./${PKG_NAME}.sh" --tar xf -C ${S} || die
+	xorriso -osirrox on -indev "./${PKG_NAME}.run" -extract / ${S} || die
 }
 
 src_prepare() {
@@ -41,76 +42,58 @@ src_prepare() {
 }
 
 src_install() {
-	dodoc "Linux_Installation_Instructions.pdf"
-	dodoc "DaVinci_Resolve_Manual.pdf"
-
-	mkdir -p "${D}/opt/resolve/DolbyVision"
 	mkdir -p "${D}/opt/resolve/Media"
+	mkdir -p "${D}/opt/resolve/DolbyVision"
 	mkdir -p "${D}/opt/resolve/configs"
+	mkdir -p "${D}/opt/resolve/easyDCP"
 	mkdir -p "${D}/opt/resolve/Resolve Disk Database"
 	mkdir -p "${D}/opt/resolve/Fairlight"
 	mkdir -p "${D}/opt/resolve/.crashreport"
 	mkdir -p "${D}/opt/resolve/.license"
 	mkdir -p "${D}/opt/resolve/.LUT"
+	mkdir -p "${D}/opt/resolve/logs"
+
+	sed -i -- 's/RESOLVE_INSTALL_LOCATION/\/opt\/resolve/g' share/*.desktop
 
 	insinto /opt/resolve
-	insopts -m644
-	doins -r UI_Resource
+	insopts -m751
+	doins -r Control
 	doins -r libs
 	doins -r plugins
-	doins -r Developer
 	doins -r LUT
+	doins -r share
+	doins -r UI_Resource
+	insopts -m744
+	doins -r docs
+	doins -r Fusion
+	doins -r Developer
+	doins -r graphics
 	doins -r Onboarding
-	doins -r rsf/Control
 
-	insinto /opt/resolve/graphics
-	insopts -m644
-	doins rsf/DV_Resolve.png
+	cp -a share/default-config-linux.dat ${D}/opt/resolve/configs/config.dat
+	cp -a share/log-conf.xml ${D}/opt/resolve/configs/log-conf.xml
+	# cp -a share/default_cm_config.bin ${D}/opt/resolve/DolbyVision/config.bin
 
-	cp -a rsf/default-config-linux.dat ${D}/opt/resolve/configs/config.dat
-	cp -a rsf/log-conf.xml ${D}/opt/resolve/configs/log-conf.xml
-	cp -a rsf/default_cm_config.bin ${D}/opt/resolve/DolbyVision/config.bin
-	fperms 0644 "/opt/resolve/configs/config.dat"
-	fperms 0644 "/opt/resolve/configs/log-conf.xml"
-	fperms 0755 "/opt/resolve/DolbyVision/config.bin"
+	fperms 0744 "/opt/resolve/configs/config.dat"
+	fperms 0744 "/opt/resolve/configs/log-conf.xml"
 	fperms 0775 "/opt/resolve/configs"
-	fperms 0775 "/opt/resolve/Media"
 	fperms 0775 "/opt/resolve/Resolve Disk Database"
 	fperms 0775 "/opt/resolve/Fairlight"
+	fperms 0775 "/opt/resolve/easyDCP"
 	fperms 0775 "/opt/resolve/LUT"
+	fperms 0775 "/opt/resolve/.LUT"
+	fperms 0775 "/opt/resolve/.crashreport"
+	fperms 0775 "/opt/resolve/.license"
+	fperms 0775 "/opt/resolve/Media"
+	fperms 0775 "/opt/resolve/DolbyVision"
+	fperms 0775 "/opt/resolve/Developer"
+	fperms 0775 "/opt/resolve/logs"
 
 	exeinto /opt/resolve/bin
-	doexe panels/DaVinciPanelDaemon
-	doexe resolve
-	doexe rsf/run_bmdpaneld
-	doexe rsf/bmdpaneld
-	doexe rsf/BMDPanelFirmware
-	doexe rsf/DPDecoder
-	doexe rsf/qt.conf
-	doexe rsf/ShowDpxHeader
-	doexe rsf/TestIO
-	doexe rsf/deviceQuery
-	doexe rsf/bandwidthTest
-	doexe rsf/oclDeviceQuery
-	doexe rsf/oclBandwidthTest
-	doexe rsf/VstScanner
-
+	doexe bin/*
 	exeinto /opt/resolve/scripts
-	doexe rsf/script.getlogs.v4
+	doexe scripts/*
 
-	tar xf panels/libusb-1.0.tgz -C ${D}/opt/resolve/bin
-	tar xf panels/dvpanel-framework-linux-x86_64.tgz -C ${D}/opt/resolve/libs
-	tar xf panels/dvpanel-utility-linux-x86_64.tgz -C ${D}/opt/resolve
-
-	for archive in ${D}/opt/resolve/libs/*tgz; do
-		tar xf "${archive}" -C ${D}/opt/resolve/libs/
-		rm -f "${archive}"
-	done
-
-	unzip -qo rsf/fusion_presets.zip -d ${D}/opt/resolve
-	chmod -R 644 ${D}/opt/resolve/Fusion
-
-	gunzip -f ${D}/opt/resolve/LUT/trim_lut0.dpx.gz
 	# udev rules
 	echo 'SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="1edb", MODE="0666"' > 75-davincipanel.rules
 	echo 'SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="096e", MODE="0666"' > 75-sdx.rules
@@ -119,8 +102,18 @@ src_install() {
 
 	dobin ${FILESDIR}/resolve
 
-	ln -s "/tmp/resolve/logs" "${D}/opt/resolve/logs"
-	ln -s "/tmp/resolve/GPUCache" "${D}/opt/resolve/GPUCache"
+	#ln -s "/tmp/resolve/logs" "${D}/opt/resolve/logs"
 
-	make_desktop_entry resolve "Davinci Resolve" /opt/resolve/graphics/DV_Resolve.png
+	domenu share/DaVinciResolve.desktop
+	domenu share/DaVinciResolveCaptureLogs.desktop
+}
+
+pkg_postinst() {
+	xdg_mimeinfo_database_update
+	xdg_desktop_database_update
+}
+
+pkg_postrm() {
+	xdg_mimeinfo_database_update
+	xdg_desktop_database_update
 }
