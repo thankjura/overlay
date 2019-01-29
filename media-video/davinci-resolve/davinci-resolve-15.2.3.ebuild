@@ -3,7 +3,7 @@
 
 EAPI=6
 
-inherit udev desktop
+inherit udev desktop xdg-utils
 
 DESCRIPTION="Professional A/V post-production software suite"
 HOMEPAGE="https://www.blackmagicdesign.com/products/davinciresolve/"
