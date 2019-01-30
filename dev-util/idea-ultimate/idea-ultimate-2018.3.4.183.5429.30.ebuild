@@ -35,7 +35,7 @@ src_unpack() {
 
 src_install() {
 	local dir="/opt/${MY_PN}-${SHORT_PV}"
-	local exe="${MY_PN}-${SLOT}"
+	local exe="${PN}"
 
 	# config files
 	insinto "/etc/idea"
@@ -70,11 +70,6 @@ src_install() {
 	fperms 755 "${dir}/bin/fsnotifier64"
 
 	newicon "bin/${MY_PN}.png" "${exe}.png"
-	make_wrapper "${exe}" "/opt/${P}/bin/${MY_PN}.sh"
+	make_wrapper "${exe}" "/opt/${MY_PN}-${SHORT_PV}/bin/${MY_PN}.sh"
 	make_desktop_entry ${exe} "IntelliJ IDEA ${SHORT_PV}" "${exe}" "Development;IDE"
-
-	# Protect idea conf on upgrade
-	env_file="${T}/25idea-${SLOT}"
-	echo "CONFIG_PROTECT=\"\${CONFIG_PROTECT} /etc/idea/conf\"" > "${env_file}"  || die
-	doenvd "${env_file}"
 }
