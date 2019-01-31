@@ -1,10 +1,9 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI="4"
+EAPI="6"
 inherit eutils versionator
 
-SLOT="$(get_major_version)"
 RDEPEND=">=virtual/jdk-1.8"
 
 RESTRICT="strip mirror"
@@ -20,6 +19,7 @@ else
     SRC_URI="http://download.jetbrains.com/${MY_PN}/${MY_PN}IU-$(get_version_component_range 1-3)-no-jdk.tar.gz"
 fi
 
+SLOT="0"
 LICENSE="IntelliJ-IDEA"
 IUSE=""
 KEYWORDS="~x86 ~amd64"
