@@ -37,10 +37,6 @@ src_install() {
 	local dir="/opt/${MY_PN}-${SHORT_PV}"
 	local exe="${PN}"
 
-	mv bin/idea.properties bin/idea-${SLOT}.properties
-	doins bin/idea-${SLOT}.properties
-	rm bin/idea-${SLOT}.properties
-
 	rm bin/fsnotifier-arm
 	rm -rf plugins/tfsIntegration/lib/native/linux/ppc
 	rm -rf plugins/tfsIntegration/lib/native/solaris
