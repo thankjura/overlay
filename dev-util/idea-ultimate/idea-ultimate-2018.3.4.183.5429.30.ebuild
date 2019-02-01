@@ -37,25 +37,9 @@ src_install() {
 	local dir="/opt/${MY_PN}-${SHORT_PV}"
 	local exe="${PN}"
 
-	# config files
-	insinto "/etc/idea"
-
 	mv bin/idea.properties bin/idea-${SLOT}.properties
 	doins bin/idea-${SLOT}.properties
 	rm bin/idea-${SLOT}.properties
-
-	case $ARCH in
-		amd64|ppc64)
-			cat bin/idea64.vmoptions > bin/idea.vmoptions
-			rm bin/idea64.vmoptions
-			;;
-	esac
-
-	mv bin/idea.vmoptions bin/idea-${SLOT}.vmoptions
-	doins bin/idea-${SLOT}.vmoptions
-	rm bin/idea-${SLOT}.vmoptions
-
-	ln -s /etc/idea/idea-${SLOT}.properties bin/idea.properties
 
 	rm bin/fsnotifier-arm
 	rm -rf plugins/tfsIntegration/lib/native/linux/ppc
