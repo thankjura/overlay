@@ -9,15 +9,11 @@ MY_PV=${PV/_beta/-beta\.}
 
 DESCRIPTION="Franz is a free messaging app"
 HOMEPAGE="http://meetfranz.com/"
-SRC_URI="https://github.com/meetfranz/franz/archive/v${MY_PV}.tar.gz"
+SRC_URI="https://github.com/meetfranz/franz/releases/download/v${PV}/franz-${PV}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~x86 ~amd64"
 LICENSE="Franz"
-
-QA_EXECSTACK="usr*/lib64/${PN}/Franz"
-QA_PRESTRIPPED="usr/lib.*/${PN}/lib.*
-	usr/lib.*/${PN}/Franz"
 
 DEPEND="dev-libs/libpcre:3
 	dev-libs/libtasn1:0
@@ -31,16 +27,12 @@ DEPEND="dev-libs/libpcre:3
 
 RDEPEND="${DEPEND}"
 
-S="${WORKDIR}"
-
 src_install() {
-	insinto "/usr/$(get_libdir)/${PN}"
-	doins -r *.pak *.so *.bin *.dat locales resources Franz
-	fperms 755 "/usr/$(get_libdir)/${PN}/Franz"
+	insinto	/opt/${PN}
+	doins -r *
+	fperms a+x /opt/${PN}/${PN}
+	doicon ${FILESDIR}/franz.png
 
-	doicon -s scalable resources/app.asar.unpacked/assets/franz.svg
-	doicon resources/app.asar.unpacked/assets/franz.png
-
-	make_wrapper franz "/usr/$(get_libdir)/${PN}/Franz"
+	make_wrapper franz "/opt/${PN}/franz"
 	make_desktop_entry franz Franz franz
 }
