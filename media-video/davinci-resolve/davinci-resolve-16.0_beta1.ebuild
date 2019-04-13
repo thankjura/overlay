@@ -5,10 +5,12 @@ EAPI=6
 
 inherit udev desktop xdg-utils
 
+MY_PV=${PV/_beta/b}
+
 DESCRIPTION="Professional A/V post-production software suite"
 HOMEPAGE="https://www.blackmagicdesign.com/products/davinciresolve/"
-PKG_NAME="DaVinci_Resolve_${PV}_Linux"
-SRC_URI="https://sw.blackmagicdesign.com/DaVinciResolve/v${PV}/${PKG_NAME}.zip"
+PKG_NAME="DaVinci_Resolve_${MY_PV}_Linux"
+SRC_URI="https://sw.blackmagicdesign.com/DaVinciResolve/v${MY_PV}/${PKG_NAME}.zip"
 
 RESTRICT="fetch mirror strip"
 
@@ -70,7 +72,7 @@ src_install() {
 	doins -r graphics
 	doins -r Onboarding
 
-	cp -a share/default-config-linux.dat ${D}/opt/resolve/configs/config.dat
+	cp -a share/default-config.dat ${D}/opt/resolve/configs/config.dat
 	cp -a share/log-conf.xml ${D}/opt/resolve/configs/log-conf.xml
 	# cp -a share/default_cm_config.bin ${D}/opt/resolve/DolbyVision/config.bin
 
