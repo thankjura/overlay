@@ -3,10 +3,12 @@
 
 EAPI=7
 
+inherit desktop
+
 DESCRIPTION="Shell-centric MongoDB management tool"
 HOMEPAGE="https://robomongo.org/"
-PKG_NAME=${P}-linux-x86_64-3e50a65
-SRC_URI="https://download.robomongo.org/${PV}/linux/${PKG_NAME}.tar.gz"
+PKG_NAME=${P}-linux-x86_64-7419c406
+SRC_URI="https://github.com/Studio3T/robomongo/releases/download/v${PV}/${PKG_NAME}.tar.gz"
 
 LICENSE="GPLv3"
 SLOT="0"
@@ -24,6 +26,6 @@ S=${WORKDIR}/${PKG_NAME}
 
 src_install() {
 	newbin bin/robo3t ${PN}
-	newicon logo-256x256.png ${PN}.png
+	newicon ${FILESDIR}/icon.png ${PN}.png
 	make_desktop_entry ${PN} Robo3T ${PN} Development
 }
