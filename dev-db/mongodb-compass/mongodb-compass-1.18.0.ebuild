@@ -6,7 +6,7 @@ EAPI=7
 inherit desktop
 
 MY_PV=${PV/_beta/~beta.}
-MY_PN=${PV}
+MY_PN=${PN}
 DESCRIPTION="The MongoDB GUI"
 HOMEPAGE="https://www.mongodb.com/products/compass"
 
