@@ -14,9 +14,9 @@ HOMEPAGE="https://jetbrains.com/idea/"
 MY_PN="idea"
 VER=($(get_all_version_components))
 if [[ "${VER[4]}" == "0" ]]; then
-    SRC_URI="http://download.jetbrains.com/${MY_PN}/${MY_PN}IU-$(get_version_component_range 1-2)-no-jdk.tar.gz"
+    SRC_URI="http://download.jetbrains.com/${MY_PN}/${MY_PN}IU-$(get_version_component_range 1-2)-no-jbr.tar.gz"
 else
-    SRC_URI="http://download.jetbrains.com/${MY_PN}/${MY_PN}IU-$(get_version_component_range 1-3)-no-jdk.tar.gz"
+    SRC_URI="http://download.jetbrains.com/${MY_PN}/${MY_PN}IU-$(get_version_component_range 1-3)-no-jbr.tar.gz"
 fi
 
 SLOT="0"
