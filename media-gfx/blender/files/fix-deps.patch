@@ -1,0 +1,12 @@
+diff -ru blender-2.80.old/intern/cycles/bvh/CMakeLists.txt blender-2.80/intern/cycles/bvh/CMakeLists.txt
+--- blender-2.80.old/intern/cycles/bvh/CMakeLists.txt	2019-07-30 23:43:07.485308553 +0300
++++ blender-2.80/intern/cycles/bvh/CMakeLists.txt	2019-07-30 23:51:31.719464881 +0300
+@@ -36,7 +36,7 @@
+ )
+ 
+ set(LIB
+-  cycles_render
++
+ )
+ 
+ include_directories(${INC})
