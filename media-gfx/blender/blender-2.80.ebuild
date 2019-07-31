@@ -18,7 +18,7 @@ SLOT="28"
 KEYWORDS="~amd64"
 
 IUSE_DESKTOP="-portable +blender +X +nls -ndof -player"
-IUSE_GPU="+opengl cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
+IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
 IUSE_LIBS="+cycles -sdl jack openal freestyle -osl -openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oind"
 IUSE_CPU="openmp embree +sse"
 IUSE_TEST="-valgrind -debug -doc"
@@ -76,6 +76,7 @@ RDEPEND="${PYTHON_DEPS}
 		openvdb? ( media-gfx/openvdb[${PYTHON_USEDEP}]
 		dev-cpp/tbb )
 	)
+	optix? ( dev-libs/optix )
 	sdl? ( media-libs/libsdl[sound,joystick] )
 	tiff? ( media-libs/tiff:0 )
 	openexr? ( media-libs/openexr )
@@ -129,6 +130,11 @@ src_prepare() {
 	eapply_user
 	eapply "${FILESDIR}"/blender-doxyfile.patch
 	eapply "${FILESDIR}"/fix-deps.patch
+
+	if use optix; then
+		eapply "${FILESDIR}"/D5363.diff
+	fi
+
 	cmake-utils_src_prepare
 
 	# remove some bundled deps
@@ -204,6 +210,14 @@ src_configure() {
 			-DWITH_CYCLES_CUDA_BINARIES=ON
 			-DCUDA_TOOLKIT_ROOT_DIR=/opt/cuda
 			-DCUDA_NVCC_EXECUDABLE=/opt/cuda/bin/nvcc
+		)
+	fi
+
+	if use optix; then
+		mycmakeargs+=(
+			-OPTIX_ROOT_DIR=/opt/optix
+			-DOPTIX_INCLUDE_DIR=/opt/optix/include
+			-DWITH_CYCLES_DEVICE_OPTIX=ON
 		)
 	fi
 
