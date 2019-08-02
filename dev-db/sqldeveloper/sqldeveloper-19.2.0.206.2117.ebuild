@@ -64,7 +64,7 @@ src_install() {
 	dodir /opt/${PN}
 	# NOTE For future version to get that line (what to copy) go to the unpacked sources dir
 	# using `bash` and press Meta+_ (i.e. Meta+Shift+-) -- that is a builtin bash feature ;-)
-	cp -r {configuration,d{ataminer,ropins,vt},e{quinox,xternal},ide,j{avavm,d{bc,ev},lib,views},modules,netbeans,ords,rdbms,s{leepycat,ql{developer,j},vnkit}} \
+	cp -r {configuration,d{ataminer,ropins,vt},e{quinox,xternal},ide,j{avavm,d{bc,ev},lib,views},modules,netbeans,rdbms,s{leepycat,ql{developer,j},vnkit}} \
 		"${D}"/opt/${PN}/ || die "Install failed"
 
 	newbin "${FILESDIR}"/${PN}-r1 ${PN}

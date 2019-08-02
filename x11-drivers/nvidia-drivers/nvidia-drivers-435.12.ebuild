@@ -321,6 +321,12 @@ src_install() {
 
 	if use tools; then
 		dobin nvidia-settings
+		
+		if use gtk3; then
+			dolib libnvidia-gtk3.so.435.12
+		else
+			dolib libnvidia-gtk2.so.435.12
+		fi
 
 		insinto /usr/share/nvidia/
 		doins nvidia-application-profiles-${PV}-key-documentation
