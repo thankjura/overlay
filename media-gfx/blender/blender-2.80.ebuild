@@ -19,7 +19,7 @@ KEYWORDS="~amd64"
 
 IUSE_DESKTOP="-portable +blender +X +nls -ndof -player"
 IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
-IUSE_LIBS="+cycles -sdl jack openal freestyle -osl -openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oind"
+IUSE_LIBS="+cycles -sdl jack openal freestyle -osl -openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oidn"
 IUSE_CPU="openmp embree +sse"
 IUSE_TEST="-valgrind -debug -doc"
 IUSE_IMAGE="-dpx -dds +openexr jpeg2k tiff +hdr"
@@ -38,7 +38,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	cycles? ( openexr tiff openimageio opencolorio )
 	osl? ( cycles )
 	embree? ( cycles )
-	oind? ( cycles )"
+	oidn? ( cycles )"
 
 LANGS="en ar bg ca cs de el es es_ES fa fi fr he hr hu id it ja ky ne nl pl pt pt_BR ru sr sr@latin sv tr uk zh_CN zh_TW"
 for X in ${LANGS} ; do
@@ -97,7 +97,7 @@ RDEPEND="${PYTHON_DEPS}
 	opencl? ( app-eselect/eselect-opencl )
 	opensubdiv? ( media-libs/opensubdiv )
 	nls? ( virtual/libiconv )
-	oind? ( media-libs/oidn )"
+	oidn? ( media-libs/oidn )"
 
 DEPEND="${RDEPEND}
 	dev-cpp/eigen:3
@@ -133,6 +133,10 @@ src_prepare() {
 
 	if use optix; then
 		eapply "${FILESDIR}"/D5363.diff
+	fi
+
+	if use oidn; then
+		eapply "${FILESDIR}"/D4304.diff
 	fi
 
 	cmake-utils_src_prepare
@@ -290,8 +294,15 @@ src_configure() {
 		-DWITH_GHOST_DEBUG=$(usex debug)
 		-DWITH_WITH_CYCLES_DEBUG=$(usex debug)
 		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
-		-DWITH_OPENIMAGEDENOISE=$(usex oind)
+		-DWITH_OPENIMAGEDENOISE=$(usex oidn)
 	)
+
+	if use oidn; then
+		mycmakeargs+=(
+			-DOPENIMAGEDENOISE_COMMON_LIBRARY=/usr/lib64/
+			-DOPENIMAGEDENOISE_MKLDNN_LIBRARY=/usr/lib64/
+		)
+	fi
 
 	cmake-utils_src_configure
 }
