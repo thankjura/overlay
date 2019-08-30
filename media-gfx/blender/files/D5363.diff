@@ -1,7 +1,7 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -419,9 +419,11 @@
+@@ -424,9 +424,11 @@
  mark_as_advanced(WITH_CYCLES_NATIVE_ONLY)
  
  option(WITH_CYCLES_DEVICE_CUDA              "Enable Cycles CUDA compute support" ON)
@@ -75,24 +75,6 @@ new file mode 100644
 +)
 +
 +UNSET(_optix_SEARCH_DIRS)
-diff --git a/extern/cuew/src/cuew.c b/extern/cuew/src/cuew.c
---- a/extern/cuew/src/cuew.c
-+++ b/extern/cuew/src/cuew.c
-@@ -619,10 +619,11 @@
-   /* Library paths. */
- #ifdef _WIN32
-   /* Expected in c:/windows/system or similar, no path needed. */
--  const char *nvrtc_paths[] = {"nvrtc64_80.dll",
--                               "nvrtc64_90.dll",
-+  const char *nvrtc_paths[] = {"nvrtc64_101_0.dll",
-+                               "nvrtc64_100_0.dll",
-                                "nvrtc64_91.dll",
--                               "nvrtc64_10_0.dll",
-+                               "nvrtc64_90.dll",
-+                               "nvrtc64_80.dll",
-                                NULL};
- #elif defined(__APPLE__)
-   /* Default installation path. */
 diff --git a/intern/cycles/CMakeLists.txt b/intern/cycles/CMakeLists.txt
 --- a/intern/cycles/CMakeLists.txt
 +++ b/intern/cycles/CMakeLists.txt
@@ -109,7 +91,7 @@ diff --git a/intern/cycles/CMakeLists.txt b/intern/cycles/CMakeLists.txt
  # External Libraries
  
  include(cmake/external_libs.cmake)
-@@ -217,6 +223,15 @@
+@@ -219,6 +225,15 @@
    )
  endif()
  
@@ -140,7 +122,7 @@ diff --git a/intern/cycles/blender/addon/properties.py b/intern/cycles/blender/a
      debug_use_cuda_adaptive_compile: BoolProperty(name="Adaptive Compile", default=False)
      debug_use_cuda_split_kernel: BoolProperty(name="Split Kernel", default=False)
  
-+    debug_cuda_streams: IntProperty(name="CUDA Streams", default=1, min=1)
++    debug_optix_cuda_streams: IntProperty(name="CUDA Streams", default=1, min=1)
 +
      debug_opencl_kernel_type: EnumProperty(
          name="OpenCL Kernel Type",
@@ -229,7 +211,7 @@ diff --git a/intern/cycles/blender/addon/ui.py b/intern/cycles/blender/addon/ui.
          col = layout.column()
 -        col.label(text='OpenCL Flags:')
 +        col.label(text="OptiX Flags:")
-+        col.prop(cscene, "debug_cuda_streams")
++        col.prop(cscene, "debug_optix_cuda_streams")
 +
 +        col.separator()
 +
@@ -247,7 +229,7 @@ diff --git a/intern/cycles/blender/blender_device.cpp b/intern/cycles/blender/bl
        COMPUTE_DEVICE_OPENCL = 2,
 -      COMPUTE_DEVICE_NUM = 3,
 +      COMPUTE_DEVICE_OPTIX = 3,
-+      COMPUTE_DEVICE_NUM
++      COMPUTE_DEVICE_NUM = 4,
      };
  
      ComputeDevice compute_device = (ComputeDevice)get_enum(
@@ -270,7 +252,7 @@ diff --git a/intern/cycles/blender/blender_python.cpp b/intern/cycles/blender/bl
    flags.cuda.adaptive_compile = get_boolean(cscene, "debug_use_cuda_adaptive_compile");
    flags.cuda.split_kernel = get_boolean(cscene, "debug_use_cuda_split_kernel");
 +  /* Synchronize OptiX flags. */
-+  flags.optix.cuda_streams = get_int(cscene, "debug_cuda_streams");
++  flags.optix.cuda_streams = get_int(cscene, "debug_optix_cuda_streams");
    /* Synchronize OpenCL device type. */
    switch (get_enum(cscene, "debug_opencl_device_type")) {
      case 0:
@@ -327,7 +309,7 @@ diff --git a/intern/cycles/blender/blender_session.cpp b/intern/cycles/blender/b
  
 -  if (session == NULL) {
 -    create();
-+  const bool is_new_session = session == NULL;
++  bool is_new_session = (session == NULL);
 +  if (is_new_session) {
 +    /* Initialize session and remember it was just created so not to
 +     * re-create it below.
@@ -425,26 +407,15 @@ diff --git a/intern/cycles/bvh/bvh.cpp b/intern/cycles/bvh/bvh.cpp
  #ifdef WITH_EMBREE
  #  include "bvh/bvh_embree.h"
  #endif
-@@ -41,6 +44,8 @@
- const char *bvh_layout_name(BVHLayout layout)
- {
-   switch (layout) {
-+    case BVH_LAYOUT_ALL:
-+      return "ALL";
-     case BVH_LAYOUT_BVH2:
-       return "BVH2";
-     case BVH_LAYOUT_BVH4:
-@@ -51,8 +56,8 @@
+@@ -51,6 +54,8 @@
        return "NONE";
      case BVH_LAYOUT_EMBREE:
        return "EMBREE";
--    case BVH_LAYOUT_ALL:
--      return "ALL";
 +    case BVH_LAYOUT_OPTIX:
 +      return "OPTIX";
+     case BVH_LAYOUT_ALL:
+       return "ALL";
    }
-   LOG(DFATAL) << "Unsupported BVH layout was passed.";
-   return "";
 @@ -71,7 +76,11 @@
    /* This is a mask of supported BVH layouts which are narrower than the
     * requested one.
@@ -458,7 +429,7 @@ diff --git a/intern/cycles/bvh/bvh.cpp b/intern/cycles/bvh/bvh.cpp
    /* We get widest from allowed ones and convert mask to actual layout. */
    const BVHLayoutMask widest_allowed_layout_mask = __bsr(allowed_layouts_mask);
    return (BVHLayout)(1 << widest_allowed_layout_mask);
-@@ -90,26 +99,36 @@
+@@ -90,23 +99,33 @@
  
  /* BVH */
  
@@ -497,12 +468,8 @@ diff --git a/intern/cycles/bvh/bvh.cpp b/intern/cycles/bvh/bvh.cpp
 +#else
 +      break;
  #endif
--    case BVH_LAYOUT_NONE:
+     case BVH_LAYOUT_NONE:
      case BVH_LAYOUT_ALL:
-+    case BVH_LAYOUT_NONE:
-       break;
-   }
-   LOG(DFATAL) << "Requested unsupported BVH layout.";
 @@ -356,26 +375,17 @@
    size_t pack_leaf_nodes_offset = leaf_nodes_size;
    size_t object_offset = 0;
@@ -642,7 +609,7 @@ diff --git a/intern/cycles/bvh/bvh_embree.h b/intern/cycles/bvh/bvh_embree.h
  class BVHEmbree : public BVH {
   public:
    virtual void build(Progress &progress, Stats *stats) override;
-+  virtual void upload(DeviceScene *dscene) override;
++  virtual void upload(Progress &progress, DeviceScene *dscene) override;
    virtual ~BVHEmbree();
    RTCScene scene;
    static void destroy(RTCScene);
@@ -763,7 +730,7 @@ diff --git a/intern/cycles/bvh/bvh_optix.cpp b/intern/cycles/bvh/bvh_optix.cpp
 new file mode 100644
 --- /dev/null
 +++ b/intern/cycles/bvh/bvh_optix.cpp
-@@ -0,0 +1,211 @@
+@@ -0,0 +1,215 @@
 +/*
 + * Copyright 2019, NVIDIA Corporation.
 + * Copyright 2019, Blender Foundation.
@@ -867,10 +834,14 @@ new file mode 100644
 +  }
 +
 +  // Initialize visibility to zero and later update it during top-level build
++  uint prev_visibility = objects[0]->visibility;
 +  objects[0]->visibility = 0;
 +
 +  // Update 'pack.prim_tri_index', 'pack.prim_tri_verts' and 'pack.prim_visibility'
 +  pack_primitives();
++
++  // Reset visibility after packing
++  objects[0]->visibility = prev_visibility;
 +}
 +
 +void BVHOptiX::pack_tlas()
@@ -1274,7 +1245,7 @@ diff --git a/intern/cycles/device/device_optix.cpp b/intern/cycles/device/device
 new file mode 100644
 --- /dev/null
 +++ b/intern/cycles/device/device_optix.cpp
-@@ -0,0 +1,1938 @@
+@@ -0,0 +1,1971 @@
 +/*
 + * Copyright 2019, NVIDIA Corporation.
 + * Copyright 2019, Blender Foundation.
@@ -1322,9 +1293,19 @@ new file mode 100644
 +CCL_NAMESPACE_BEGIN
 +
 +/* Make sure this stays in sync with kernel_globals.h */
++struct ShaderParams {
++  uint4 *input;
++  float4 *output;
++  int type;
++  int filter;
++  int sx;
++  int offset;
++  int sample;
++};
 +struct KernelParams {
 +  WorkTile tile;
 +  KernelData data;
++  ShaderParams shader;
 +#  define KERNEL_TEX(type, name) const type *name;
 +#  include "kernel/kernel_textures.h"
 +#  undef KERNEL_TEX
@@ -1377,7 +1358,7 @@ new file mode 100644
 +class OptiXDevice : public Device {
 +
 +  // List of OptiX program groups
-+  enum ProgramGroup {
++  enum {
 +    PG_RGEN,
 +    PG_MISS,
 +    PG_HITD,  // Default hit group
@@ -1386,8 +1367,14 @@ new file mode 100644
 +#  ifdef WITH_CYCLES_DEBUG
 +    PG_EXCP,
 +#  endif
++    PG_BAKE,  // kernel_bake_evaluate
++    PG_DISP,  // kernel_displace_evaluate
++    PG_BACK,  // kernel_background_evaluate
 +    NUM_PROGRAM_GROUPS
 +  };
++
++  // List of OptiX pipelines
++  enum { PIP_PATH_TRACE, PIP_SHADER_EVAL, NUM_PIPELINES };
 +
 +  // A single shader binding table entry
 +  struct SbtRecord {
@@ -1426,9 +1413,9 @@ new file mode 100644
 +  // Need CUDA kernel module for some utility functions
 +  CUmodule cuda_module = NULL;
 +  CUmodule cuda_filter_module = NULL;
-+  // All necessary OptiX kernels are compiled into a single pipeline
-+  OptixModule module = NULL;
-+  OptixPipeline pipeline = NULL;
++  // All necessary OptiX kernels are in one module
++  OptixModule optix_module = NULL;
++  OptixPipeline pipelines[NUM_PIPELINES] = {};
 +
 +  bool need_texture_info = false;
 +  device_vector<SbtRecord> sbt_data;
@@ -1512,14 +1499,16 @@ new file mode 100644
 +    // Make CUDA context current
 +    const CUDAContextScope scope(cuda_context);
 +
-+    if (module != NULL)
-+      optixModuleDestroy(module);
-+    if (pipeline != NULL)
-+      optixPipelineDestroy(pipeline);
++    // Unload modules
 +    if (cuda_module != NULL)
 +      cuModuleUnload(cuda_module);
 +    if (cuda_filter_module != NULL)
 +      cuModuleUnload(cuda_filter_module);
++    if (optix_module != NULL)
++      optixModuleDestroy(optix_module);
++    for (unsigned int i = 0; i < NUM_PIPELINES; ++i)
++      if (pipelines[i] != NULL)
++        optixPipelineDestroy(pipelines[i]);
 +
 +    // Destroy launch streams
 +    for (int i = 0; i < info.cpu_threads; ++i)
@@ -1548,6 +1537,11 @@ new file mode 100644
 +    if (have_error())
 +      return false;  // Abort early if context creation failed already
 +
++    // Disable baking for now, since its kernel is not well-suited for inlining and is very slow
++    if (requested_features.use_baking) {
++      set_error("OptiX implementation does not support baking yet");
++      return false;
++    }
 +    // Disable shader raytracing support for now, since continuation callables are slow
 +    if (requested_features.use_shader_raytrace) {
 +      set_error("OptiX implementation does not support shader raytracing yet");
@@ -1559,6 +1553,19 @@ new file mode 100644
 +      return false;
 +    }
 +
++    const CUDAContextScope scope(cuda_context);
++
++    // Unload any existing modules first
++    if (cuda_module != NULL)
++      cuModuleUnload(cuda_module);
++    if (cuda_filter_module != NULL)
++      cuModuleUnload(cuda_filter_module);
++    if (optix_module != NULL)
++      optixModuleDestroy(optix_module);
++    for (unsigned int i = 0; i < NUM_PIPELINES; ++i)
++      if (pipelines[i] != NULL)
++        optixPipelineDestroy(pipelines[i]);
++
 +    OptixModuleCompileOptions module_options;
 +    module_options.maxRegisterCount = 0;  // Do not set an explicit register limit
 +#  ifdef WITH_CYCLES_DEBUG
@@ -1569,11 +1576,12 @@ new file mode 100644
 +    module_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
 +#  endif
 +    OptixPipelineCompileOptions pipeline_options;
++    // Default to no motion blur and two-level graph, since it is the fastest option
 +    pipeline_options.usesMotionBlur = false;
 +    pipeline_options.traversableGraphFlags =
 +        OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 +    pipeline_options.numPayloadValues = 6;
-+    pipeline_options.numAttributeValues = 3;  // u, v, prim type
++    pipeline_options.numAttributeValues = 2;  // u, v
 +#  ifdef WITH_CYCLES_DEBUG
 +    pipeline_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW |
 +                                      OPTIX_EXCEPTION_FLAG_TRACE_DEPTH;
@@ -1585,18 +1593,14 @@ new file mode 100644
 +    if (requested_features.use_object_motion) {
 +      pipeline_options.usesMotionBlur = true;
 +      // Motion blur can insert motion transforms into the traversal graph
++      // It is no longer a two-level graph then, so need to set flags to allow any configuration
 +      pipeline_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY;
 +    }
 +
-+    // Make CUDA context current before calling into OptiX
-+    const CUDAContextScope scope(cuda_context);
-+
-+    {  // Load OptiX kernel PTX module
++    {  // Load and compile PTX module with OptiX kernels
 +      string ptx_data;
-+      string ptx_filename = "lib/kernel_optix.ptx";
-+      if (!compile_kernels(requested_features, ptx_data) &&
-+          // Try adaptive compilation, but fall back to kernel with all features enabled on failure
-+          !path_read_text(path_get(ptx_filename), ptx_data)) {
++      const string ptx_filename = "lib/kernel_optix.ptx";
++      if (!path_read_text(path_get(ptx_filename), ptx_data)) {
 +        set_error("Failed loading OptiX kernel " + ptx_filename + ".");
 +        return false;
 +      }
@@ -1604,20 +1608,20 @@ new file mode 100644
 +      check_result_optix_ret(optixModuleCreateFromPTX(context,
 +                                                      &module_options,
 +                                                      &pipeline_options,
-+                                                      ptx_data.c_str(),
++                                                      ptx_data.data(),
 +                                                      ptx_data.size(),
 +                                                      nullptr,
 +                                                      0,
-+                                                      &module));
++                                                      &optix_module));
 +    }
 +
-+    {  // Load CUDA kernel module because we need some of the utility kernels
++    {  // Load CUDA modules because we need some of the utility kernels
 +      int major, minor;
 +      cuDeviceGetAttribute(&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, info.num);
 +      cuDeviceGetAttribute(&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, info.num);
 +
 +      string cubin_data;
-+      string cubin_filename = string_printf("lib/kernel_sm_%d%d.cubin", major, minor);
++      const string cubin_filename = string_printf("lib/kernel_sm_%d%d.cubin", major, minor);
 +      if (!path_read_text(path_get(cubin_filename), cubin_data)) {
 +        set_error("Failed loading pre-compiled CUDA kernel " + cubin_filename + ".");
 +        return false;
@@ -1626,7 +1630,7 @@ new file mode 100644
 +      check_result_cuda_ret(cuModuleLoadData(&cuda_module, cubin_data.data()));
 +
 +      string filter_data;
-+      string filter_filename = string_printf("lib/filter_sm_%d%d.cubin", major, minor);
++      const string filter_filename = string_printf("lib/filter_sm_%d%d.cubin", major, minor);
 +      if (!path_read_text(path_get(filter_filename), filter_data)) {
 +        set_error("Failed loading pre-compiled CUDA filter kernel " + filter_filename + ".");
 +        return false;
@@ -1638,42 +1642,60 @@ new file mode 100644
 +    // Create program groups
 +    OptixProgramGroup groups[NUM_PROGRAM_GROUPS] = {};
 +    OptixProgramGroupDesc group_descs[NUM_PROGRAM_GROUPS] = {};
-+    OptixProgramGroupOptions group_options = {};
++    OptixProgramGroupOptions group_options = {};  // There are no options currently
 +    group_descs[PG_RGEN].kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
-+    group_descs[PG_RGEN].raygen.module = module;
++    group_descs[PG_RGEN].raygen.module = optix_module;
 +    group_descs[PG_RGEN].raygen.entryFunctionName = "__raygen__kernel_optix_path_trace";
 +    group_descs[PG_MISS].kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
-+    group_descs[PG_MISS].miss.module = module;
++    group_descs[PG_MISS].miss.module = optix_module;
 +    group_descs[PG_MISS].miss.entryFunctionName = "__miss__kernel_optix_miss";
 +    group_descs[PG_HITD].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-+    group_descs[PG_HITD].hitgroup.moduleAH = module;
-+    group_descs[PG_HITD].hitgroup.moduleCH = module;
-+    group_descs[PG_HITD].hitgroup.entryFunctionNameAH = "__anyhit__kernel_optix_visibility_test";
++    group_descs[PG_HITD].hitgroup.moduleCH = optix_module;
 +    group_descs[PG_HITD].hitgroup.entryFunctionNameCH = "__closesthit__kernel_optix_hit";
++    group_descs[PG_HITD].hitgroup.moduleAH = optix_module;
++    group_descs[PG_HITD].hitgroup.entryFunctionNameAH = "__anyhit__kernel_optix_visibility_test";
 +    group_descs[PG_HITS].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-+    group_descs[PG_HITS].hitgroup.moduleAH = module;
++    group_descs[PG_HITS].hitgroup.moduleAH = optix_module;
 +    group_descs[PG_HITS].hitgroup.entryFunctionNameAH = "__anyhit__kernel_optix_shadow_all_hit";
 +
 +    if (requested_features.use_hair) {
 +      // Add curve intersection programs
-+      group_descs[PG_HITD].hitgroup.moduleIS = module;
++      group_descs[PG_HITD].hitgroup.moduleIS = optix_module;
 +      group_descs[PG_HITD].hitgroup.entryFunctionNameIS = "__intersection__curve";
-+      group_descs[PG_HITS].hitgroup.moduleIS = module;
++      group_descs[PG_HITS].hitgroup.moduleIS = optix_module;
 +      group_descs[PG_HITS].hitgroup.entryFunctionNameIS = "__intersection__curve";
 +    }
 +
 +    if (requested_features.use_subsurface || requested_features.use_shader_raytrace) {
 +      // Add hit group for local intersections
 +      group_descs[PG_HITL].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-+      group_descs[PG_HITL].hitgroup.moduleAH = module;
++      group_descs[PG_HITL].hitgroup.moduleAH = optix_module;
 +      group_descs[PG_HITL].hitgroup.entryFunctionNameAH = "__anyhit__kernel_optix_local_hit";
 +    }
 +
 +#  ifdef WITH_CYCLES_DEBUG
 +    group_descs[PG_EXCP].kind = OPTIX_PROGRAM_GROUP_KIND_EXCEPTION;
-+    group_descs[PG_EXCP].exception.module = module;
++    group_descs[PG_EXCP].exception.module = optix_module;
 +    group_descs[PG_EXCP].exception.entryFunctionName = "__exception__kernel_optix_exception";
 +#  endif
++
++    if (requested_features.use_baking) {
++      group_descs[PG_BAKE].kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
++      group_descs[PG_BAKE].raygen.module = optix_module;
++      group_descs[PG_BAKE].raygen.entryFunctionName = "__raygen__kernel_optix_bake";
++    }
++
++    if (requested_features.use_true_displacement) {
++      group_descs[PG_DISP].kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
++      group_descs[PG_DISP].raygen.module = optix_module;
++      group_descs[PG_DISP].raygen.entryFunctionName = "__raygen__kernel_optix_displace";
++    }
++
++    if (requested_features.use_background_light) {
++      group_descs[PG_BACK].kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
++      group_descs[PG_BACK].raygen.module = optix_module;
++      group_descs[PG_BACK].raygen.entryFunctionName = "__raygen__kernel_optix_background";
++    }
 +
 +    check_result_optix_ret(optixProgramGroupCreate(
 +        context, group_descs, NUM_PROGRAM_GROUPS, &group_options, nullptr, 0, groups));
@@ -1684,13 +1706,18 @@ new file mode 100644
 +    sbt_data.alloc(NUM_PROGRAM_GROUPS);
 +    memset(sbt_data.host_pointer, 0, sizeof(SbtRecord) * NUM_PROGRAM_GROUPS);
 +    for (unsigned int i = 0; i < NUM_PROGRAM_GROUPS; ++i) {
++      check_result_optix_ret(optixSbtRecordPackHeader(groups[i], &sbt_data[i]));
 +      check_result_optix_ret(optixProgramGroupGetStackSize(groups[i], &stack_size[i]));
-+      check_result_optix_ret(
-+          optixSbtRecordPackHeader(groups[i], (SbtRecord *)sbt_data.host_pointer + i));
 +    }
 +    sbt_data.copy_to_device();  // Upload SBT to device
 +
-+    // Create pipeline from program groups
++    // Calculate maximum trace continuation stack size
++    unsigned int trace_css = stack_size[PG_HITD].cssCH;
++    // This is based on the maximum of closest-hit and any-hit/intersection programs
++    trace_css = max(trace_css, stack_size[PG_HITD].cssIS + stack_size[PG_HITD].cssAH);
++    trace_css = max(trace_css, stack_size[PG_HITL].cssIS + stack_size[PG_HITL].cssAH);
++    trace_css = max(trace_css, stack_size[PG_HITS].cssIS + stack_size[PG_HITS].cssAH);
++
 +    OptixPipelineLinkOptions link_options;
 +    link_options.maxTraceDepth = 1;
 +#  ifdef WITH_CYCLES_DEBUG
@@ -1700,102 +1727,78 @@ new file mode 100644
 +#  endif
 +    link_options.overrideUsesMotionBlur = pipeline_options.usesMotionBlur;
 +
-+    check_result_optix_ret(optixPipelineCreate(context,
-+                                               &pipeline_options,
-+                                               &link_options,
-+                                               groups,
-+                                               NUM_PROGRAM_GROUPS,
-+                                               nullptr,
-+                                               0,
-+                                               &pipeline));
++    {  // Create path tracing pipeline
++      OptixProgramGroup pipeline_groups[] = {
++          groups[PG_RGEN],
++          groups[PG_MISS],
++          groups[PG_HITD],
++          groups[PG_HITS],
++          groups[PG_HITL],
++#  ifdef WITH_CYCLES_DEBUG
++          groups[PG_EXCP],
++#  endif
++      };
++      check_result_optix_ret(
++          optixPipelineCreate(context,
++                              &pipeline_options,
++                              &link_options,
++                              pipeline_groups,
++                              (sizeof(pipeline_groups) / sizeof(pipeline_groups[0])),
++                              nullptr,
++                              0,
++                              &pipelines[PIP_PATH_TRACE]));
 +
-+    // Calculate maximum trace continuation stack size
-+    unsigned int css = stack_size[PG_HITD].cssCH;
-+    css = max(css, stack_size[PG_HITD].cssIS + stack_size[PG_HITD].cssAH);
-+    css = max(css, stack_size[PG_HITL].cssIS + stack_size[PG_HITL].cssAH);
-+    css = max(css, stack_size[PG_HITS].cssIS + stack_size[PG_HITS].cssAH);
-+    // Combine ray generation and trace continuation stack size
-+    css = stack_size[PG_RGEN].cssRG + link_options.maxTraceDepth * css;
++      // Combine ray generation and trace continuation stack size
++      const unsigned int css = stack_size[PG_RGEN].cssRG + link_options.maxTraceDepth * trace_css;
 +
-+    // Set stack size depending on pipeline options
-+    check_result_optix_ret(
-+        optixPipelineSetStackSize(pipeline, 0, 0, css, pipeline_options.usesMotionBlur ? 3 : 2));
-+
-+    return true;
-+  }
-+
-+  bool compile_kernels(const DeviceRequestedFeatures &requested_features, string &ptx_data)
-+  {
-+    if (!DebugFlags().cuda.adaptive_compile)
-+      return false;  // Only use adaptive compilation if the respective debug flag is set
-+
-+    const string source_path = path_get("source");
-+    const string source_files_md5 = path_files_md5_hash(source_path);
-+
-+    string kernel_md5 = util_md5_string(source_files_md5 + requested_features.get_build_options());
-+    string ptx_filename = path_cache_get("kernels/cycles_optix_" + kernel_md5 + ".ptx");
-+
-+    // First try to load a kernel with requested features from cache
-+    if (path_read_text(ptx_filename, ptx_data))
-+      return true;
-+
-+#  if 0
-+    if (nvrtcVersion == NULL)
-+      return false;  // NVRTC is not loaded, cannot continue
-+
-+    // Load kernel source code and compile a new permutation
-+    string source_code;
-+    if (path_read_text(path_join(source_path, "kernel/kernels/optix/kernel_optix.cu"),
-+                       source_code)) {
-+      nvrtcProgram prog = NULL;
-+      if (NVRTC_SUCCESS ==
-+          nvrtcCreateProgram(&prog, source_code.c_str(), "kernel_optix.cu", 0, NULL, NULL)) {
-+        // Get build options
-+        vector<string> build_options;
-+        build_options.push_back("--std=c++11");
-+        build_options.push_back("--use_fast_math");
-+        build_options.push_back("--generate-line-info");
-+        build_options.push_back("--gpu-architecture=compute_30");
-+        build_options.push_back("--include-path=" + source_path);
-+        string_split(build_options, requested_features.get_build_options());
-+
-+        // Get build options char pointers
-+        vector<const char *> build_options_arg;
-+        build_options_arg.reserve(build_options.size());
-+        for (string &option : build_options)
-+          build_options_arg.push_back(option.c_str());
-+
-+        // Try to compile kernel with only requested features
-+        if (NVRTC_SUCCESS ==
-+            nvrtcCompileProgram(prog, build_options_arg.size(), build_options_arg.data())) {
-+          // Get compiled PTX
-+          size_t ptx_data_size = 0;
-+          nvrtcGetPTXSize(prog, &ptx_data_size);
-+          ptx_data.resize(ptx_data_size);
-+          nvrtcGetPTX(prog, (char *)ptx_data.data());
-+
-+          // Cache the result to disk
-+          path_write_text(ptx_filename, ptx_data);
-+        }
-+        else {
-+          ptx_data.clear();
-+
-+          size_t error_log_size = 0;
-+          nvrtcGetProgramLogSize(prog, &error_log_size);
-+          string error_log(error_log_size, 0);
-+          nvrtcGetProgramLog(prog, (char *)error_log.data());
-+
-+          printf("Compile errors: %s\n", error_log.c_str());
-+        }
-+
-+        nvrtcDestroyProgram(&prog);
-+      }
++      // Set stack size depending on pipeline options
++      check_result_optix_ret(optixPipelineSetStackSize(
++          pipelines[PIP_PATH_TRACE], 0, 0, css, (pipeline_options.usesMotionBlur ? 3 : 2)));
 +    }
 +
-+    return !ptx_data.empty();
-+#  else
-+    return false;
++    // Only need to create shader evaluation pipeline if one of these features is used:
++    const bool use_shader_eval_pipeline = requested_features.use_baking ||
++                                          requested_features.use_background_light ||
++                                          requested_features.use_true_displacement;
++
++    if (use_shader_eval_pipeline) {  // Create shader evaluation pipeline
++      OptixProgramGroup pipeline_groups[] = {
++          groups[PG_BAKE],
++          groups[PG_DISP],
++          groups[PG_BACK],
++          groups[PG_MISS],
++          groups[PG_HITD],
++          groups[PG_HITS],
++          groups[PG_HITL],
++#  ifdef WITH_CYCLES_DEBUG
++          groups[PG_EXCP],
 +#  endif
++      };
++      check_result_optix_ret(
++          optixPipelineCreate(context,
++                              &pipeline_options,
++                              &link_options,
++                              pipeline_groups,
++                              (sizeof(pipeline_groups) / sizeof(pipeline_groups[0])),
++                              nullptr,
++                              0,
++                              &pipelines[PIP_SHADER_EVAL]));
++
++      // Calculate continuation stack size based on the maximum of all ray generation stack sizes
++      const unsigned int css = max(stack_size[PG_BAKE].cssRG,
++                                   max(stack_size[PG_DISP].cssRG, stack_size[PG_BACK].cssRG)) +
++                               link_options.maxTraceDepth * trace_css;
++
++      check_result_optix_ret(optixPipelineSetStackSize(
++          pipelines[PIP_SHADER_EVAL], 0, 0, css, (pipeline_options.usesMotionBlur ? 3 : 2)));
++    }
++
++    // Clean up program group objects
++    for (unsigned int i = 0; i < NUM_PROGRAM_GROUPS; ++i) {
++      optixProgramGroupDestroy(groups[i]);
++    }
++
++    return true;
 +  }
 +
 +  void thread_run(DeviceTask &task, int thread_index)  // Main task entry point
@@ -1843,7 +1846,7 @@ new file mode 100644
 +
 +    const int end_sample = rtile.start_sample + rtile.num_samples;
 +    // Keep this number reasonable to avoid running into TDRs
-+    const int step_samples = info.display_device ? 8 : 32;
++    const int step_samples = (info.display_device ? 8 : 32);
 +    // Offset into launch params buffer so that streams use separate data
 +    device_ptr launch_params_ptr = launch_params.device_pointer +
 +                                   thread_index * launch_params.data_elements;
@@ -1872,7 +1875,7 @@ new file mode 100644
 +      sbt_params.hitgroupRecordCount = 3;  // PG_HITD, PG_HITL, PG_HITS
 +
 +      // Launch the ray generation program
-+      check_result_optix(optixLaunch(pipeline,
++      check_result_optix(optixLaunch(pipelines[PIP_PATH_TRACE],
 +                                     cuda_stream[thread_index],
 +                                     launch_params_ptr,
 +                                     launch_params.data_elements,
@@ -1939,53 +1942,52 @@ new file mode 100644
 +
 +  void launch_shader_eval(DeviceTask &task, int thread_index)
 +  {
++    unsigned int rgen_index = PG_BACK;
++    if (task.shader_eval_type >= SHADER_EVAL_BAKE)
++      rgen_index = PG_BAKE;
++    if (task.shader_eval_type == SHADER_EVAL_DISPLACE)
++      rgen_index = PG_DISP;
++
 +    const CUDAContextScope scope(cuda_context);
 +
-+    // TODO(pmours): Convert this to OptiX kernel eventually
-+    // ... since shading may invoke tracing (see __SHADER_RAYTRACE__)
-+    CUfunction shader_func;
-+    if (task.shader_eval_type >= SHADER_EVAL_BAKE) {
-+      check_result_cuda(cuModuleGetFunction(&shader_func, cuda_module, "kernel_cuda_bake"));
-+    }
-+    else if (task.shader_eval_type == SHADER_EVAL_DISPLACE) {
-+      check_result_cuda(cuModuleGetFunction(&shader_func, cuda_module, "kernel_cuda_displace"));
-+    }
-+    else {
-+      check_result_cuda(cuModuleGetFunction(&shader_func, cuda_module, "kernel_cuda_background"));
-+    }
-+
-+    void *args[9];
-+
-+    int threads_per_block;
-+    check_result_cuda(cuFuncGetAttribute(
-+        &threads_per_block, CU_FUNC_ATTRIBUTE_MAX_THREADS_PER_BLOCK, shader_func));
++    device_ptr launch_params_ptr = launch_params.device_pointer +
++                                   thread_index * launch_params.data_elements;
 +
 +    for (int sample = 0; sample < task.num_samples; ++sample) {
-+      int num_args = 0;
-+      args[num_args++] = &task.shader_input;
-+      args[num_args++] = &task.shader_output;
-+      args[num_args++] = &task.shader_eval_type;
-+      if (task.shader_eval_type >= SHADER_EVAL_BAKE)
-+        args[num_args++] = &task.shader_filter;
-+      args[num_args++] = &task.shader_x;
-+      args[num_args++] = &task.shader_w;
-+      args[num_args++] = &task.offset;
-+      args[num_args++] = &sample;
++      ShaderParams params;
++      params.input = (uint4 *)task.shader_input;
++      params.output = (float4 *)task.shader_output;
++      params.type = task.shader_eval_type;
++      params.filter = task.shader_filter;
++      params.sx = task.shader_x;
++      params.offset = task.offset;
++      params.sample = sample;
 +
-+      int num_blocks_x = (task.shader_w + threads_per_block - 1) / threads_per_block;
-+      int num_threads_x = threads_per_block;
++      check_result_cuda(cuMemcpyHtoDAsync(launch_params_ptr + offsetof(KernelParams, shader),
++                                          &params,
++                                          sizeof(params),
++                                          cuda_stream[thread_index]));
 +
-+      check_result_cuda(cuLaunchKernel(shader_func,
-+                                       num_blocks_x,
-+                                       1,
-+                                       1, /* blocks */
-+                                       num_threads_x,
-+                                       1,
-+                                       1, /* threads */
-+                                       0,
-+                                       cuda_stream[thread_index],
-+                                       args,
-+                                       0));
++      OptixShaderBindingTable sbt_params = {};
++      sbt_params.raygenRecord = sbt_data.device_pointer + rgen_index * sizeof(SbtRecord);
++#  ifdef WITH_CYCLES_DEBUG
++      sbt_params.exceptionRecord = sbt_data.device_pointer + PG_EXCP * sizeof(SbtRecord);
++#  endif
++      sbt_params.missRecordBase = sbt_data.device_pointer + PG_MISS * sizeof(SbtRecord);
++      sbt_params.missRecordStrideInBytes = sizeof(SbtRecord);
++      sbt_params.missRecordCount = 1;
++      sbt_params.hitgroupRecordBase = sbt_data.device_pointer + PG_HITD * sizeof(SbtRecord);
++      sbt_params.hitgroupRecordStrideInBytes = sizeof(SbtRecord);
++      sbt_params.hitgroupRecordCount = 3;  // PG_HITD, PG_HITL, PG_HITS
++
++      check_result_optix(optixLaunch(pipelines[PIP_SHADER_EVAL],
++                                     cuda_stream[thread_index],
++                                     launch_params_ptr,
++                                     launch_params.data_elements,
++                                     &sbt_params,
++                                     task.shader_w,
++                                     1,
++                                     1));
 +
 +      check_result_cuda(cuStreamSynchronize(cuda_stream[thread_index]));
 +
@@ -2004,7 +2006,7 @@ new file mode 100644
 +                                                           "kernel_cuda_convert_to_half_float"));
 +
 +    float sample_scale = 1.0f / (task.sample + 1);
-+    CUdeviceptr rgba = task.rgba_byte ? task.rgba_byte : task.rgba_half;
++    CUdeviceptr rgba = (task.rgba_byte ? task.rgba_byte : task.rgba_half);
 +
 +    void *args[] = {&rgba,
 +                    &task.buffer,
@@ -2285,7 +2287,7 @@ new file mode 100644
 +
 +        // Volumes have a special bit set in the visibility mask so a trace can mask only volumes
 +        // See 'scene_intersect_volume' in bvh.h
-+        instance.visibilityMask = ob->mesh->has_volume ? 3 : 1;
++        instance.visibilityMask = (ob->mesh->has_volume ? 3 : 1);
 +
 +        // Insert motion traversable if object has motion
 +        if (ob->use_motion()) {
@@ -2398,6 +2400,8 @@ new file mode 100644
 +                       data_size));
 +
 +    // Set constant memory for CUDA module
++    // TODO(pmours): This is only used for tonemapping (see 'launch_film_convert').
++    //               Could be removed by moving those functions to filter CUDA module.
 +    size_t bytes = 0;
 +    CUdeviceptr mem = 0;
 +    check_result_cuda(cuModuleGetGlobal(&mem, &bytes, cuda_module, name));
@@ -3254,7 +3258,7 @@ diff --git a/intern/cycles/kernel/CMakeLists.txt b/intern/cycles/kernel/CMakeLis
  )
  
  set(SRC_SVM_HEADERS
-@@ -471,6 +479,53 @@
+@@ -474,6 +482,53 @@
    cycles_set_solution_folder(cycles_kernel_cuda)
  endif()
  
@@ -3266,9 +3270,9 @@ diff --git a/intern/cycles/kernel/CMakeLists.txt b/intern/cycles/kernel/CMakeLis
 +
 +    set(output "${CMAKE_CURRENT_BINARY_DIR}/${input_we}.ptx")
 +    set(cuda_flags
-+      -I ${OPTIX_INCLUDE_DIR}
-+      -I ${CMAKE_CURRENT_SOURCE_DIR}/..
-+      -I ${CMAKE_CURRENT_SOURCE_DIR}/kernels/cuda
++      -I "${OPTIX_INCLUDE_DIR}"
++      -I "${CMAKE_CURRENT_SOURCE_DIR}/.."
++      -I "${CMAKE_CURRENT_SOURCE_DIR}/kernels/cuda"
 +      -arch=sm_30
 +      --use_fast_math
 +      -o ${output})
@@ -3308,7 +3312,7 @@ diff --git a/intern/cycles/kernel/CMakeLists.txt b/intern/cycles/kernel/CMakeLis
  # OSL module
  
  if(WITH_CYCLES_OSL)
-@@ -517,10 +572,12 @@
+@@ -533,10 +588,12 @@
  cycles_add_library(cycles_kernel "${LIB}"
    ${SRC_CPU_KERNELS}
    ${SRC_CUDA_KERNELS}
@@ -3321,7 +3325,7 @@ diff --git a/intern/cycles/kernel/CMakeLists.txt b/intern/cycles/kernel/CMakeLis
    ${SRC_KERNELS_OPENCL_HEADERS}
    ${SRC_BVH_HEADERS}
    ${SRC_CLOSURE_HEADERS}
-@@ -530,9 +587,24 @@
+@@ -546,9 +603,24 @@
    ${SRC_SPLIT_HEADERS}
  )
  
@@ -3346,7 +3350,7 @@ diff --git a/intern/cycles/kernel/CMakeLists.txt b/intern/cycles/kernel/CMakeLis
  
  # OpenCL kernel
  
-@@ -546,9 +618,11 @@
+@@ -562,9 +634,11 @@
  
  delayed_install(${CMAKE_CURRENT_SOURCE_DIR} "${SRC_OPENCL_KERNELS}" ${CYCLES_INSTALL_PATH}/source/kernel/kernels/opencl)
  delayed_install(${CMAKE_CURRENT_SOURCE_DIR} "${SRC_CUDA_KERNELS}" ${CYCLES_INSTALL_PATH}/source/kernel/kernels/cuda)
@@ -3441,7 +3445,7 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
      rtcIntersect1(kernel_data.bvh.scene, &rtc_ctx.context, &ray_hit);
      if (ray_hit.hit.geomID != RTC_INVALID_GEOMETRY_ID &&
          ray_hit.hit.primID != RTC_INVALID_GEOMETRY_ID) {
-@@ -203,46 +233,43 @@
+@@ -203,46 +233,46 @@
      }
      return false;
    }
@@ -3452,47 +3456,53 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
 +#  ifdef __OBJECT_MOTION__
    if (kernel_data.bvh.have_motion) {
 -#  ifdef __HAIR__
-+#    ifdef __HAIR__
-     if (kernel_data.bvh.have_curves)
+-    if (kernel_data.bvh.have_curves)
 -      return bvh_intersect_hair_motion(kg, &ray, isect, visibility);
 -#  endif /* __HAIR__ */
++#    ifdef __HAIR__
++    if (kernel_data.bvh.have_curves) {
 +      return bvh_intersect_hair_motion(kg, ray, isect, visibility);
++    }
 +#    endif /* __HAIR__ */
  
 -    return bvh_intersect_motion(kg, &ray, isect, visibility);
 +    return bvh_intersect_motion(kg, ray, isect, visibility);
    }
 -#endif /* __OBJECT_MOTION__ */
-+#  endif /* __OBJECT_MOTION__ */
- 
+-
 -#ifdef __HAIR__
-+#  ifdef __HAIR__
-   if (kernel_data.bvh.have_curves)
+-  if (kernel_data.bvh.have_curves)
 -    return bvh_intersect_hair(kg, &ray, isect, visibility);
 -#endif /* __HAIR__ */
 -
 -#ifdef __KERNEL_CPU__
-+    return bvh_intersect_hair(kg, ray, isect, visibility);
-+#  endif /* __HAIR__ */
- 
+-
 -#  ifdef __INSTANCING__
-+#  ifdef __KERNEL_CPU__
-+#    ifdef __INSTANCING__
-   if (kernel_data.bvh.have_instancing)
+-  if (kernel_data.bvh.have_instancing)
 -    return bvh_intersect_instancing(kg, &ray, isect, visibility);
 -#  endif /* __INSTANCING__ */
 -
 -  return bvh_intersect(kg, &ray, isect, visibility);
 -#else /* __KERNEL_CPU__ */
--
++#  endif /* __OBJECT_MOTION__ */
+ 
 -#  ifdef __INSTANCING__
 -  return bvh_intersect_instancing(kg, &ray, isect, visibility);
 -#  else
 -  return bvh_intersect(kg, &ray, isect, visibility);
 -#  endif /* __INSTANCING__ */
--
++#  ifdef __HAIR__
++  if (kernel_data.bvh.have_curves) {
++    return bvh_intersect_hair(kg, ray, isect, visibility);
++  }
++#  endif /* __HAIR__ */
+ 
 -#endif /* __KERNEL_CPU__ */
++#  ifdef __KERNEL_CPU__
++#    ifdef __INSTANCING__
++  if (kernel_data.bvh.have_instancing) {
 +    return bvh_intersect_instancing(kg, ray, isect, visibility);
++  }
 +#    endif /* __INSTANCING__ */
 +  return bvh_intersect(kg, ray, isect, visibility);
 +#  else /* __KERNEL_CPU__ */
@@ -3513,7 +3523,7 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
                                                  LocalIntersection *local_isect,
                                                  int local_object,
                                                  uint *lcg_state,
-@@ -250,11 +277,32 @@
+@@ -250,11 +280,32 @@
  {
    PROFILING_INIT(kg, PROFILING_INTERSECT_LOCAL);
  
@@ -3548,7 +3558,7 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
    if (kernel_data.bvh.scene) {
      CCLIntersectContext ctx(kg, CCLIntersectContext::RAY_SSS);
      ctx.lcg_state = lcg_state;
-@@ -264,19 +312,19 @@
+@@ -264,19 +315,19 @@
      ctx.sss_object_id = local_object;
      IntersectContext rtc_ctx(&ctx);
      RTCRay rtc_ray;
@@ -3573,22 +3583,21 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
          /* bvh_instance_motion_push() returns the inverse transform but
           * it's not needed here. */
          (void)ob_itfm;
-@@ -296,13 +344,15 @@
+@@ -296,13 +347,16 @@
  
      return local_isect->num_hits > 0;
    }
 -#  endif /* __EMBREE__ */
 -#  ifdef __OBJECT_MOTION__
--  if (kernel_data.bvh.have_motion) {
--    return bvh_intersect_local_motion(kg, &ray, local_isect, local_object, lcg_state, max_hits);
--  }
--#  endif /* __OBJECT_MOTION__ */
--  return bvh_intersect_local(kg, &ray, local_isect, local_object, lcg_state, max_hits);
 +#    endif /* __EMBREE__ */
 +
 +#    ifdef __OBJECT_MOTION__
-+  if (kernel_data.bvh.have_motion)
+   if (kernel_data.bvh.have_motion) {
+-    return bvh_intersect_local_motion(kg, &ray, local_isect, local_object, lcg_state, max_hits);
 +    return bvh_intersect_local_motion(kg, ray, local_isect, local_object, lcg_state, max_hits);
+   }
+-#  endif /* __OBJECT_MOTION__ */
+-  return bvh_intersect_local(kg, &ray, local_isect, local_object, lcg_state, max_hits);
 +#    endif /* __OBJECT_MOTION__ */
 +
 +  return bvh_intersect_local(kg, ray, local_isect, local_object, lcg_state, max_hits);
@@ -3596,7 +3605,7 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
  }
  #endif
  
-@@ -316,11 +366,30 @@
+@@ -316,11 +370,30 @@
  {
    PROFILING_INIT(kg, PROFILING_INTERSECT_SHADOW_ALL);
  
@@ -3628,7 +3637,7 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
    if (kernel_data.bvh.scene) {
      CCLIntersectContext ctx(kg, CCLIntersectContext::RAY_SHADOW_ALL);
      ctx.isect_s = isect;
-@@ -337,32 +406,38 @@
+@@ -337,32 +410,41 @@
      *num_hits = ctx.num_hits;
      return rtc_ray.tfar == -INFINITY;
    }
@@ -3639,11 +3648,10 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
 +#    ifdef __OBJECT_MOTION__
    if (kernel_data.bvh.have_motion) {
 -#    ifdef __HAIR__
--    if (kernel_data.bvh.have_curves) {
 +#      ifdef __HAIR__
-+    if (kernel_data.bvh.have_curves)
+     if (kernel_data.bvh.have_curves) {
        return bvh_intersect_shadow_all_hair_motion(kg, ray, isect, visibility, max_hits, num_hits);
--    }
+     }
 -#    endif /* __HAIR__ */
 +#      endif /* __HAIR__ */
  
@@ -3653,21 +3661,19 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
 +#    endif /* __OBJECT_MOTION__ */
  
 -#  ifdef __HAIR__
--  if (kernel_data.bvh.have_curves) {
 +#    ifdef __HAIR__
-+  if (kernel_data.bvh.have_curves)
+   if (kernel_data.bvh.have_curves) {
      return bvh_intersect_shadow_all_hair(kg, ray, isect, visibility, max_hits, num_hits);
--  }
+   }
 -#  endif /* __HAIR__ */
 +#    endif /* __HAIR__ */
  
 -#  ifdef __INSTANCING__
--  if (kernel_data.bvh.have_instancing) {
 +#    ifdef __KERNEL_CPU__
 +#      ifdef __INSTANCING__
-+  if (kernel_data.bvh.have_instancing)
+   if (kernel_data.bvh.have_instancing) {
      return bvh_intersect_shadow_all_instancing(kg, ray, isect, visibility, max_hits, num_hits);
--  }
+   }
 -#  endif /* __INSTANCING__ */
 -
 +#      endif /* __INSTANCING__ */
@@ -3683,7 +3689,7 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
  }
  #endif /* __SHADOW_RECORD_ALL__ */
  
-@@ -374,27 +449,54 @@
+@@ -374,27 +456,56 @@
  {
    PROFILING_INIT(kg, PROFILING_INTERSECT_VOLUME);
  
@@ -3716,22 +3722,23 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
      return false;
    }
 -#  ifdef __OBJECT_MOTION__
--  if (kernel_data.bvh.have_motion) {
 +
 +#    ifdef __OBJECT_MOTION__
-+  if (kernel_data.bvh.have_motion)
+   if (kernel_data.bvh.have_motion) {
      return bvh_intersect_volume_motion(kg, ray, isect, visibility);
--  }
+   }
 -#  endif /* __OBJECT_MOTION__ */
 -#  ifdef __KERNEL_CPU__
 -#    ifdef __INSTANCING__
+-  if (kernel_data.bvh.have_instancing)
 +#    endif /* __OBJECT_MOTION__ */
 +
 +#    ifdef __KERNEL_CPU__
 +#      ifdef __INSTANCING__
-   if (kernel_data.bvh.have_instancing)
++  if (kernel_data.bvh.have_instancing) {
      return bvh_intersect_volume_instancing(kg, ray, isect, visibility);
 -#    endif /* __INSTANCING__ */
++  }
 +#      endif /* __INSTANCING__ */
    return bvh_intersect_volume(kg, ray, isect, visibility);
 -#  else /* __KERNEL_CPU__ */
@@ -3750,7 +3757,7 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
  }
  #endif /* __VOLUME__ */
  
-@@ -410,6 +512,7 @@
+@@ -410,6 +521,7 @@
    if (!scene_intersect_valid(ray)) {
      return false;
    }
@@ -3758,7 +3765,7 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
  #  ifdef __EMBREE__
    if (kernel_data.bvh.scene) {
      CCLIntersectContext ctx(kg, CCLIntersectContext::RAY_VOLUME_ALL);
-@@ -422,12 +525,13 @@
+@@ -422,15 +534,18 @@
      rtcOccluded1(kernel_data.bvh.scene, &rtc_ctx.context, &rtc_ray);
      return rtc_ray.tfar == -INFINITY;
    }
@@ -3766,15 +3773,19 @@ diff --git a/intern/cycles/kernel/bvh/bvh.h b/intern/cycles/kernel/bvh/bvh.h
 +#  endif /* __EMBREE__ */
 +
  #  ifdef __OBJECT_MOTION__
--  if (kernel_data.bvh.have_motion) {
-+  if (kernel_data.bvh.have_motion)
+   if (kernel_data.bvh.have_motion) {
      return bvh_intersect_volume_all_motion(kg, ray, isect, max_hits, visibility);
--  }
+   }
  #  endif /* __OBJECT_MOTION__ */
 +
  #  ifdef __INSTANCING__
-   if (kernel_data.bvh.have_instancing)
+-  if (kernel_data.bvh.have_instancing)
++  if (kernel_data.bvh.have_instancing) {
      return bvh_intersect_volume_all_instancing(kg, ray, isect, max_hits, visibility);
++  }
+ #  endif /* __INSTANCING__ */
+   return bvh_intersect_volume_all(kg, ray, isect, max_hits, visibility);
+ }
 diff --git a/intern/cycles/kernel/bvh/bvh_nodes.h b/intern/cycles/kernel/bvh/bvh_nodes.h
 --- a/intern/cycles/kernel/bvh/bvh_nodes.h
 +++ b/intern/cycles/kernel/bvh/bvh_nodes.h
@@ -3798,6 +3809,86 @@ diff --git a/intern/cycles/kernel/bvh/bvh_nodes.h b/intern/cycles/kernel/bvh/bvh
    if (bvh_unaligned_node_intersect_child(kg, P, dir, t, node_addr, 0, &dist[0])) {
  #  ifdef __VISIBILITY_FLAG__
      if ((__float_as_uint(cnodes.x) & visibility))
+diff --git a/intern/cycles/kernel/closure/bsdf_microfacet.h b/intern/cycles/kernel/closure/bsdf_microfacet.h
+--- a/intern/cycles/kernel/closure/bsdf_microfacet.h
++++ b/intern/cycles/kernel/closure/bsdf_microfacet.h
+@@ -303,9 +303,7 @@
+ 
+ ccl_device int bsdf_microfacet_ggx_fresnel_setup(MicrofacetBsdf *bsdf, const ShaderData *sd)
+ {
+-  bsdf->extra->cspec0.x = saturate(bsdf->extra->cspec0.x);
+-  bsdf->extra->cspec0.y = saturate(bsdf->extra->cspec0.y);
+-  bsdf->extra->cspec0.z = saturate(bsdf->extra->cspec0.z);
++  bsdf->extra->cspec0 = saturate3(bsdf->extra->cspec0);
+ 
+   float F0 = fresnel_dielectric_cos(1.0f, bsdf->ior);
+   float F = average(interpolate_fresnel_color(sd->I, bsdf->N, bsdf->ior, F0, bsdf->extra->cspec0));
+@@ -321,9 +319,7 @@
+ 
+ ccl_device int bsdf_microfacet_ggx_clearcoat_setup(MicrofacetBsdf *bsdf, const ShaderData *sd)
+ {
+-  bsdf->extra->cspec0.x = saturate(bsdf->extra->cspec0.x);
+-  bsdf->extra->cspec0.y = saturate(bsdf->extra->cspec0.y);
+-  bsdf->extra->cspec0.z = saturate(bsdf->extra->cspec0.z);
++  bsdf->extra->cspec0 = saturate3(bsdf->extra->cspec0);
+ 
+   float F0 = fresnel_dielectric_cos(1.0f, bsdf->ior);
+   float F = average(interpolate_fresnel_color(sd->I, bsdf->N, bsdf->ior, F0, bsdf->extra->cspec0));
+@@ -366,9 +362,7 @@
+ 
+ ccl_device int bsdf_microfacet_ggx_aniso_fresnel_setup(MicrofacetBsdf *bsdf, const ShaderData *sd)
+ {
+-  bsdf->extra->cspec0.x = saturate(bsdf->extra->cspec0.x);
+-  bsdf->extra->cspec0.y = saturate(bsdf->extra->cspec0.y);
+-  bsdf->extra->cspec0.z = saturate(bsdf->extra->cspec0.z);
++  bsdf->extra->cspec0 = saturate3(bsdf->extra->cspec0);
+ 
+   float F0 = fresnel_dielectric_cos(1.0f, bsdf->ior);
+   float F = average(interpolate_fresnel_color(sd->I, bsdf->N, bsdf->ior, F0, bsdf->extra->cspec0));
+diff --git a/intern/cycles/kernel/closure/bsdf_microfacet_multi.h b/intern/cycles/kernel/closure/bsdf_microfacet_multi.h
+--- a/intern/cycles/kernel/closure/bsdf_microfacet_multi.h
++++ b/intern/cycles/kernel/closure/bsdf_microfacet_multi.h
+@@ -378,12 +378,8 @@
+ {
+   bsdf->alpha_x = clamp(bsdf->alpha_x, 1e-4f, 1.0f);
+   bsdf->alpha_y = clamp(bsdf->alpha_y, 1e-4f, 1.0f);
+-  bsdf->extra->color.x = saturate(bsdf->extra->color.x);
+-  bsdf->extra->color.y = saturate(bsdf->extra->color.y);
+-  bsdf->extra->color.z = saturate(bsdf->extra->color.z);
+-  bsdf->extra->cspec0.x = saturate(bsdf->extra->cspec0.x);
+-  bsdf->extra->cspec0.y = saturate(bsdf->extra->cspec0.y);
+-  bsdf->extra->cspec0.z = saturate(bsdf->extra->cspec0.z);
++  bsdf->extra->color = saturate3(bsdf->extra->color);
++  bsdf->extra->cspec0 = saturate3(bsdf->extra->cspec0);
+ 
+   return SD_BSDF | SD_BSDF_HAS_EVAL | SD_BSDF_NEEDS_LCG;
+ }
+@@ -568,9 +564,7 @@
+   bsdf->alpha_x = clamp(bsdf->alpha_x, 1e-4f, 1.0f);
+   bsdf->alpha_y = bsdf->alpha_x;
+   bsdf->ior = max(0.0f, bsdf->ior);
+-  bsdf->extra->color.x = saturate(bsdf->extra->color.x);
+-  bsdf->extra->color.y = saturate(bsdf->extra->color.y);
+-  bsdf->extra->color.z = saturate(bsdf->extra->color.z);
++  bsdf->extra->color = saturate3(bsdf->extra->color);
+ 
+   bsdf->type = CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_ID;
+ 
+@@ -583,12 +577,8 @@
+   bsdf->alpha_x = clamp(bsdf->alpha_x, 1e-4f, 1.0f);
+   bsdf->alpha_y = bsdf->alpha_x;
+   bsdf->ior = max(0.0f, bsdf->ior);
+-  bsdf->extra->color.x = saturate(bsdf->extra->color.x);
+-  bsdf->extra->color.y = saturate(bsdf->extra->color.y);
+-  bsdf->extra->color.z = saturate(bsdf->extra->color.z);
+-  bsdf->extra->cspec0.x = saturate(bsdf->extra->cspec0.x);
+-  bsdf->extra->cspec0.y = saturate(bsdf->extra->cspec0.y);
+-  bsdf->extra->cspec0.z = saturate(bsdf->extra->cspec0.z);
++  bsdf->extra->color = saturate3(bsdf->extra->color);
++  bsdf->extra->cspec0 = saturate3(bsdf->extra->cspec0);
+ 
+   bsdf->type = CLOSURE_BSDF_MICROFACET_MULTI_GGX_GLASS_FRESNEL_ID;
+ 
 diff --git a/intern/cycles/kernel/geom/geom_curve_intersect.h b/intern/cycles/kernel/geom/geom_curve_intersect.h
 --- a/intern/cycles/kernel/geom/geom_curve_intersect.h
 +++ b/intern/cycles/kernel/geom/geom_curve_intersect.h
@@ -3831,75 +3922,6 @@ diff --git a/intern/cycles/kernel/geom/geom_curve_intersect.h b/intern/cycles/ke
  
    int segment = PRIMITIVE_UNPACK_SEGMENT(type);
    /* curve Intersection check */
-diff --git a/intern/cycles/kernel/geom/geom_motion_triangle_shader.h b/intern/cycles/kernel/geom/geom_motion_triangle_shader.h
---- a/intern/cycles/kernel/geom/geom_motion_triangle_shader.h
-+++ b/intern/cycles/kernel/geom/geom_motion_triangle_shader.h
-@@ -32,8 +32,17 @@
-  * normals */
- 
- /* return 3 triangle vertex normals */
--ccl_device_noinline void motion_triangle_shader_setup(
--    KernelGlobals *kg, ShaderData *sd, const Intersection *isect, const Ray *ray, bool is_local)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device_inline
-+#else
-+ccl_device_noinline
-+#endif
-+    void
-+    motion_triangle_shader_setup(KernelGlobals *kg,
-+                                 ShaderData *sd,
-+                                 const Intersection *isect,
-+                                 const Ray *ray,
-+                                 bool is_local)
- {
-   /* Get shader. */
-   sd->shader = kernel_tex_fetch(__tri_shader, sd->prim);
-diff --git a/intern/cycles/kernel/geom/geom_subd_triangle.h b/intern/cycles/kernel/geom/geom_subd_triangle.h
---- a/intern/cycles/kernel/geom/geom_subd_triangle.h
-+++ b/intern/cycles/kernel/geom/geom_subd_triangle.h
-@@ -99,7 +99,7 @@
- 
- /* Reading attributes on various subdivision triangle elements */
- 
--ccl_device_noinline float subd_triangle_attribute_float(
-+ccl_device float subd_triangle_attribute_float(
-     KernelGlobals *kg, const ShaderData *sd, const AttributeDescriptor desc, float *dx, float *dy)
- {
-   int patch = subd_triangle_patch(kg, sd);
-@@ -227,11 +227,11 @@
-   }
- }
- 
--ccl_device_noinline float2 subd_triangle_attribute_float2(KernelGlobals *kg,
--                                                          const ShaderData *sd,
--                                                          const AttributeDescriptor desc,
--                                                          float2 *dx,
--                                                          float2 *dy)
-+ccl_device float2 subd_triangle_attribute_float2(KernelGlobals *kg,
-+                                                 const ShaderData *sd,
-+                                                 const AttributeDescriptor desc,
-+                                                 float2 *dx,
-+                                                 float2 *dy)
- {
-   int patch = subd_triangle_patch(kg, sd);
- 
-@@ -362,11 +362,11 @@
-   }
- }
- 
--ccl_device_noinline float3 subd_triangle_attribute_float3(KernelGlobals *kg,
--                                                          const ShaderData *sd,
--                                                          const AttributeDescriptor desc,
--                                                          float3 *dx,
--                                                          float3 *dy)
-+ccl_device float3 subd_triangle_attribute_float3(KernelGlobals *kg,
-+                                                 const ShaderData *sd,
-+                                                 const AttributeDescriptor desc,
-+                                                 float3 *dx,
-+                                                 float3 *dy)
- {
-   int patch = subd_triangle_patch(kg, sd);
- 
 diff --git a/intern/cycles/kernel/kernel_accumulate.h b/intern/cycles/kernel/kernel_accumulate.h
 --- a/intern/cycles/kernel/kernel_accumulate.h
 +++ b/intern/cycles/kernel/kernel_accumulate.h
@@ -4005,8 +4027,8 @@ new file mode 100644
 +
 +#define ccl_device \
 +  __device__ __forceinline__  // Function calls are bad for OptiX performance, so inline everything
-+#define ccl_device_inline __device__ __forceinline__
-+#define ccl_device_forceinline __device__ __forceinline__
++#define ccl_device_inline ccl_device
++#define ccl_device_forceinline ccl_device
 +#define ccl_device_noinline __device__ __noinline__
 +#define ccl_global
 +#define ccl_static_constant __constant__
@@ -4185,15 +4207,26 @@ diff --git a/intern/cycles/kernel/kernel_emission.h b/intern/cycles/kernel/kerne
 diff --git a/intern/cycles/kernel/kernel_globals.h b/intern/cycles/kernel/kernel_globals.h
 --- a/intern/cycles/kernel/kernel_globals.h
 +++ b/intern/cycles/kernel/kernel_globals.h
-@@ -90,12 +90,32 @@
+@@ -90,12 +90,43 @@
  
  #endif /* __KERNEL_CPU__ */
  
 +#ifdef __KERNEL_OPTIX__
 +
++typedef struct ShaderParams {
++  uint4 *input;
++  float4 *output;
++  int type;
++  int filter;
++  int sx;
++  int offset;
++  int sample;
++} ShaderParams;
++
 +typedef struct KernelParams {
 +  WorkTile tile;
 +  KernelData data;
++  ShaderParams shader;
 +#  define KERNEL_TEX(type, name) const type *name;
 +#  include "kernel/kernel_textures.h"
 +} KernelParams;
@@ -4219,7 +4252,7 @@ diff --git a/intern/cycles/kernel/kernel_globals.h b/intern/cycles/kernel/kernel
  
  __constant__ KernelData __data;
  typedef struct KernelGlobals {
-@@ -103,10 +123,12 @@
+@@ -103,10 +134,12 @@
    Intersection hits_stack[64];
  } KernelGlobals;
  
@@ -4284,7 +4317,7 @@ diff --git a/intern/cycles/kernel/kernel_light.h b/intern/cycles/kernel/kernel_l
  
    /* Clamping should not be needed but float rounding errors seem to
     * make this fail on rare occasions. */
-@@ -1120,42 +1120,55 @@
+@@ -1120,42 +1120,49 @@
  
  /* Generic Light */
  
@@ -4296,20 +4329,14 @@ diff --git a/intern/cycles/kernel/kernel_light.h b/intern/cycles/kernel/kernel_l
  
 -ccl_device_noinline bool light_sample(
 -    KernelGlobals *kg, float randu, float randv, float time, float3 P, int bounce, LightSample *ls)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device
-+#else
-+ccl_device_noinline
-+#endif
-+    bool
-+    light_sample(KernelGlobals *kg,
-+                 int lamp,
-+                 float randu,
-+                 float randv,
-+                 float time,
-+                 float3 P,
-+                 int bounce,
-+                 LightSample *ls)
++ccl_device_noinline bool light_sample(KernelGlobals *kg,
++                                      int lamp,
++                                      float randu,
++                                      float randv,
++                                      float time,
++                                      float3 P,
++                                      int bounce,
++                                      LightSample *ls)
  {
 -  /* sample index */
 -  int index = light_distribution_sample(kg, &randu);
@@ -4410,7 +4437,19 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  
  #ifdef __KERNEL_DEBUG__
    if (state->flag & PATH_RAY_CAMERA) {
-@@ -103,7 +103,7 @@
+@@ -92,7 +92,11 @@
+ #ifdef __LAMP_MIS__
+   if (kernel_data.integrator.use_lamp_mis && !(state->flag & PATH_RAY_CAMERA)) {
+     /* ray starting from previous non-transparent bounce */
++#  ifdef __KERNEL_OPTIX__
++    Ray light_ray = {};
++#  else
+     Ray light_ray;
++#  endif
+ 
+     light_ray.P = ray->P - state->ray_t * ray->D;
+     state->ray_t += isect->t;
+@@ -103,7 +107,7 @@
      light_ray.dP = ray->dP;
  
      /* intersect with lamp */
@@ -4419,7 +4458,7 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  
      if (indirect_lamp_emission(kg, emission_sd, state, &light_ray, &emission))
        path_radiance_accum_emission(L, state, throughput, emission);
-@@ -326,13 +326,19 @@
+@@ -326,13 +330,19 @@
    return true;
  }
  
@@ -4430,10 +4469,10 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
 -                                        ccl_addr_space PathState *state,
 -                                        float3 throughput,
 -                                        float3 ao_alpha)
-+#ifndef __KERNEL_OPTIX__
-+ccl_device_noinline
++#ifdef __KERNEL_OPTIX__
++ccl_device_inline /* inline trace calls */
 +#else
-+ccl_device_forceinline
++ccl_device_noinline
 +#endif
 +    void
 +    kernel_path_ao(KernelGlobals *kg,
@@ -4446,7 +4485,7 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  {
    PROFILING_INIT(kg, PROFILING_AO);
  
-@@ -349,18 +355,22 @@
+@@ -349,18 +359,26 @@
  
    sample_cos_hemisphere(ao_N, bsdf_u, bsdf_v, &ao_D, &ao_pdf);
  
@@ -4454,6 +4493,9 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
 -    Ray light_ray;
 -    float3 ao_shadow;
 +  Ray light_ray;
++  bool has_ao = false;
++  float3 ao_shadow;
++
 +  light_ray.P = ray_offset(sd->P, sd->Ng);
 +  light_ray.D = ao_D;
 +  light_ray.t = 0.0f;
@@ -4463,22 +4505,23 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  
 -    light_ray.P = ray_offset(sd->P, sd->Ng);
 -    light_ray.D = ao_D;
-+  if (kernel_data.integrator.use_ambient_occlusion && dot(sd->Ng, ao_D) > 0.0f && ao_pdf != 0.0f)
++  if (kernel_data.integrator.use_ambient_occlusion && dot(sd->Ng, ao_D) > 0.0f && ao_pdf != 0.0f) {
++    has_ao = true;
      light_ray.t = kernel_data.background.ao_distance;
 -    light_ray.time = sd->time;
 -    light_ray.dP = sd->dP;
 -    light_ray.dD = differential3_zero();
++  }
++
++  const bool blocked = shadow_blocked(kg, sd, emission_sd, state, &light_ray, &ao_shadow);
  
 -    if (!shadow_blocked(kg, sd, emission_sd, state, &light_ray, &ao_shadow)) {
-+  float3 ao_shadow = make_float3(1.0f, 1.0f, 1.0f);
-+  const bool blocked = shadow_blocked(kg, sd, emission_sd, state, &light_ray, &ao_shadow);
-+
-+  if (light_ray.t != 0.0f) {
++  if (has_ao) {
 +    if (!blocked) {
        path_radiance_accum_ao(L, state, throughput, ao_alpha, ao_bsdf, ao_shadow);
      }
      else {
-@@ -457,9 +467,7 @@
+@@ -457,9 +475,7 @@
  
  #    ifdef __AO__
          /* ambient occlusion */
@@ -4489,7 +4532,7 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  #    endif /* __AO__ */
  
  #    ifdef __SUBSURFACE__
-@@ -474,12 +482,10 @@
+@@ -474,12 +490,10 @@
  #    endif /* __SUBSURFACE__ */
  
  #    if defined(__EMISSION__)
@@ -4506,7 +4549,7 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  #    endif /* defined(__EMISSION__) */
  
  #    ifdef __VOLUME__
-@@ -590,13 +596,13 @@
+@@ -590,13 +604,13 @@
            throughput /= probability;
          }
  
@@ -4523,7 +4566,7 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  #  endif /* __AO__ */
  
  #  ifdef __SUBSURFACE__
-@@ -610,8 +616,10 @@
+@@ -610,8 +624,10 @@
          }
  #  endif /* __SUBSURFACE__ */
  
@@ -4534,7 +4577,7 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  
  #  ifdef __VOLUME__
        }
-@@ -653,9 +661,11 @@
+@@ -653,9 +669,11 @@
  
    kernel_path_trace_setup(kg, sample, x, y, &rng_hash, &ray);
  
@@ -4546,7 +4589,7 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
  
    /* Initialize state. */
    float3 throughput = make_float3(1.0f, 1.0f, 1.0f);
-@@ -669,6 +679,13 @@
+@@ -669,6 +687,13 @@
    PathState state;
    path_state_init(kg, emission_sd, &state, rng_hash, sample, &ray);
  
@@ -4563,15 +4606,6 @@ diff --git a/intern/cycles/kernel/kernel_path.h b/intern/cycles/kernel/kernel_pa
 diff --git a/intern/cycles/kernel/kernel_path_branched.h b/intern/cycles/kernel/kernel_path_branched.h
 --- a/intern/cycles/kernel/kernel_path_branched.h
 +++ b/intern/cycles/kernel/kernel_path_branched.h
-@@ -44,7 +44,7 @@
- 
-     if (dot(sd->Ng, ao_D) > 0.0f && ao_pdf != 0.0f) {
-       Ray light_ray;
--      float3 ao_shadow;
-+      float3 ao_shadow = make_float3(1.0f, 1.0f, 1.0f);
- 
-       light_ray.P = ray_offset(sd->P, sd->Ng);
-       light_ray.D = ao_D;
 @@ -198,14 +198,20 @@
  #    endif /* __VOLUME__ */
  
@@ -4614,7 +4648,7 @@ diff --git a/intern/cycles/kernel/kernel_path_branched.h b/intern/cycles/kernel/
 diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/kernel_path_surface.h
 --- a/intern/cycles/kernel/kernel_path_surface.h
 +++ b/intern/cycles/kernel/kernel_path_surface.h
-@@ -18,154 +18,118 @@
+@@ -18,154 +18,129 @@
  
  #if defined(__BRANCHED_PATH__) || defined(__SUBSURFACE__) || defined(__SHADOW_TRICKS__) || \
      defined(__BAKING__)
@@ -4650,19 +4684,18 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
 -  if (!(sd->flag & SD_BSDF_HAS_EVAL))
 -    return;
 -
-   Ray light_ray;
+-  Ray light_ray;
 +#    ifdef __KERNEL_OPTIX__
 +  BsdfEval L_light = {};
 +#    else
    BsdfEval L_light;
 -  bool is_lamp;
-+#    endif
+-
+-#    ifdef __OBJECT_MOTION__
+-  light_ray.time = sd->time;
+ #    endif
 +  bool is_lamp = false;
 +  bool has_emission = false;
- 
- #    ifdef __OBJECT_MOTION__
-   light_ray.time = sd->time;
- #    endif
  
 +  int num_lights = 1;
    if (sample_all_lights) {
@@ -4716,20 +4749,21 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
 -              path_radiance_accum_total_light(L, state, throughput * num_samples_inv, &L_light);
 -            }
 -          }
--        }
 +  for (int i = 0; i < num_lights; i++) {
 +    /* sample one light at random */
 +    int num_samples = 1;
 +    int num_all_lights = 1;
 +    uint lamp_rng_hash = state->rng_hash;
 +    bool duplicate_pdf = false;
++    bool is_mesh_light = false;
 +
 +    if (sample_all_lights) {
 +      /* lamp sampling */
 +      is_lamp = i < kernel_data.integrator.num_all_lights;
 +      if (is_lamp) {
-+        if (UNLIKELY(light_select_reached_max_bounces(kg, i, state->bounce)))
++        if (UNLIKELY(light_select_reached_max_bounces(kg, i, state->bounce))) {
 +          continue;
+         }
 +        num_samples = ceil_to_int(num_samples_adjust * light_select_num_samples(kg, i));
 +        num_all_lights = kernel_data.integrator.num_all_lights;
 +        lamp_rng_hash = cmj_hash(state->rng_hash, i);
@@ -4739,6 +4773,7 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
 +      else {
 +        num_samples = ceil_to_int(num_samples_adjust * kernel_data.integrator.mesh_light_samples);
 +        duplicate_pdf = kernel_data.integrator.num_all_lights != 0;
++        is_mesh_light = true;
        }
      }
 +    else {
@@ -4751,23 +4786,33 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
 -                                    kernel_data.integrator.mesh_light_samples);
 -      float num_samples_inv = num_samples_adjust / num_samples;
 +    float num_samples_inv = num_samples_adjust / (num_samples * num_all_lights);
++
++    for (int j = 0; j < num_samples; j++) {
++#    ifdef __KERNEL_OPTIX
++      Ray light_ray = {};
++#    else
++      Ray light_ray;
++      light_ray.t = 0.0f; /* reset ray */
++#    endif
++#    ifdef __OBJECT_MOTION__
++      light_ray.time = sd->time;
++#    endif
++      has_emission = false;
  
 -      for (int j = 0; j < num_samples; j++) {
-+    for (int j = 0; j < num_samples; j++) {
-+      light_ray.t = 0.0f; /* reset ray */
-+      has_emission = false;
-+
 +      if (kernel_data.integrator.use_direct_light && (sd->flag & SD_BSDF_HAS_EVAL)) {
          float light_u, light_v;
          path_branched_rng_2D(
 -            kg, state->rng_hash, state, j, num_samples, PRNG_LIGHT_U, &light_u, &light_v);
--        float terminate = path_branched_rng_light_termination(
--            kg, state->rng_hash, state, j, num_samples);
--
--        /* only sample triangle lights */
--        if (kernel_data.integrator.num_all_lights)
--          light_u = 0.5f * light_u;
 +            kg, lamp_rng_hash, state, j, num_samples, PRNG_LIGHT_U, &light_u, &light_v);
+         float terminate = path_branched_rng_light_termination(
+-            kg, state->rng_hash, state, j, num_samples);
++            kg, lamp_rng_hash, state, j, num_samples);
+ 
+         /* only sample triangle lights */
+-        if (kernel_data.integrator.num_all_lights)
++        if (is_mesh_light && duplicate_pdf)
+           light_u = 0.5f * light_u;
  
 +#    ifdef __KERNEL_OPTIX__
 +        LightSample ls = {};
@@ -4805,8 +4850,6 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
 -              path_radiance_accum_total_light(L, state, throughput * num_samples_inv, &L_light);
 -            }
 -          }
-+          float terminate = path_branched_rng_light_termination(
-+              kg, lamp_rng_hash, state, j, num_samples);
 +          has_emission = direct_emission(
 +              kg, sd, emission_sd, &ls, state, &light_ray, &L_light, &is_lamp, terminate);
          }
@@ -4829,7 +4872,8 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
 -
 -        if (!shadow_blocked(kg, sd, emission_sd, state, &light_ray, &shadow)) {
 +      /* trace shadow ray */
-+      float3 shadow = make_float3(1.0f, 1.0f, 1.0f);
++      float3 shadow;
++
 +      const bool blocked = shadow_blocked(kg, sd, emission_sd, state, &light_ray, &shadow);
 +
 +      if (has_emission) {
@@ -4851,7 +4895,7 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
          }
        }
      }
-@@ -187,9 +151,16 @@
+@@ -187,9 +162,16 @@
  {
    /* sample BSDF */
    float bsdf_pdf;
@@ -4868,7 +4912,7 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
    float bsdf_u, bsdf_v;
    path_branched_rng_2D(
        kg, state->rng_hash, state, sample, num_samples, PRNG_BSDF_U, &bsdf_u, &bsdf_v);
-@@ -255,45 +226,55 @@
+@@ -255,45 +237,57 @@
    PROFILING_INIT(kg, PROFILING_CONNECT_LIGHT);
  
  #ifdef __EMISSION__
@@ -4889,10 +4933,11 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
 -  float light_u, light_v;
 -  path_state_rng_2D(kg, state, PRNG_LIGHT_U, &light_u, &light_v);
 -
-   Ray light_ray;
 +#    ifdef __KERNEL_OPTIX__
++  Ray light_ray = {};
 +  BsdfEval L_light = {};
 +#    else
+   Ray light_ray;
    BsdfEval L_light;
 -  bool is_lamp;
 +#    endif
@@ -4937,7 +4982,8 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
    }
 +
 +  /* trace shadow ray */
-+  float3 shadow = make_float3(1.0f, 1.0f, 1.0f);
++  float3 shadow;
++
 +  const bool blocked = shadow_blocked(kg, sd, emission_sd, state, &light_ray, &shadow);
 +
 +  if (has_emission) {
@@ -4953,7 +4999,7 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
  #endif
  }
  
-@@ -311,9 +292,16 @@
+@@ -311,9 +305,16 @@
    if (sd->flag & SD_BSDF) {
      /* sample BSDF */
      float bsdf_pdf;
@@ -4973,7 +5019,7 @@ diff --git a/intern/cycles/kernel/kernel_path_surface.h b/intern/cycles/kernel/k
 diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/kernel_path_volume.h
 --- a/intern/cycles/kernel/kernel_path_volume.h
 +++ b/intern/cycles/kernel/kernel_path_volume.h
-@@ -26,41 +26,53 @@
+@@ -26,41 +26,55 @@
                                                          PathRadiance *L)
  {
  #  ifdef __EMISSION__
@@ -4984,10 +5030,11 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
 -  float light_u, light_v;
 -  path_state_rng_2D(kg, state, PRNG_LIGHT_U, &light_u, &light_v);
 -
-   Ray light_ray;
 +#    ifdef __KERNEL_OPTIX__
++  Ray light_ray = {};
 +  BsdfEval L_light = {};
 +#    else
+   Ray light_ray;
    BsdfEval L_light;
 -  LightSample ls;
 -  bool is_lamp;
@@ -5028,7 +5075,8 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
    }
 +
 +  /* trace shadow ray */
-+  float3 shadow = make_float3(1.0f, 1.0f, 1.0f);
++  float3 shadow;
++
 +  const bool blocked = shadow_blocked(kg, sd, emission_sd, state, &light_ray, &shadow);
 +
 +  if (has_emission && !blocked) {
@@ -5048,7 +5096,7 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
  #  endif
      bool
      kernel_path_volume_bounce(KernelGlobals *kg,
-@@ -72,9 +84,16 @@
+@@ -72,9 +86,16 @@
  {
    /* sample phase function */
    float phase_pdf;
@@ -5065,7 +5113,7 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
    float phase_u, phase_v;
    path_state_rng_2D(kg, state, PRNG_BSDF_U, &phase_u, &phase_v);
    int label;
-@@ -128,7 +147,7 @@
+@@ -128,7 +149,7 @@
    return true;
  }
  
@@ -5074,26 +5122,24 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
  ccl_device void kernel_branched_path_volume_connect_light(KernelGlobals *kg,
                                                            ShaderData *sd,
                                                            ShaderData *emission_sd,
-@@ -140,96 +159,76 @@
+@@ -140,96 +161,86 @@
                                                            const VolumeSegment *segment)
  {
  #    ifdef __EMISSION__
 -  if (!kernel_data.integrator.use_direct_light)
 -    return;
 -
-   Ray light_ray;
+-  Ray light_ray;
 +#      ifdef __KERNEL_OPTIX__
 +  BsdfEval L_light = {};
 +#      else
    BsdfEval L_light;
 -  bool is_lamp;
+-
+-  light_ray.time = sd->time;
 +#      endif
 +  bool is_lamp = false;
 +  bool has_emission = false;
- 
-+#      ifdef __OBJECT_MOTION__
-   light_ray.time = sd->time;
-+#      endif
  
 +  int num_lights = 1;
    if (sample_all_lights) {
@@ -5159,20 +5205,21 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
 -                  L, state, tp * num_samples_inv, &L_light, shadow, num_samples_inv, is_lamp);
 -            }
 -          }
--        }
 +  for (int i = 0; i < num_lights; ++i) {
 +    /* sample one light at random */
 +    int num_samples = 1;
 +    int num_all_lights = 1;
 +    uint lamp_rng_hash = state->rng_hash;
 +    bool duplicate_pdf = false;
++    bool is_mesh_light = false;
 +
 +    if (sample_all_lights) {
 +      /* lamp sampling */
 +      is_lamp = i < kernel_data.integrator.num_all_lights;
 +      if (is_lamp) {
-+        if (UNLIKELY(light_select_reached_max_bounces(kg, i, state->bounce)))
++        if (UNLIKELY(light_select_reached_max_bounces(kg, i, state->bounce))) {
 +          continue;
+         }
 +        num_samples = light_select_num_samples(kg, i);
 +        num_all_lights = kernel_data.integrator.num_all_lights;
 +        lamp_rng_hash = cmj_hash(state->rng_hash, i);
@@ -5182,6 +5229,7 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
 +      else {
 +        num_samples = kernel_data.integrator.mesh_light_samples;
 +        duplicate_pdf = kernel_data.integrator.num_all_lights != 0;
++        is_mesh_light = true;
        }
      }
 +    else {
@@ -5195,7 +5243,15 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
 +    float num_samples_inv = 1.0f / (num_samples * num_all_lights);
 +
 +    for (int j = 0; j < num_samples; j++) {
++#      ifdef __KERNEL_OPTIX
++      Ray light_ray = {};
++#      else
++      Ray light_ray;
 +      light_ray.t = 0.0f; /* reset ray */
++#      endif
++#      ifdef __OBJECT_MOTION__
++      light_ray.time = sd->time;
++#      endif
 +      has_emission = false;
  
 -      for (int j = 0; j < num_samples; j++) {
@@ -5203,15 +5259,16 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
 +      float3 tp = throughput;
 +
 +      if (kernel_data.integrator.use_direct_light) {
-+        /* sample random position on random light */
++        /* sample random position on random light/triangle */
          float light_u, light_v;
          path_branched_rng_2D(
 -            kg, state->rng_hash, state, j, num_samples, PRNG_LIGHT_U, &light_u, &light_v);
--
--        /* only sample triangle lights */
--        if (kernel_data.integrator.num_all_lights)
--          light_u = 0.5f * light_u;
 +            kg, lamp_rng_hash, state, j, num_samples, PRNG_LIGHT_U, &light_u, &light_v);
+ 
+         /* only sample triangle lights */
+-        if (kernel_data.integrator.num_all_lights)
++        if (is_mesh_light && duplicate_pdf)
+           light_u = 0.5f * light_u;
  
 +#      ifdef __KERNEL_OPTIX__
 +        LightSample ls = {};
@@ -5226,7 +5283,7 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
  
          /* sample position on volume segment */
          float rphase = path_branched_rng_1D(
-@@ -249,69 +248,29 @@
+@@ -249,69 +260,30 @@
                                                                                             NULL,
                                                                         false);
  
@@ -5305,7 +5362,8 @@ diff --git a/intern/cycles/kernel/kernel_path_volume.h b/intern/cycles/kernel/ke
 -          path_radiance_accum_light(L, state, tp, &L_light, shadow, 1.0f, is_lamp);
 -        }
 +      /* trace shadow ray */
-+      float3 shadow = make_float3(1.0f, 1.0f, 1.0f);
++      float3 shadow;
++
 +      const bool blocked = shadow_blocked(kg, sd, emission_sd, state, &light_ray, &shadow);
 +
 +      if (has_emission && !blocked) {
@@ -5361,7 +5419,7 @@ diff --git a/intern/cycles/kernel/kernel_shader.h b/intern/cycles/kernel/kernel_
  {
    PROFILING_INIT(kg, PROFILING_SHADER_SETUP);
  
-@@ -780,7 +786,7 @@
+@@ -778,7 +784,7 @@
    kernel_assert(CLOSURE_IS_BSDF(sc->type));
  
    int label;
@@ -5370,7 +5428,7 @@ diff --git a/intern/cycles/kernel/kernel_shader.h b/intern/cycles/kernel/kernel_
  
    *pdf = 0.0f;
    label = bsdf_sample(kg, sd, sc, randu, randv, &eval, omega_in, domega_in, pdf);
-@@ -810,7 +816,7 @@
+@@ -808,7 +814,7 @@
    PROFILING_INIT(kg, PROFILING_CLOSURE_SAMPLE);
  
    int label;
@@ -5379,7 +5437,7 @@ diff --git a/intern/cycles/kernel/kernel_shader.h b/intern/cycles/kernel/kernel_
  
    *pdf = 0.0f;
    label = bsdf_sample(kg, sd, sc, randu, randv, &eval, omega_in, domega_in, pdf);
-@@ -1223,7 +1229,7 @@
+@@ -1221,7 +1227,7 @@
     * depending on color channels, even if this is perhaps not a common case */
    const ShaderClosure *sc = &sd->closure[sampled];
    int label;
@@ -5388,7 +5446,7 @@ diff --git a/intern/cycles/kernel/kernel_shader.h b/intern/cycles/kernel/kernel_
  
    *pdf = 0.0f;
    label = volume_phase_sample(sd, sc, randu, randv, &eval, omega_in, domega_in, pdf);
-@@ -1248,7 +1254,7 @@
+@@ -1246,7 +1252,7 @@
    PROFILING_INIT(kg, PROFILING_CLOSURE_VOLUME_SAMPLE);
  
    int label;
@@ -5397,7 +5455,7 @@ diff --git a/intern/cycles/kernel/kernel_shader.h b/intern/cycles/kernel/kernel_
  
    *pdf = 0.0f;
    label = volume_phase_sample(sd, sc, randu, randv, &eval, omega_in, domega_in, pdf);
-@@ -1358,7 +1364,7 @@
+@@ -1356,7 +1362,7 @@
    int shader = 0;
  
  #  ifdef __HAIR__
@@ -5468,19 +5526,7 @@ diff --git a/intern/cycles/kernel/kernel_shadow.h b/intern/cycles/kernel/kernel_
  #    endif
    /* If no opaque surface found but we did find transparent hits,
     * shade them.
-@@ -245,10 +241,7 @@
-                                                uint max_hits,
-                                                float3 *shadow)
- {
--#    ifdef __SPLIT_KERNEL__
--  Intersection hits_[SHADOW_STACK_MAX_HITS];
--  Intersection *hits = &hits_[0];
--#    elif defined(__KERNEL_CUDA__)
-+#    if defined(__KERNEL_CUDA__) && !defined(__SPLIT_KERNEL__)
-   Intersection *hits = kg->hits_stack;
- #    else
-   Intersection hits_stack[SHADOW_STACK_MAX_HITS];
-@@ -302,7 +295,11 @@
+@@ -302,7 +298,11 @@
                                                          float3 *shadow)
  {
  #    ifdef __VOLUME__
@@ -5492,7 +5538,7 @@ diff --git a/intern/cycles/kernel/kernel_shadow.h b/intern/cycles/kernel/kernel_
  #    endif
    if (blocked && is_transparent_isect) {
      float3 throughput = make_float3(1.0f, 1.0f, 1.0f);
-@@ -318,7 +315,7 @@
+@@ -318,7 +318,7 @@
        if (bounce >= kernel_data.integrator.transparent_max_bounce) {
          return true;
        }
@@ -5501,7 +5547,7 @@ diff --git a/intern/cycles/kernel/kernel_shadow.h b/intern/cycles/kernel/kernel_
          break;
        }
        if (!shader_transparent_shadow(kg, isect)) {
-@@ -374,7 +371,7 @@
+@@ -374,7 +374,7 @@
                                                     Intersection *isect,
                                                     float3 *shadow)
  {
@@ -5510,7 +5556,7 @@ diff --git a/intern/cycles/kernel/kernel_shadow.h b/intern/cycles/kernel/kernel_
    bool is_transparent_isect = blocked ? shader_transparent_shadow(kg, isect) : false;
    return shadow_blocked_transparent_stepped_loop(
        kg, sd, shadow_sd, state, visibility, ray, isect, blocked, is_transparent_isect, shadow);
-@@ -387,32 +384,37 @@
+@@ -387,32 +387,38 @@
                                        ShaderData *sd,
                                        ShaderData *shadow_sd,
                                        ccl_addr_space PathState *state,
@@ -5521,7 +5567,7 @@ diff --git a/intern/cycles/kernel/kernel_shadow.h b/intern/cycles/kernel/kernel_
 -  Ray *ray = ray_input;
 -  Intersection isect;
 -  /* Some common early checks. */
--  *shadow = make_float3(1.0f, 1.0f, 1.0f);
+   *shadow = make_float3(1.0f, 1.0f, 1.0f);
 +#if !defined(__KERNEL_OPTIX__)
 +  /* Some common early checks.
 +   * Avoid conditional trace call in OptiX though, since those hurt performance there.
@@ -5557,7 +5603,7 @@ diff --git a/intern/cycles/kernel/kernel_shadow.h b/intern/cycles/kernel/kernel_
  #ifdef __TRANSPARENT_SHADOWS__
  #  ifdef __SHADOW_RECORD_ALL__
    /* For the transparent shadows we try to use record-all logic on the
-@@ -426,14 +428,14 @@
+@@ -426,14 +432,14 @@
      return true;
    }
    const uint max_hits = transparent_max_bounce - state->transparent_bounce - 1;
@@ -5586,34 +5632,7 @@ diff --git a/intern/cycles/kernel/kernel_subsurface.h b/intern/cycles/kernel/ker
    int num_eval_hits = min(ss_isect->num_hits, BSSRDF_MAX_HITS);
  
    for (int hit = 0; hit < num_eval_hits; hit++) {
-@@ -281,13 +281,19 @@
-   return num_eval_hits;
- }
- 
--ccl_device_noinline void subsurface_scatter_multi_setup(KernelGlobals *kg,
--                                                        LocalIntersection *ss_isect,
--                                                        int hit,
--                                                        ShaderData *sd,
--                                                        ccl_addr_space PathState *state,
--                                                        ClosureType type,
--                                                        float roughness)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device
-+#else
-+ccl_device_noinline
-+#endif
-+    void
-+    subsurface_scatter_multi_setup(KernelGlobals *kg,
-+                                   LocalIntersection *ss_isect,
-+                                   int hit,
-+                                   ShaderData *sd,
-+                                   ccl_addr_space PathState *state,
-+                                   ClosureType type,
-+                                   float roughness)
- {
- #ifdef __SPLIT_KERNEL__
-   Ray ray_object = ss_isect->ray;
-@@ -353,13 +359,19 @@
+@@ -353,13 +353,19 @@
    *weight = safe_divide_color(bssrdf->weight, A);
  }
  
@@ -5625,7 +5644,7 @@ diff --git a/intern/cycles/kernel/kernel_subsurface.h b/intern/cycles/kernel/ker
 -                                                const float bssrdf_u,
 -                                                const float bssrdf_v)
 +#ifdef __KERNEL_OPTIX__
-+ccl_device
++ccl_device_inline /* inline trace calls */
 +#else
 +ccl_device_noinline
 +#endif
@@ -5640,7 +5659,7 @@ diff --git a/intern/cycles/kernel/kernel_subsurface.h b/intern/cycles/kernel/ker
  {
    /* Sample diffuse surface scatter into the object. */
    float3 D;
-@@ -418,7 +430,7 @@
+@@ -418,7 +424,7 @@
      float t = -logf(1.0f - rdist) / sample_sigma_t;
  
      ray->t = t;
@@ -5761,30 +5780,7 @@ diff --git a/intern/cycles/kernel/kernel_volume.h b/intern/cycles/kernel/kernel_
  
      /* compute attenuation over segment */
      if (volume_shader_extinction_sample(kg, sd, state, new_P, &sigma_t)) {
-@@ -256,11 +256,17 @@
- 
- /* get the volume attenuation over line segment defined by ray, with the
-  * assumption that there are no surfaces blocking light between the endpoints */
--ccl_device_noinline void kernel_volume_shadow(KernelGlobals *kg,
--                                              ShaderData *shadow_sd,
--                                              ccl_addr_space PathState *state,
--                                              Ray *ray,
--                                              float3 *throughput)
-+#  ifdef __KERNEL_OPTIX__
-+ccl_device
-+#  else
-+ccl_device_noinline
-+#  endif
-+    void
-+    kernel_volume_shadow(KernelGlobals *kg,
-+                         ShaderData *shadow_sd,
-+                         ccl_addr_space PathState *state,
-+                         Ray *ray,
-+                         float3 *throughput)
- {
-   shader_setup_from_volume(kg, shadow_sd, ray);
- 
-@@ -428,7 +434,11 @@
+@@ -428,7 +428,11 @@
                                      ccl_addr_space float3 *throughput,
                                      bool probalistic_scatter)
  {
@@ -5796,7 +5792,7 @@ diff --git a/intern/cycles/kernel/kernel_volume.h b/intern/cycles/kernel/kernel_
  
    if (!volume_shader_sample(kg, sd, state, ray->P, &coeff))
      return VOLUME_PATH_MISSED;
-@@ -565,7 +575,11 @@
+@@ -565,7 +569,11 @@
      }
  
      float3 new_P = ray->P + ray->D * (t + step_offset);
@@ -5808,7 +5804,7 @@ diff --git a/intern/cycles/kernel/kernel_volume.h b/intern/cycles/kernel/kernel_
  
      /* compute segment */
      if (volume_shader_sample(kg, sd, state, new_P, &coeff)) {
-@@ -621,6 +635,7 @@
+@@ -621,6 +629,7 @@
          new_tp = tp * transmittance;
        }
        else {
@@ -5816,7 +5812,7 @@ diff --git a/intern/cycles/kernel/kernel_volume.h b/intern/cycles/kernel/kernel_
          new_tp = tp;
        }
  
-@@ -671,14 +686,19 @@
+@@ -671,14 +680,19 @@
   * ray, with the assumption that there are no surfaces blocking light
   * between the endpoints. distance sampling is used to decide if we will
   * scatter or not. */
@@ -5844,7 +5840,7 @@ diff --git a/intern/cycles/kernel/kernel_volume.h b/intern/cycles/kernel/kernel_
  {
    shader_setup_from_volume(kg, sd, ray);
  
-@@ -800,7 +820,11 @@
+@@ -800,7 +814,11 @@
      }
  
      float3 new_P = ray->P + ray->D * (t + step_offset);
@@ -5856,7 +5852,7 @@ diff --git a/intern/cycles/kernel/kernel_volume.h b/intern/cycles/kernel/kernel_
  
      /* compute segment */
      if (volume_shader_sample(kg, sd, state, new_P, &coeff)) {
-@@ -1275,7 +1299,7 @@
+@@ -1275,7 +1293,7 @@
     */
    if (stack_index == 0 && kernel_data.background.volume_shader == SHADER_NONE) {
      stack[0].shader = kernel_data.background.volume_shader;
@@ -5869,7 +5865,7 @@ diff --git a/intern/cycles/kernel/kernels/optix/kernel_optix.cu b/intern/cycles/
 new file mode 100644
 --- /dev/null
 +++ b/intern/cycles/kernel/kernels/optix/kernel_optix.cu
-@@ -0,0 +1,263 @@
+@@ -0,0 +1,289 @@
 +/*
 + * Copyright 2019, NVIDIA Corporation.
 + * Copyright 2019, Blender Foundation.
@@ -5891,19 +5887,20 @@ new file mode 100644
 +#include "util/util_atomic.h"
 +#include "kernel/kernel_types.h"
 +#include "kernel/kernel_globals.h"
-+#include "kernel/kernels/cuda/kernel_cuda_image.h"
++#include "kernel/kernels/cuda/kernel_cuda_image.h"  // Texture lookup uses normal CUDA intrinsics
 +#include "kernel/kernel_path.h"
++#include "kernel/kernel_bake.h"
 +
-+template<typename T> ccl_device_forceinline T *optixGetPayloadPtr_0()
++template<typename T> ccl_device_forceinline T *get_payload_ptr_0()
 +{
 +  return (T *)(((uint64_t)optixGetPayload_1() << 32) | optixGetPayload_0());
 +}
-+template<typename T> ccl_device_forceinline T *optixGetPayloadPtr_2()
++template<typename T> ccl_device_forceinline T *get_payload_ptr_2()
 +{
 +  return (T *)(((uint64_t)optixGetPayload_3() << 32) | optixGetPayload_2());
 +}
 +
-+template<bool always = false> ccl_device_forceinline uint optixGetObjectId()
++template<bool always = false> ccl_device_forceinline uint get_object_id()
 +{
 +#ifdef __OBJECT_MOTION__
 +  // Always get the the instance ID from the TLAS
@@ -5936,6 +5933,36 @@ new file mode 100644
 +                    __params.tile.stride);
 +}
 +
++#ifdef __BAKING__
++extern "C" __global__ void __raygen__kernel_optix_bake()
++{
++  KernelGlobals kg;
++  const ShaderParams &p = __params.shader;
++  kernel_bake_evaluate(&kg,
++                       p.input,
++                       p.output,
++                       (ShaderEvalType)p.type,
++                       p.filter,
++                       p.sx + optixGetLaunchIndex().x,
++                       p.offset,
++                       p.sample);
++}
++#endif
++
++extern "C" __global__ void __raygen__kernel_optix_displace()
++{
++  KernelGlobals kg;
++  const ShaderParams &p = __params.shader;
++  kernel_displace_evaluate(&kg, p.input, p.output, p.sx + optixGetLaunchIndex().x);
++}
++
++extern "C" __global__ void __raygen__kernel_optix_background()
++{
++  KernelGlobals kg;
++  const ShaderParams &p = __params.shader;
++  kernel_background_evaluate(&kg, p.input, p.output, p.sx + optixGetLaunchIndex().x);
++}
++
 +extern "C" __global__ void __miss__kernel_optix_miss()
 +{
 +  // 'kernel_path_lamp_emission' checks intersection distance, so need to set it even on a miss
@@ -5946,15 +5973,15 @@ new file mode 100644
 +extern "C" __global__ void __anyhit__kernel_optix_local_hit()
 +{
 +#ifdef __BVH_LOCAL__
-+  const uint object = optixGetObjectId<true>();
++  const uint object = get_object_id<true>();
 +  if (object != optixGetPayload_4() /* local_object */) {
 +    // Only intersect with matching object
 +    return optixIgnoreIntersection();
 +  }
 +
 +  int hit = 0;
-+  uint *const lcg_state = optixGetPayloadPtr_0<uint>();
-+  LocalIntersection *const local_isect = optixGetPayloadPtr_2<LocalIntersection>();
++  uint *const lcg_state = get_payload_ptr_0<uint>();
++  LocalIntersection *const local_isect = get_payload_ptr_2<LocalIntersection>();
 +
 +  if (lcg_state) {
 +    const uint max_hits = optixGetPayload_5();
@@ -5986,18 +6013,17 @@ new file mode 100644
 +  Intersection *isect = &local_isect->hits[hit];
 +  isect->t = optixGetRayTmax();
 +  isect->prim = optixGetPrimitiveIndex();
-+  isect->object = optixGetObjectId();
++  isect->object = get_object_id();
++  isect->type = kernel_tex_fetch(__prim_type, isect->prim);
 +
 +  if (optixIsTriangleHit()) {
 +    const float2 barycentrics = optixGetTriangleBarycentrics();
 +    isect->u = 1.0f - barycentrics.y - barycentrics.x;
 +    isect->v = barycentrics.x;
-+    isect->type = kernel_tex_fetch(__prim_type, isect->prim);
 +  }
 +  else {
 +    isect->u = __uint_as_float(optixGetAttribute_0());
 +    isect->v = __uint_as_float(optixGetAttribute_1());
-+    isect->type = optixGetAttribute_2();
 +  }
 +
 +  // Record geometric normal
@@ -6024,21 +6050,20 @@ new file mode 100644
 +#  endif
 +
 +  // Offset into array with num_hits
-+  Intersection *const isect = optixGetPayloadPtr_0<Intersection>() + optixGetPayload_2();
++  Intersection *const isect = get_payload_ptr_0<Intersection>() + optixGetPayload_2();
 +  isect->t = optixGetRayTmax();
 +  isect->prim = prim;
-+  isect->object = optixGetObjectId();
++  isect->object = get_object_id();
++  isect->type = kernel_tex_fetch(__prim_type, prim);
 +
 +  if (optixIsTriangleHit()) {
 +    const float2 barycentrics = optixGetTriangleBarycentrics();
 +    isect->u = 1.0f - barycentrics.y - barycentrics.x;
 +    isect->v = barycentrics.x;
-+    isect->type = kernel_tex_fetch(__prim_type, prim);
 +  }
 +  else {
 +    isect->u = __uint_as_float(optixGetAttribute_0());
 +    isect->v = __uint_as_float(optixGetAttribute_1());
-+    isect->type = optixGetAttribute_2();
 +  }
 +
 +#  ifdef __TRANSPARENT_SHADOWS__
@@ -6078,20 +6103,18 @@ new file mode 100644
 +{
 +  optixSetPayload_0(__float_as_uint(optixGetRayTmax()));  // Intersection distance
 +  optixSetPayload_3(optixGetPrimitiveIndex());
-+  optixSetPayload_4(optixGetObjectId());
++  optixSetPayload_4(get_object_id());
++  // Can be PRIMITIVE_TRIANGLE and PRIMITIVE_MOTION_TRIANGLE or curve type and segment index
++  optixSetPayload_5(kernel_tex_fetch(__prim_type, optixGetPrimitiveIndex()));
 +
 +  if (optixIsTriangleHit()) {
 +    const float2 barycentrics = optixGetTriangleBarycentrics();
 +    optixSetPayload_1(__float_as_uint(1.0f - barycentrics.y - barycentrics.x));
 +    optixSetPayload_2(__float_as_uint(barycentrics.x));
-+    // Can be PRIMITIVE_TRIANGLE or PRIMITIVE_MOTION_TRIANGLE
-+    optixSetPayload_5(kernel_tex_fetch(__prim_type, optixGetPrimitiveIndex()));
 +  }
 +  else {
 +    optixSetPayload_1(optixGetAttribute_0());
 +    optixSetPayload_2(optixGetAttribute_1());
-+    // Curve type and segment index
-+    optixSetPayload_5(optixGetAttribute_2());
 +  }
 +}
 +
@@ -6099,8 +6122,8 @@ new file mode 100644
 +extern "C" __global__ void __intersection__curve()
 +{
 +  const uint prim = optixGetPrimitiveIndex();
++  const uint object = get_object_id<true>();
 +  const uint type = kernel_tex_fetch(__prim_type, prim);
-+  const uint object = optixGetObjectId<true>();
 +  const uint visibility = optixGetPayload_4();
 +
 +  const float3 P = optixGetObjectRayOrigin();
@@ -6120,9 +6143,8 @@ new file mode 100644
 +          cardinal_curve_intersect(NULL, &isect, P, dir, visibility, object, prim, time, type)) {
 +    optixReportIntersection(isect.t,
 +                            type & PRIMITIVE_ALL,
-+                            __float_as_int(isect.u),  // Attribute_0
-+                            __float_as_int(isect.v),  // Attribute_1
-+                            type);                    // Attribute_2
++                            __float_as_int(isect.u),   // Attribute_0
++                            __float_as_int(isect.v));  // Attribute_1
 +  }
 +}
 +#endif
@@ -6136,7 +6158,7 @@ new file mode 100644
 diff --git a/intern/cycles/kernel/osl/osl_services.cpp b/intern/cycles/kernel/osl/osl_services.cpp
 --- a/intern/cycles/kernel/osl/osl_services.cpp
 +++ b/intern/cycles/kernel/osl/osl_services.cpp
-@@ -1401,7 +1401,7 @@
+@@ -1406,7 +1406,7 @@
  
    /* Raytrace, leaving out shadow opaque to avoid early exit. */
    uint visibility = PATH_RAY_ALL_VISIBILITY - PATH_RAY_SHADOW_OPAQUE;
@@ -6181,8 +6203,18 @@ diff --git a/intern/cycles/kernel/svm/svm.h b/intern/cycles/kernel/svm/svm.h
                       __uint_as_float(node.w));
  }
  
--ccl_device_inline void decode_node_uchar4(uint i, uint *x, uint *y, uint *z, uint *w)
-+ccl_device_forceinline void decode_node_uchar2(uint i, uint *x, uint *y)
++ccl_device_inline void decode_node_uchar2(uint i, uint *x, uint *y)
++{
++  *x = (i & 0xFF);
++  *y = ((i >> 8) & 0xFF);
++}
++ccl_device_inline void decode_node_uchar3(uint i, uint *x, uint *y, uint *z)
++{
++  *x = (i & 0xFF);
++  *y = ((i >> 8) & 0xFF);
++  *z = ((i >> 16) & 0xFF);
++}
+ ccl_device_inline void decode_node_uchar4(uint i, uint *x, uint *y, uint *z, uint *w)
  {
 -  if (x)
 -    *x = (i & 0xFF);
@@ -6192,17 +6224,6 @@ diff --git a/intern/cycles/kernel/svm/svm.h b/intern/cycles/kernel/svm/svm.h
 -    *z = ((i >> 16) & 0xFF);
 -  if (w)
 -    *w = ((i >> 24) & 0xFF);
-+  *x = (i & 0xFF);
-+  *y = ((i >> 8) & 0xFF);
-+}
-+ccl_device_forceinline void decode_node_uchar3(uint i, uint *x, uint *y, uint *z)
-+{
-+  *x = (i & 0xFF);
-+  *y = ((i >> 8) & 0xFF);
-+  *z = ((i >> 16) & 0xFF);
-+}
-+ccl_device_forceinline void decode_node_uchar4(uint i, uint *x, uint *y, uint *z, uint *w)
-+{
 +  *x = (i & 0xFF);
 +  *y = ((i >> 8) & 0xFF);
 +  *z = ((i >> 16) & 0xFF);
@@ -6320,15 +6341,6 @@ diff --git a/intern/cycles/kernel/svm/svm_bevel.h b/intern/cycles/kernel/svm/svm
  /* Bevel shader averaging normals from nearby surfaces.
   *
   * Sampling strategy from: BSSRDF Importance Sampling, SIGGRAPH 2013
-@@ -51,7 +53,7 @@
-   float3 sum_N = make_float3(0.0f, 0.0f, 0.0f);
- 
-   for (int sample = 0; sample < num_samples; sample++) {
--    float disk_u, disk_v;
-+    float disk_u = 0.0f, disk_v = 0.0f;
-     path_branched_rng_2D(
-         kg, state->rng_hash, state, sample, num_samples, PRNG_BEVEL_U, &disk_u, &disk_v);
- 
 @@ -110,7 +112,7 @@
  
      /* Intersect with the same object. if multiple intersections are found it
@@ -6384,7 +6396,7 @@ diff --git a/intern/cycles/kernel/svm/svm_brick.h b/intern/cycles/kernel/svm/svm
  /* Brick */
  
 -ccl_device_noinline float brick_noise(uint n) /* fast integer noise */
-+ccl_device_inline float brick_noise(uint n) /* fast integer noise */
++ccl_device float brick_noise(uint n) /* fast integer noise */
  {
    uint nn;
    n = (n + 1013) & 0x7fffffff;
@@ -6466,8 +6478,18 @@ diff --git a/intern/cycles/kernel/svm/svm_checker.h b/intern/cycles/kernel/svm/s
 diff --git a/intern/cycles/kernel/svm/svm_color_util.h b/intern/cycles/kernel/svm/svm_color_util.h
 --- a/intern/cycles/kernel/svm/svm_color_util.h
 +++ b/intern/cycles/kernel/svm/svm_color_util.h
-@@ -264,7 +264,13 @@
-   return outcol;
+@@ -255,16 +255,16 @@
+ 
+ ccl_device float3 svm_mix_clamp(float3 col)
+ {
+-  float3 outcol = col;
+-
+-  outcol.x = saturate(col.x);
+-  outcol.y = saturate(col.y);
+-  outcol.z = saturate(col.z);
+-
+-  return outcol;
++  return saturate3(col);
  }
  
 -ccl_device_noinline float3 svm_mix(NodeMix type, float fac, float3 c1, float3 c2)
@@ -6593,90 +6615,7 @@ diff --git a/intern/cycles/kernel/svm/svm_magic.h b/intern/cycles/kernel/svm/svm
 diff --git a/intern/cycles/kernel/svm/svm_musgrave.h b/intern/cycles/kernel/svm/svm_musgrave.h
 --- a/intern/cycles/kernel/svm/svm_musgrave.h
 +++ b/intern/cycles/kernel/svm/svm_musgrave.h
-@@ -25,7 +25,13 @@
-  * from "Texturing and Modelling: A procedural approach"
-  */
- 
--ccl_device_noinline float noise_musgrave_fBm(float3 p, float H, float lacunarity, float octaves)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device
-+#else
-+ccl_device_noinline
-+#endif
-+    float
-+    noise_musgrave_fBm(float3 p, float H, float lacunarity, float octaves)
- {
-   float rmd;
-   float value = 0.0f;
-@@ -53,10 +59,13 @@
-  * octaves: number of frequencies in the fBm
-  */
- 
--ccl_device_noinline float noise_musgrave_multi_fractal(float3 p,
--                                                       float H,
--                                                       float lacunarity,
--                                                       float octaves)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device
-+#else
-+ccl_device_noinline
-+#endif
-+    float
-+    noise_musgrave_multi_fractal(float3 p, float H, float lacunarity, float octaves)
- {
-   float rmd;
-   float value = 1.0f;
-@@ -85,8 +94,13 @@
-  * offset: raises the terrain from `sea level'
-  */
- 
--ccl_device_noinline float noise_musgrave_hetero_terrain(
--    float3 p, float H, float lacunarity, float octaves, float offset)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device
-+#else
-+ccl_device_noinline
-+#endif
-+    float
-+    noise_musgrave_hetero_terrain(float3 p, float H, float lacunarity, float octaves, float offset)
- {
-   float value, increment, rmd;
-   float pwHL = powf(lacunarity, -H);
-@@ -121,8 +135,14 @@
-  * offset: raises the terrain from `sea level'
-  */
- 
--ccl_device_noinline float noise_musgrave_hybrid_multi_fractal(
--    float3 p, float H, float lacunarity, float octaves, float offset, float gain)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device
-+#else
-+ccl_device_noinline
-+#endif
-+    float
-+    noise_musgrave_hybrid_multi_fractal(
-+        float3 p, float H, float lacunarity, float octaves, float offset, float gain)
- {
-   float result, signal, weight, rmd;
-   float pwHL = powf(lacunarity, -H);
-@@ -159,8 +179,14 @@
-  * offset: raises the terrain from `sea level'
-  */
- 
--ccl_device_noinline float noise_musgrave_ridged_multi_fractal(
--    float3 p, float H, float lacunarity, float octaves, float offset, float gain)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device
-+#else
-+ccl_device_noinline
-+#endif
-+    float
-+    noise_musgrave_ridged_multi_fractal(
-+        float3 p, float H, float lacunarity, float octaves, float offset, float gain)
- {
-   float result, signal, weight;
-   float pwHL = powf(lacunarity, -H);
-@@ -225,7 +251,7 @@
+@@ -225,7 +225,7 @@
    decode_node_uchar4(node.y, &type, &co_offset, &color_offset, &fac_offset);
    decode_node_uchar4(
        node.z, &dimension_offset, &lacunarity_offset, &detail_offset, &offset_offset);
@@ -6688,10 +6627,11 @@ diff --git a/intern/cycles/kernel/svm/svm_musgrave.h b/intern/cycles/kernel/svm/
 diff --git a/intern/cycles/kernel/svm/svm_noise.h b/intern/cycles/kernel/svm/svm_noise.h
 --- a/intern/cycles/kernel/svm/svm_noise.h
 +++ b/intern/cycles/kernel/svm/svm_noise.h
-@@ -218,7 +218,13 @@
+@@ -181,9 +181,15 @@
+ }
  #endif
  
- #ifndef __KERNEL_SSE2__
+-#ifndef __KERNEL_SSE2__
 -ccl_device_noinline float perlin(float x, float y, float z)
 +#  ifdef __KERNEL_OPTIX__
 +ccl_device
@@ -6701,8 +6641,31 @@ diff --git a/intern/cycles/kernel/svm/svm_noise.h b/intern/cycles/kernel/svm/svm
 +    float
 +    perlin(float x, float y, float z)
  {
++#ifndef __KERNEL_SSE2__
    int X;
    float fx = floorfrac(x, &X);
+   int Y;
+@@ -217,10 +223,7 @@
+ 
+   /* can happen for big coordinates, things even out to 0.0 then anyway */
+   return (isfinite(r)) ? r : 0.0f;
+-}
+ #else
+-ccl_device_noinline float perlin(float x, float y, float z)
+-{
+   ssef xyz = ssef(x, y, z, 0.0f);
+   ssei XYZ;
+ 
+@@ -258,8 +261,8 @@
+   ssef rinfmask = ((r & infmask) == infmask).m128;  // 0xffffffff if r is inf/-inf/nan else 0
+   ssef rfinite = andnot(rinfmask, r);               // 0 if r is inf/-inf/nan else r
+   return extract<0>(rfinite);
+-}
+ #endif
++}
+ 
+ /* perlin noise in range 0..1 */
+ ccl_device float noise(float3 p)
 diff --git a/intern/cycles/kernel/svm/svm_noisetex.h b/intern/cycles/kernel/svm/svm_noisetex.h
 --- a/intern/cycles/kernel/svm/svm_noisetex.h
 +++ b/intern/cycles/kernel/svm/svm_noisetex.h
@@ -6748,24 +6711,6 @@ diff --git a/intern/cycles/kernel/svm/svm_tex_coord.h b/intern/cycles/kernel/svm
  
    float3 tangent;
    float3 attribute_value;
-diff --git a/intern/cycles/kernel/svm/svm_texture.h b/intern/cycles/kernel/svm/svm_texture.h
---- a/intern/cycles/kernel/svm/svm_texture.h
-+++ b/intern/cycles/kernel/svm/svm_texture.h
-@@ -18,7 +18,13 @@
- 
- /* Turbulence */
- 
--ccl_device_noinline float noise_turbulence(float3 p, float octaves, int hard)
-+#ifdef __KERNEL_OPTIX__
-+ccl_device
-+#else
-+ccl_device_noinline
-+#endif
-+    float
-+    noise_turbulence(float3 p, float octaves, int hard)
- {
-   float fscale = 1.0f;
-   float amp = 1.0f;
 diff --git a/intern/cycles/kernel/svm/svm_vector_transform.h b/intern/cycles/kernel/svm/svm_vector_transform.h
 --- a/intern/cycles/kernel/svm/svm_vector_transform.h
 +++ b/intern/cycles/kernel/svm/svm_vector_transform.h
@@ -6820,43 +6765,6 @@ diff --git a/intern/cycles/kernel/svm/svm_wireframe.h b/intern/cycles/kernel/svm
  
    /* Input Data */
    float size = stack_load_float(stack, in_size);
-diff --git a/intern/cycles/render/camera.cpp b/intern/cycles/render/camera.cpp
---- a/intern/cycles/render/camera.cpp
-+++ b/intern/cycles/render/camera.cpp
-@@ -720,12 +720,21 @@
-     float3 raster = transform_perspective(&full_cameratoraster, make_float3(dir.x, dir.y, 0.0f));
- 
-     ray.t = 1.0f;
--    camera_sample_panorama(
--        &kernel_camera, kernel_camera_motion.data(), raster.x, raster.y, 0.0f, 0.0f, &ray);
-+    camera_sample_panorama(&kernel_camera,
-+#  ifdef __CAMERA_MOTION__
-+                           kernel_camera_motion.data(),
-+#  endif
-+                           raster.x,
-+                           raster.y,
-+                           0.0f,
-+                           0.0f,
-+                           &ray);
-     if (ray.t == 0.0f) {
-       /* No differentials, just use from directly ahead. */
-       camera_sample_panorama(&kernel_camera,
-+#  ifdef __CAMERA_MOTION__
-                              kernel_camera_motion.data(),
-+#  endif
-                              0.5f * full_width,
-                              0.5f * full_height,
-                              0.0f,
-@@ -734,7 +743,9 @@
-     }
- #else
-     camera_sample_panorama(&kernel_camera,
-+#  ifdef __CAMERA_MOTION__
-                            kernel_camera_motion.data(),
-+#  endif
-                            0.5f * full_width,
-                            0.5f * full_height,
-                            0.0f,
 diff --git a/intern/cycles/render/mesh.h b/intern/cycles/render/mesh.h
 --- a/intern/cycles/render/mesh.h
 +++ b/intern/cycles/render/mesh.h
@@ -6877,10 +6785,10 @@ diff --git a/intern/cycles/render/mesh.h b/intern/cycles/render/mesh.h
      {
        return num_keys - 1;
      }
-@@ -166,6 +167,15 @@
-   {
+@@ -167,6 +168,16 @@
      return curve_first_key.size();
    }
+ 
 +  size_t num_segments() const
 +  {
 +    return curve_keys.size() - curve_first_key.size();
@@ -6890,10 +6798,11 @@ diff --git a/intern/cycles/render/mesh.h b/intern/cycles/render/mesh.h
 +  {
 +    return num_triangles() + num_segments();
 +  }
- 
++
    /* Mesh SubdFace */
    struct SubdFace {
-@@ -268,6 +278,8 @@
+     int start_corner;
+@@ -268,6 +279,8 @@
  
    size_t attr_map_offset;
  
@@ -6902,7 +6811,7 @@ diff --git a/intern/cycles/render/mesh.h b/intern/cycles/render/mesh.h
    size_t num_subd_verts;
  
    /* Functions */
-@@ -331,8 +343,9 @@
+@@ -332,8 +345,9 @@
     *   same BVH tree.
     * - Special ray intersection is needed, for example to limit subsurface rays
     *   to only the mesh itself.
@@ -6976,7 +6885,7 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
        MEM_GUARDED_CALL(progress, bvh->build, *progress);
      }
    }
-@@ -1117,9 +1125,9 @@
+@@ -1128,9 +1136,9 @@
    return -1;
  }
  
@@ -6988,7 +6897,7 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
  }
  
  bool Mesh::is_instanced() const
-@@ -1711,6 +1719,8 @@
+@@ -1722,6 +1730,8 @@
    size_t face_size = 0;
    size_t corner_size = 0;
  
@@ -6997,7 +6906,7 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
    foreach (Mesh *mesh, scene->meshes) {
      mesh->vert_offset = vert_size;
      mesh->tri_offset = tri_size;
-@@ -1740,6 +1750,9 @@
+@@ -1751,6 +1761,9 @@
      }
      face_size += mesh->subd_faces.size();
      corner_size += mesh->subd_face_corners.size();
@@ -7007,7 +6916,7 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
    }
  }
  
-@@ -1918,7 +1931,7 @@
+@@ -1929,7 +1942,7 @@
    }
  #endif
  
@@ -7016,7 +6925,7 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
    bvh->build(progress, &device->stats);
  
    if (progress.get_cancel()) {
-@@ -1983,14 +1996,7 @@
+@@ -1994,14 +2007,7 @@
    dscene->data.bvh.bvh_layout = bparams.bvh_layout;
    dscene->data.bvh.use_bvh_steps = (scene->params.num_bvh_time_steps != 0);
  
@@ -7032,7 +6941,7 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
  
    delete bvh;
  }
-@@ -2210,6 +2216,8 @@
+@@ -2213,6 +2219,8 @@
    /* Update displacement. */
    bool displacement_done = false;
    size_t num_bvh = 0;
@@ -7041,7 +6950,7 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
  
    foreach (Mesh *mesh, scene->meshes) {
      if (mesh->need_update) {
-@@ -2217,7 +2225,7 @@
+@@ -2220,7 +2228,7 @@
          displacement_done = true;
        }
  
@@ -7050,7 +6959,7 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
          num_bvh++;
        }
      }
-@@ -2242,7 +2250,7 @@
+@@ -2245,7 +2253,7 @@
      if (mesh->need_update) {
        pool.push(function_bind(
            &Mesh::compute_bvh, mesh, device, dscene, &scene->params, &progress, i, num_bvh));
@@ -7059,18 +6968,6 @@ diff --git a/intern/cycles/render/mesh.cpp b/intern/cycles/render/mesh.cpp
          i++;
        }
      }
-diff --git a/intern/cycles/render/svm.cpp b/intern/cycles/render/svm.cpp
---- a/intern/cycles/render/svm.cpp
-+++ b/intern/cycles/render/svm.cpp
-@@ -75,7 +75,7 @@
-    * while memcpy is running, it'll be copying into possibly invalid/freed ram.
-    */
-   size_t global_nodes_size = global_svm_nodes->size();
--  global_svm_nodes->resize(global_nodes_size + svm_nodes.size());
-+  global_svm_nodes->resize(global_nodes_size + (svm_nodes.size() - 1));
- 
-   /* Offset local SVM nodes to a global address space. */
-   int4 &jump_node = (*global_svm_nodes)[shader->id];
 diff --git a/intern/cycles/util/util_debug.h b/intern/cycles/util/util_debug.h
 --- a/intern/cycles/util/util_debug.h
 +++ b/intern/cycles/util/util_debug.h
@@ -7122,7 +7019,7 @@ diff --git a/intern/cycles/util/util_debug.cpp b/intern/cycles/util/util_debug.c
  DebugFlags::OpenCL::OpenCL() : device_type(DebugFlags::OpenCL::DEVICE_ALL), debug(false)
  {
    reset();
-@@ -130,22 +140,26 @@
+@@ -130,6 +140,7 @@
    viewport_static_bvh = false;
    cpu.reset();
    cuda.reset();
@@ -7130,44 +7027,16 @@ diff --git a/intern/cycles/util/util_debug.cpp b/intern/cycles/util/util_debug.c
    opencl.reset();
  }
  
- std::ostream &operator<<(std::ostream &os, DebugFlagsConstRef debug_flags)
- {
-   os << "CPU flags:\n"
--     << "  AVX2       : " << string_from_bool(debug_flags.cpu.avx2) << "\n"
--     << "  AVX        : " << string_from_bool(debug_flags.cpu.avx) << "\n"
--     << "  SSE4.1     : " << string_from_bool(debug_flags.cpu.sse41) << "\n"
--     << "  SSE3       : " << string_from_bool(debug_flags.cpu.sse3) << "\n"
--     << "  SSE2       : " << string_from_bool(debug_flags.cpu.sse2) << "\n"
--     << "  BVH layout : " << bvh_layout_name(debug_flags.cpu.bvh_layout) << "\n"
--     << "  Split      : " << string_from_bool(debug_flags.cpu.split_kernel) << "\n";
-+     << "  AVX2             : " << string_from_bool(debug_flags.cpu.avx2) << "\n"
-+     << "  AVX              : " << string_from_bool(debug_flags.cpu.avx) << "\n"
-+     << "  SSE4.1           : " << string_from_bool(debug_flags.cpu.sse41) << "\n"
-+     << "  SSE3             : " << string_from_bool(debug_flags.cpu.sse3) << "\n"
-+     << "  SSE2             : " << string_from_bool(debug_flags.cpu.sse2) << "\n"
-+     << "  BVH layout       : " << bvh_layout_name(debug_flags.cpu.bvh_layout) << "\n"
-+     << "  Split            : " << string_from_bool(debug_flags.cpu.split_kernel) << "\n";
+@@ -145,7 +156,10 @@
+      << "  Split      : " << string_from_bool(debug_flags.cpu.split_kernel) << "\n";
  
    os << "CUDA flags:\n"
 -     << " Adaptive Compile: " << string_from_bool(debug_flags.cuda.adaptive_compile) << "\n";
 +     << "  Adaptive Compile : " << string_from_bool(debug_flags.cuda.adaptive_compile) << "\n";
 +
 +  os << "OptiX flags:\n"
-+     << "  CUDA streams     : " << debug_flags.optix.cuda_streams << "\n";
++     << "  CUDA streams : " << debug_flags.optix.cuda_streams << "\n";
  
    const char *opencl_device_type;
    switch (debug_flags.opencl.device_type) {
-@@ -169,9 +183,9 @@
-       break;
-   }
-   os << "OpenCL flags:\n"
--     << "  Device type    : " << opencl_device_type << "\n"
--     << "  Debug          : " << string_from_bool(debug_flags.opencl.debug) << "\n"
--     << "  Memory limit   : " << string_human_readable_size(debug_flags.opencl.mem_limit) << "\n";
-+     << "  Device type      : " << opencl_device_type << "\n"
-+     << "  Debug            : " << string_from_bool(debug_flags.opencl.debug) << "\n"
-+     << "  Memory limit     : " << string_human_readable_size(debug_flags.opencl.mem_limit) << "\n";
-   return os;
- }
- 
 
