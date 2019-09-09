@@ -1,9 +1,0 @@
-diff -ru stepmania-5.9999.old/extern/CMakeLists.txt stepmania-5.9999/extern/CMakeLists.txt
---- stepmania-5.9999.old/extern/CMakeLists.txt	2017-09-02 00:38:59.671490397 +0300
-+++ stepmania-5.9999/extern/CMakeLists.txt	2017-09-02 00:40:41.623310971 +0300
-@@ -19,5 +19,4 @@
- endif()
- include(CMakeProject-tomcrypt.cmake)
- include(CMakeProject-tommath.cmake)
--include(CMakeProject-png.cmake)
- 
