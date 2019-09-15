@@ -10,6 +10,7 @@ DESCRIPTION="Stepmania 5 sm-ssc branch"
 HOMEPAGE="https://github.com/stepmania/stepmania"
 SRC_URI=""
 
+EGIT_BRANCH="5_1-new"
 EGIT_REPO_URI="https://github.com/stepmania/stepmania.git"
 EGIT_SUBMODULES=(
 	"extern/cppformat"
@@ -85,7 +86,7 @@ src_configure() {
 
 src_install() {
 	cmake-utils_src_install
-	make_wrapper ${PN} ${GAMES_PREFIX_OPT}/${PN}-5.2/${PN}
+	make_wrapper ${PN} ${GAMES_PREFIX_OPT}/${PN}-5.1/${PN}
 	newicon "Themes/default/Graphics/Common window icon.png" ${PN}.png
 	make_desktop_entry ${PN} Stepmania ${PN}
 }
