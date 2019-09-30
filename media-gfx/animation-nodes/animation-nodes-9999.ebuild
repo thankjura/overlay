@@ -20,6 +20,7 @@ IUSE=""
 
 DEPEND="
 	media-gfx/blender:=
+	dev-python/numpy[${PYTHON_USEDEP}]
 "
 RDEPEND="${DEPEND}"
 BDEPEND=""
