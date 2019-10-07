@@ -20,11 +20,6 @@ fi
 LICENSE="Apache-2.0"
 SLOT="0"
 
-#X86_CPU_FLAGS=(
-#	sse2:sse2 sse4_2:sse4_2 avx:avx avx2:avx2
-#)
-#CPU_FLAGS=( ${X86_CPU_FLAGS[@]/#/cpu_flags_x86_} )
-
 IUSE="clang ispc +tbb tutorial" # ${CPU_FLAGS[@]%:*}
 
 REQUIRED_USE="clang? ( !tutorial )"
@@ -51,16 +46,6 @@ DOCS=( CHANGELOG.md README.md readme.pdf )
 
 CMAKE_BUILD_TYPE=Release
 
-src_prepare() {
-	cmake-utils_src_prepare
-
-	# disable RPM package building
-	sed -e 's|CPACK_RPM_PACKAGE_RELEASE 1|CPACK_RPM_PACKAGE_RELEASE 0|' \
-		-i CMakeLists.txt || die
-	# change -O3 settings for various compilers
-	sed -e 's|-O3|-O2|' -i "${S}"/common/cmake/{clang,gnu,intel,ispc}.cmake || die
-}
-
 src_configure() {
 	if use clang; then
 		export CC=clang
@@ -72,23 +57,11 @@ src_configure() {
 		filter-ldflags "-Wl,--defsym=__gentoo_check_ldflags__=0"
 	fi
 
-# FIXME:
-#	any option with a comment # default at the end of the line is
-#	currently set to use default value. Some of them could probably
-#	be turned into USE flags.
-#
-#	EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR: leave it at 2.0f for now
-#		0.0f disables self intersection avoidance.
-#
-# The build currently only works with their own C{,XX}FLAGS,
-# not respecting user flags.
-#		-DEMBREE_IGNORE_CMAKE_CXX_FLAGS=OFF
 	local mycmakeargs=(
 		-DBUILD_TESTING:BOOL=OFF
 #		-DCMAKE_C_COMPILER=$(tc-getCC)
 #		-DCMAKE_CXX_COMPILER=$(tc-getCXX)
 		-DCMAKE_SKIP_INSTALL_RPATH:BOOL=ON
-		-DEMBREE_BACKFACE_CULLING=OFF			# default
 		-DEMBREE_FILTER_FUNCTION=ON				# default
 		-DEMBREE_GEOMETRY_CURVE=ON				# default
 		-DEMBREE_GEOMETRY_GRID=ON				# default
@@ -98,13 +71,9 @@ src_configure() {
 		-DEMBREE_GEOMETRY_SUBDIVISION=ON		# default
 		-DEMBREE_GEOMETRY_TRIANGLE=ON			# default
 		-DEMBREE_GEOMETRY_USER=ON				# default
-		-DEMBREE_IGNORE_INVALID_RAYS=OFF		# default
 		-DEMBREE_ISPC_SUPPORT=$(usex ispc)
-		-DEMBREE_RAY_MASK=OFF					# default
 		-DEMBREE_RAY_PACKETS=ON					# default
-		-DEMBREE_STACK_PROTECTOR=OFF			# default
 		-DEMBREE_STATIC_LIB=OFF
-		-DEMBREE_STAT_COUNTERS=OFF
 		-DEMBREE_TASKING_SYSTEM:STRING=$(usex tbb "TBB" "INTERNAL")
 		-DEMBREE_TUTORIALS=$(usex tutorial)
 	)
