@@ -7,7 +7,7 @@ inherit eutils
 
 DESCRIPTION="Free digital painting application. Digital Painting, Creative Freedom!"
 HOMEPAGE="https://krita.org/"
-SRC_URI="http://download.kde.org/stable/krita/${PV}/krita-${PV}-x86_64.appimage"
+SRC_URI="http://download.kde.org/stable/krita/${PV/b/}/krita-${PV}-x86_64.appimage"
 
 LICENSE="GPL-3"
 SLOT="0"
