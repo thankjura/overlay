@@ -171,6 +171,14 @@ src_prepare() {
 			done
 		fi
 	fi
+
+	# cleanup addons
+	for a in $(ls "${S}"/release/scripts/addons_contrib/); do
+		if [[ -d "${S}"/release/scripts/addons/${a} || -f "${S}"/release/scripts/addons/${a} ]]; then
+			ewarn "Duplicate ${a}, removing"
+			rm -r "${S}"/release/scripts/addons_contrib/${a}
+		fi
+	done
 }
 
 src_configure() {
