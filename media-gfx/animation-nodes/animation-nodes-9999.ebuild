@@ -11,7 +11,6 @@ inherit distutils-r1 git-r3
 DESCRIPTION="is a node based visual scripting system designed for motion graphics in Blender"
 HOMEPAGE="https://github.com/JacquesLucke/animation_nodes"
 EGIT_REPO_URI="https://github.com/JacquesLucke/animation_nodes.git"
-EGIT_BRANCH="blender2.8"
 
 LICENSE="GPL"
 SLOT="0"
