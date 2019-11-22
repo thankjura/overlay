@@ -9,9 +9,7 @@ inherit check-reqs cmake-utils python-single-r1 gnome2-utils xdg-utils pax-utils
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org/"
 
-MY_PV="$(ver_cut 1-2)"
-
-SRC_URI="https://download.blender.org/source/${P}.tar.gz"
+SRC_URI="https://download.blender.org/source/${P}.tar.xz"
 
 LICENSE="|| ( GPL-2 BL )"
 SLOT="28"
@@ -19,7 +17,7 @@ KEYWORDS="~amd64"
 
 IUSE_DESKTOP="-portable +blender +X +nls -ndof -player"
 IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
-IUSE_LIBS="+cycles -sdl jack openal freestyle -osl -openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oidn"
+IUSE_LIBS="+cycles -sdl jack openal freestyle -osl +openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oidn"
 IUSE_CPU="openmp embree +sse"
 IUSE_TEST="-valgrind -debug -doc"
 IUSE_IMAGE="-dpx -dds +openexr jpeg2k tiff +hdr"
@@ -131,14 +129,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/blender-doxyfile.patch
 	eapply "${FILESDIR}"/fix-deps.patch
 
-	if use optix; then
-		eapply "${FILESDIR}"/D5363.diff
-	fi
-
-	if use oidn; then
-		eapply "${FILESDIR}"/D4304.diff
-	fi
-
 	cmake-utils_src_prepare
 
 	# remove some bundled deps
@@ -180,12 +170,21 @@ src_prepare() {
 			done
 		fi
 	fi
+
+	# cleanup addons
+	for a in $(ls "${S}"/release/scripts/addons_contrib/); do
+		if [[ -d "${S}"/release/scripts/addons/${a} || -f "${S}"/release/scripts/addons/${a} ]]; then
+			ewarn "Duplicate ${a}, removing"
+			rm -r "${S}"/release/scripts/addons_contrib/${a}
+		fi
+	done
 }
 
 src_configure() {
 	append-flags -funsigned-char -fno-strict-aliasing
 	append-lfs-flags
-	append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=4
+	#append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=4
+	append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=5
 	local MYCMAKEARGS=(-DCMAKE_TOOLCHAIN_FILE="")
 
 	local mycmakeargs=""
