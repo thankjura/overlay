@@ -4,7 +4,7 @@
 EAPI=7
 PYTHON_COMPAT=( python3_7 )
 
-inherit check-reqs cmake-utils python-single-r1 gnome2-utils xdg-utils pax-utils toolchain-funcs flag-o-matic git-r3
+inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 xdg
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org/"
@@ -13,8 +13,9 @@ EGIT_REPO_URI="https://git.blender.org/blender.git"
 EGIT_BRANCH="master"
 
 LICENSE="|| ( GPL-2 BL )"
-SLOT="28"
 KEYWORDS="~amd64"
+SLOT="0"
+MY_PV="2.82"
 
 IUSE_DESKTOP="-portable +blender +X +nls -ndof -player"
 IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
@@ -357,10 +358,6 @@ src_install() {
 	python_optimize "${ED%/}/usr/share/blender/${MY_PV}/scripts"
 }
 
-pkg_preinst() {
-	gnome2_icon_savelist
-}
-
 pkg_postinst() {
 	elog
 	elog "Blender compiles from master thunk by default"
@@ -371,13 +368,11 @@ pkg_postinst() {
 	elog "/etc/portage/patches/media-gfx/blender/"
 	elog "or create simlink"
 	elog
-	gnome2_icon_cache_update
-	xdg_mimeinfo_database_update
+	xdg_pkg_postinst
 }
 
 pkg_postrm() {
-	gnome2_icon_cache_update
-	xdg_mimeinfo_database_update
+	xdg_pkg_postrm
 
 	ewarn ""
 	ewarn "You may want to remove the following directory."
