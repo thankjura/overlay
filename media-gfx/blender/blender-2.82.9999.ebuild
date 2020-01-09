@@ -131,7 +131,6 @@ src_prepare() {
 	eapply_user
 	eapply "${FILESDIR}"/blender-doxyfile.patch
 	eapply "${FILESDIR}"/fix-deps.patch
-	eapply "${FILESDIR}"/nvidia-denoiser-D6395.patch
 
 	cmake-utils_src_prepare
 
