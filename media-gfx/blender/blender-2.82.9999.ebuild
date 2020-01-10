@@ -10,13 +10,13 @@ DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org/"
 
 EGIT_REPO_URI="https://git.blender.org/blender.git"
-EGIT_BRANCH="master"
+EGIT_BRANCH="blender-v2.82-release"
 #EGIT_COMMIT="7c2217cd126a97df9b1c305f79a605f25c06a229"
 
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64"
 SLOT="0"
-MY_PV="2.82"
+MY_PV="$(ver_cut 1-2)"
 
 IUSE_DESKTOP="-portable +blender +X +nls -ndof -player"
 IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
