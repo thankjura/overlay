@@ -74,7 +74,7 @@ RDEPEND="${PYTHON_DEPS}
 		cuda? ( dev-util/nvidia-cuda-toolkit )
 		osl? ( media-libs/osl )
 		embree? ( media-libs/embree )
-		openvdb? ( media-gfx/openvdb[${PYTHON_USEDEP}]
+		openvdb? ( media-gfx/openvdb[${PYTHON_USEDEP},-abi4-compat]
 		dev-cpp/tbb )
 	)
 	optix? ( dev-libs/optix )
