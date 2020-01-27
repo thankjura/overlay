@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
-PYTHON_COMPAT=( python3_7 )
+PYTHON_COMPAT=( python3_{7,8} )
 
 inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 xdg
 
@@ -130,7 +130,6 @@ pkg_setup() {
 src_prepare() {
 	eapply_user
 	eapply "${FILESDIR}"/blender-doxyfile.patch
-	eapply "${FILESDIR}"/fix-deps.patch
 
 	cmake-utils_src_prepare
 
