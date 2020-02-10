@@ -4,7 +4,7 @@
 EAPI=7
 
 DISTUTILS_SINGLE_IMPL=1
-PYTHON_COMPAT=( python3_7 )
+PYTHON_COMPAT=( python3_{6,7,8} )
 
 inherit distutils-r1 git-r3
 
@@ -18,8 +18,10 @@ KEYWORDS="~amd64"
 IUSE=""
 
 DEPEND="
-	media-gfx/blender:=
-	dev-python/numpy[${PYTHON_USEDEP}]
+	media-gfx/blender:=[${PYTHON_SINGLE_USEDEP}]
+	$(python_gen_cond_dep '
+		dev-python/numpy[${PYTHON_MULTI_USEDEP}]
+	')
 "
 RDEPEND="${DEPEND}"
 BDEPEND=""

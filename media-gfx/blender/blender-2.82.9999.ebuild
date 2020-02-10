@@ -49,8 +49,10 @@ done
 
 RDEPEND="${PYTHON_DEPS}
 	dev-libs/jemalloc
-	dev-python/numpy[${PYTHON_USEDEP}]
-	dev-python/requests[${PYTHON_USEDEP}]
+	$(python_gen_cond_dep '
+		>=dev-python/numpy-1.10.1[${PYTHON_MULTI_USEDEP}]
+		dev-python/requests[${PYTHON_MULTI_USEDEP}]
+	')
 	sys-libs/zlib
 	smoke? ( sci-libs/fftw:3.0 )
 	media-libs/freetype
@@ -74,7 +76,7 @@ RDEPEND="${PYTHON_DEPS}
 		cuda? ( dev-util/nvidia-cuda-toolkit )
 		osl? ( media-libs/osl )
 		embree? ( media-libs/embree )
-		openvdb? ( media-gfx/openvdb[${PYTHON_USEDEP},-abi4-compat]
+		openvdb? ( media-gfx/openvdb[${PYTHON_SINGLE_USEDEP},-abi4-compat]
 		dev-cpp/tbb )
 	)
 	optix? ( dev-libs/optix )

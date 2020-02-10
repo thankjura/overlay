@@ -3,7 +3,7 @@
 
 EAPI=7
 
-PYTHON_COMPAT=( python3_7 )
+PYTHON_COMPAT=( python3_{7,8} )
 
 inherit eutils desktop python-single-r1
 
@@ -25,7 +25,7 @@ DEPEND="
 "
 RDEPEND="
 	${DEPEND}
-	blender? ( media-gfx/blender:= )
+	blender? ( media-gfx/blender:=[${PYTHON_SINGLE_USEDEP}] )
 "
 
 S=${WORKDIR}/fSpy-${PV}
