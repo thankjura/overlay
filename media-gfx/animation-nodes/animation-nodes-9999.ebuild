@@ -31,6 +31,6 @@ src_install() {
 	echo "{\"Copy Target\" : \"${D}/usr/share/blender/${BLENDER_VER}/scripts/addons\"}" > conf.json
 
 	mkdir -p ${D%/}/usr/share/blender/${BLENDER_VER}/scripts/addons
-	esetup.py build --copy
+	esetup.py build --copy --noversioncheck
 	python_optimize "${D%/}/usr/share/blender/${BLENDER_VER}/scripts/addons/animation_nodes"
 }
