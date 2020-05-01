@@ -7,11 +7,12 @@ PYTHON_COMPAT=( python3_{7,8} )
 
 inherit eutils desktop python-single-r1
 
-AV=${PV}
+AV=1.0.3
+MY_PV=${PV/_beta/\-beta\.}
 DESCRIPTION="Open source still image camera matching"
 HOMEPAGE="https://fspy.io/"
-SRC_URI="https://github.com/stuffmatic/fSpy/archive/v${PV}.tar.gz -> ${P}.tar.gz
-		blender? ( https://github.com/stuffmatic/fSpy-Blender/archive/v${PV}.tar.gz -> ${PN}-blender-${AV}.tar.gz )
+SRC_URI="https://github.com/stuffmatic/fSpy/archive/${MY_PV}.tar.gz -> ${P}.tar.gz
+		blender? ( https://github.com/stuffmatic/fSpy-Blender/archive/v${AV}.tar.gz -> ${PN}-blender-${AV}.tar.gz )
 "
 
 LICENSE="GPL-3"
@@ -28,7 +29,7 @@ RDEPEND="
 	blender? ( media-gfx/blender:=[${PYTHON_SINGLE_USEDEP}] )
 "
 
-S=${WORKDIR}/fSpy-${PV}
+S=${WORKDIR}/fSpy-${MY_PV}
 
 src_prepare() {
 	eapply_user
@@ -43,6 +44,7 @@ src_compile() {
 src_install() {
 	mkdir -p ${D}/usr/lib64/${PN}
 	cp -a dist/linux-unpacked/* ${D}/usr/lib64/${PN}
+	newicon logo.png ${PN}.png
 	make_wrapper ${PN} /usr/lib64/${PN}/${PN} /usr/lib64/${PN} /usr/lib64/${PN}
 	make_desktop_entry ${PN} fSpy ${PN} "Graphics"
 
