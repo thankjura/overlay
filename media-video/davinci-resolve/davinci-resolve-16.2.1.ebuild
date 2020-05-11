@@ -3,7 +3,7 @@
 
 EAPI=6
 
-inherit udev desktop xdg-utils
+inherit udev desktop xdg-utils preserve-libs
 
 MY_PV=${PV/_beta/b}
 
@@ -12,7 +12,7 @@ HOMEPAGE="https://www.blackmagicdesign.com/products/davinciresolve/"
 PKG_NAME="DaVinci_Resolve_${MY_PV}_Linux"
 SRC_URI="https://sw.blackmagicdesign.com/DaVinciResolve/v${MY_PV}/${PKG_NAME}.zip"
 
-RESTRICT="fetch mirror strip"
+RESTRICT="bindist fetch mirror"
 
 KEYWORDS="~amd64"
 SLOT="0"
@@ -24,7 +24,10 @@ DEPEND="
 	virtual/glu
 	dev-qt/qtscript:5
 	app-arch/libarchive
+	dev-util/patchelf
 "
+
+QA_PREBUILT=""
 
 S="${WORKDIR}"
 
@@ -34,16 +37,42 @@ pkg_nofetch() {
 	einfo "from ${HOMEPAGE} and place it in ${DISTDIR}"
 }
 
+src_unpack() {
+	unpack ${PKG_NAME}.zip || die
+	bsdtar x -f ${S}/${PKG_NAME}.run -C ${S} || die
+}
+
 src_prepare() {
 	eapply_user
+
+	rm share/resolve.xml
+	cp ${FILESDIR}/resolve.xml share/resolve.xml
+
+	echo ${S}/bin/resolve
+
+	pwd
+
+	patchelf --set-rpath '$ORIGIN' ${S}/bin/resolve || die
+	patchelf --force-rpath --set-rpath '$ORIGIN/../lib' ${S}/libs/libBlackmagicRawAPI.so || die
+	patchelf --force-rpath --set-rpath '$ORIGIN/../lib' ${S}/libs/libDecoderCUDA.so || die
+	patchelf --force-rpath --shrink-rpath ${S}/BlackmagicRAWPlayer/BlackmagicRawAPI/libDecoderCUDA.so || die
+	patchelf --force-rpath --set-rpath '$ORIGIN/../lib' ${S}/libs/libDecoderOpenCL.so || die
+	patchelf --force-rpath --set-rpath '/media/datastore1/Components/cuda_toolkit-10.0/dev/linux/lib64/stubs' ${S}/libs/libDecoderOpenCL.so || die
+	patchelf --force-rpath --shrink-rpath "${S}/BlackmagicRAWPlayer/lib/libgcc_s.so.1" || die
+	patchelf --force-rpath --shrink-rpath ${S}/BlackmagicRAWSpeedTest/lib/libgcc_s.so.1 || die
+	patchelf --force-rpath --shrink-rpath "${S}/DaVinci Resolve Panels Setup/AdminUtility/PlugIns/DaVinciPanels/lib/libgcc_s.so.1" || die
+	patchelf --force-rpath --shrink-rpath "${S}/DaVinci Resolve Panels Setup/lib/libgcc_s.so.1" || die
+	patchelf --force-rpath --shrink-rpath "${S}/libs/libpq.so.5" || die
+	patchelf --force-rpath --shrink-rpath "${S}/libs/libopencv_core.so.3.4.1" || die
+	patchelf --force-rpath --set-rpath "$ORIGIN" "${S}/libs/libCrmSdk.so.2.4" || die
 }
 
 src_install() {
 	mkdir -p -m 0775 "${D}/opt/resolve/"{configs,DolbyVision,easyDCP,Fairlight,GPUCache,logs,Media,"Resolve Disk Database",.crashreport,.license,.LUT}
 
-	bsdtar x -f DaVinci_Resolve_${PV}_Linux.run -C "${D}/opt/resolve/"
-
 	RD=${D}/opt/resolve
+
+	cp -r ./* ${RD}
 
 	insinto /opt/resolve/configs
 	newins ${RD}/share/default-config.dat config.dat
@@ -77,6 +106,7 @@ src_install() {
 
 	doicon ${RD}/graphics/DV_Resolve.png
 	doicon ${RD}/graphics/DV_ResolveProj.png
+
 
 	dosym /opt/resolve/share/resolve.xml /usr/share/mime/packages/resolve.xml
 	dobin ${FILESDIR}/resolve
