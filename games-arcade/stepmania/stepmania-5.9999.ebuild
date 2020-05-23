@@ -60,8 +60,6 @@ src_prepare() {
 	remove_bundled_lib "vorbis"
 	remove_bundled_lib "zlib"
 
-	eapply ${FILESDIR}/"hb.patch"
-
 	cmake-utils_src_prepare
 }
 

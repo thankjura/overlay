@@ -3,8 +3,9 @@
 
 EAPI=7
 PYTHON_COMPAT=( python3_{7,8} )
+PLOCALES="ab ar ca cs de eo es es_ES eu fa fr ha he hi hr hu id it ja ko ky nl pl pt pt_BR ru sk sr sr@latin sv th tr uk vi zh_CN zh_TW"
 
-inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 xdg
+inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 l10n xdg
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org/"
@@ -28,6 +29,7 @@ IUSE_COMPRESSION="-lzma +lzo"
 IUSE_MODIFIERS="+fluid +smoke +oceansim"
 IUSE="${IUSE_DESKTOP} ${IUSE_GPU} ${IUSE_LIBS} ${IUSE_CPU} ${IUSE_TEST} ${IUSE_IMAGE} ${IUSE_CODEC} ${IUSE_COMPRESSION} ${IUSE_MODIFIERS}"
 
+
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	fluid  ( fftw )
 	oceansim ( fftw )
@@ -39,12 +41,6 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	osl? ( cycles )
 	embree? ( cycles )
 	oidn? ( cycles )"
-
-LANGS="en ar bg ca cs de el es es_ES fa fi fr he hr hu id it ja ky ne nl pl pt pt_BR ru sr sr@latin sv tr uk zh_CN zh_TW"
-for X in ${LANGS} ; do
-	IUSE+=" linguas_${X}"
-	REQUIRED_USE+=" linguas_${X}? ( nls )"
-done
 
 RDEPEND="${PYTHON_DEPS}
 	dev-libs/jemalloc
@@ -144,6 +140,7 @@ src_prepare() {
 		extern/gtest \
 		|| die
 
+	l10n_find_plocales_changes "${S}/release/datafiles/locale/po" "" '.po'
 	default
 
 	# we don't want static glew, but it's scattered across
@@ -156,22 +153,23 @@ src_prepare() {
 
 	# Disable MS Windows help generation. The variable doesn't do what it
 	# it sounds like.
-	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" \
-	    -i doc/doxygen/Doxyfile || die
+	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" -i doc/doxygen/Doxyfile || die
 	ewarn "$(echo "Remaining bundled dependencies:";
 			( find extern -mindepth 1 -maxdepth 1 -type d; ) | sed 's|^|- |')"
-	# linguas cleanup
+	# cleanup locales
+	rm_loc() {
+		echo "Remove ${1} locale"
+		echo "${S}/release/datafiles/locale/po/${1}.po"
+		if [[ -f "${S}/release/datafiles/locale/po/${1}.po" ]]; then
+			rm "${S}/release/datafiles/locale/po/${1}.po" || die
+		fi
+	}
+
 	local i
 	if ! use nls; then
 		rm -r "${S}"/release/datafiles/locale || die
 	else
-		if [[ -n "${LINGUAS+x}" ]] ; then
-			cd "${S}"/release/datafiles/locale/po
-			for i in *.po ; do
-				mylang=${i%.po}
-				has ${mylang} ${LINGUAS} || { rm -r ${i} || die ; }
-			done
-		fi
+		l10n_for_each_disabled_locale_do rm_loc
 	fi
 
 	# cleanup addons
@@ -186,7 +184,6 @@ src_prepare() {
 src_configure() {
 	append-flags -funsigned-char -fno-strict-aliasing
 	append-lfs-flags
-	#append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=4
 	append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=5
 	local MYCMAKEARGS=(-DCMAKE_TOOLCHAIN_FILE="")
 
