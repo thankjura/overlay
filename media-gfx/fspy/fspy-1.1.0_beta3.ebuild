@@ -50,7 +50,7 @@ src_install() {
 
 	if use blender; then
 		cd ${WORKDIR}/fSpy-Blender-${AV}/${PN}_blender
-		BV=$(blender -v | head -n1 | cut -f2 -d ' ')
+		BV=$(blender --version | grep -Po 'Blender \K[0-9]\...')
 		mkdir -p ${D}/usr/share/blender/${BV}/scripts/addons/fspy
 		cp -a * ${D}/usr/share/blender/${BV}/scripts/addons/fspy
 		python_optimize "${D%/}/usr/share/blender/${BV}/scripts/addons/fspy"

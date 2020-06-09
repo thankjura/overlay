@@ -22,7 +22,7 @@ IUSE_DESKTOP="-portable +blender +X +nls -ndof -player"
 IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
 IUSE_LIBS="+cycles -sdl jack openal freestyle -osl +openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oidn"
 IUSE_CPU="openmp embree +sse"
-IUSE_TEST="-valgrind -debug -doc"
+IUSE_TEST="-debug -doc"
 IUSE_IMAGE="-dpx -dds +openexr jpeg2k tiff +hdr"
 IUSE_CODEC="avi +ffmpeg -sndfile +quicktime"
 IUSE_COMPRESSION="-lzma +lzo"
@@ -88,7 +88,6 @@ RDEPEND="${PYTHON_DEPS}
 		dev-libs/libspnav
 	)
 	quicktime? ( media-libs/libquicktime )
-	valgrind? ( dev-util/valgrind )
 	lzma? ( app-arch/lzma )
 	lzo? ( dev-libs/lzo )
 	alembic? ( media-gfx/alembic )
@@ -184,7 +183,7 @@ src_prepare() {
 src_configure() {
 	append-flags -funsigned-char -fno-strict-aliasing
 	append-lfs-flags
-	append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=5
+	append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=6
 	local MYCMAKEARGS=(-DCMAKE_TOOLCHAIN_FILE="")
 
 	local mycmakeargs=""
@@ -212,7 +211,7 @@ src_configure() {
 			-DWITH_CYCLES_CUDA=ON
 			-DWITH_CYCLES_CUDA_BINARIES=ON
 			-DCUDA_TOOLKIT_ROOT_DIR=/opt/cuda
-			-DCUDA_NVCC_EXECUDABLE=/opt/cuda/bin/nvcc
+			-DCUDA_NVCC_EXECUddDABLE=/opt/cuda/bin/nvcc
 		)
 	fi
 
@@ -221,6 +220,10 @@ src_configure() {
 			-OPTIX_ROOT_DIR=/opt/optix
 			-DOPTIX_INCLUDE_DIR=/opt/optix/include
 			-DWITH_CYCLES_DEVICE_OPTIX=ON
+		)
+	else
+		mycmakeargs+=(
+			-DWITH_CYCLES_DEVICE_OPTIX=OFF
 		)
 	fi
 
@@ -250,8 +253,8 @@ src_configure() {
 		-DWITH_CYCLES_OSL=$(usex osl)
 		-DWITH_CYCLES_STANDALONE=OFF
 		-DWITH_CYCLES_STANDALONE_GUI=OFF
+		-DWITH_CYCLES_DEBUG=$(usex debug)
 		-DWITH_FREESTYLE=$(usex freestyle)
-		-DWITH_X11=$(usex X)
 		-DWITH_GHOST_XDND=$(usex X)
 		-DWITH_IMAGE_CINEON=$(usex dpx)
 		-DWITH_IMAGE_DDS=$(usex dds)
@@ -263,14 +266,11 @@ src_configure() {
 		-DWITH_INSTALL_PORTABLE=$(usex portable)
 		-DWITH_INTERNATIONAL=$(usex nls)
 		-DWITH_JACK=$(usex jack)
-		-DWITH_LEGACY_DEPSGRAPH=OFF
 		-DWITH_LLVM=$(usex osl)
 		-DWITH_LZMA=$(usex lzma)
 		-DWITH_LZO=$(usex lzo)
-		-DWITH_VALGRIND=$(usex valgrind)
 		-DWITH_MOD_FLUID=$(usex fluid)
 		-DWITH_MOD_OCEANSIM=$(usex oceansim)
-		-DWITH_MOD_SMOKE=$(usex smoke)
 		-DWITH_OPENAL=$(usex openal)
 		-DWITH_OPENCOLLADA=$(usex collada)
 		-DWITH_OPENCOLORIO=$(usex opencolorio)
@@ -280,7 +280,6 @@ src_configure() {
 		-DWITH_OPENSUBDIV=$(usex opensubdiv)
 		-DWITH_OPENVDB=$(usex openvdb)
 		-DWITH_OPENVDB_BLOSC=$(usex openvdb)
-		-DWITH_RAYOPTIMIZATION=$(usex sse)
 		-DWITH_SDL=$(usex sdl)
 		-DWITH_STATIC_LIBS=$(usex portable)
 		-DWITH_SYSTEM_BULLET=OFF
@@ -288,12 +287,10 @@ src_configure() {
 		-DWITH_SYSTEM_GLES=$(usex !portable)
 		-DWITH_SYSTEM_GLEW=$(usex !portable)
 		-DWITH_SYSTEM_LZO=$(usex !portable)
-		-DWITH_PLAYER=OFF
-		-DWITH_DEBUG=$(usex debug)
 		-DWITH_GHOST_DEBUG=$(usex debug)
-		-DWITH_WITH_CYCLES_DEBUG=$(usex debug)
 		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
 		-DWITH_OPENIMAGEDENOISE=$(usex oidn)
+		-DWITH_TBB=ON
 	)
 
 	if use oidn; then
