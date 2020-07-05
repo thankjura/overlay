@@ -39,5 +39,5 @@ src_compile() {
 
 src_install() {
 	linux-mod_src_install
-	udev_newrules ${S}/udev_rules/99-xpadneo.rules 99-xpadneo.rules
+	udev_newrules ${S}/etc-udev-rules.d/98-xpadneo.rules 98-xpadneo.rules
 }
