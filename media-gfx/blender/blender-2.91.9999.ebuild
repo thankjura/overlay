@@ -3,15 +3,15 @@
 
 EAPI=7
 PYTHON_COMPAT=( python3_{7,8} )
+PLOCALES="ab ar ca cs de eo es es_ES eu fa fr ha he hi hr hu id it ja ko ky nl pl pt pt_BR ru sk sr sr@latin sv th tr uk vi zh_CN zh_TW"
 
-inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 xdg
+inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 l10n xdg
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org/"
 
 EGIT_REPO_URI="https://git.blender.org/blender.git"
-EGIT_BRANCH="blender-v2.82-release"
-#EGIT_COMMIT="7c2217cd126a97df9b1c305f79a605f25c06a229"
+EGIT_BRANCH="master"
 
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64"
@@ -22,12 +22,13 @@ IUSE_DESKTOP="-portable +blender +X +nls -ndof -player"
 IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
 IUSE_LIBS="+cycles -sdl jack openal freestyle -osl +openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oidn"
 IUSE_CPU="openmp embree +sse"
-IUSE_TEST="-valgrind -debug -doc"
+IUSE_TEST="-debug -doc"
 IUSE_IMAGE="-dpx -dds +openexr jpeg2k tiff +hdr"
 IUSE_CODEC="avi +ffmpeg -sndfile +quicktime"
 IUSE_COMPRESSION="-lzma +lzo"
 IUSE_MODIFIERS="+fluid +smoke +oceansim"
 IUSE="${IUSE_DESKTOP} ${IUSE_GPU} ${IUSE_LIBS} ${IUSE_CPU} ${IUSE_TEST} ${IUSE_IMAGE} ${IUSE_CODEC} ${IUSE_COMPRESSION} ${IUSE_MODIFIERS}"
+
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	fluid  ( fftw )
@@ -40,12 +41,6 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	osl? ( cycles )
 	embree? ( cycles )
 	oidn? ( cycles )"
-
-LANGS="en ar bg ca cs de el es es_ES fa fi fr he hr hu id it ja ky ne nl pl pt pt_BR ru sr sr@latin sv tr uk zh_CN zh_TW"
-for X in ${LANGS} ; do
-	IUSE+=" linguas_${X}"
-	REQUIRED_USE+=" linguas_${X}? ( nls )"
-done
 
 RDEPEND="${PYTHON_DEPS}
 	dev-libs/jemalloc
@@ -75,7 +70,7 @@ RDEPEND="${PYTHON_DEPS}
 		openimageio? ( >=media-libs/openimageio-1.1.5 )
 		cuda? ( dev-util/nvidia-cuda-toolkit )
 		osl? ( media-libs/osl )
-		embree? ( media-libs/embree )
+		embree? ( >=media-libs/embree-3.8[static-libs] )
 		openvdb? ( media-gfx/openvdb[${PYTHON_SINGLE_USEDEP},-abi4-compat]
 		dev-cpp/tbb )
 	)
@@ -93,7 +88,6 @@ RDEPEND="${PYTHON_DEPS}
 		dev-libs/libspnav
 	)
 	quicktime? ( media-libs/libquicktime )
-	valgrind? ( dev-util/valgrind )
 	lzma? ( app-arch/lzma )
 	lzo? ( dev-libs/lzo )
 	alembic? ( media-gfx/alembic )
@@ -145,6 +139,7 @@ src_prepare() {
 		extern/gtest \
 		|| die
 
+	l10n_find_plocales_changes "${S}/release/datafiles/locale/po" "" '.po'
 	default
 
 	# we don't want static glew, but it's scattered across
@@ -157,22 +152,23 @@ src_prepare() {
 
 	# Disable MS Windows help generation. The variable doesn't do what it
 	# it sounds like.
-	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" \
-	    -i doc/doxygen/Doxyfile || die
+	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" -i doc/doxygen/Doxyfile || die
 	ewarn "$(echo "Remaining bundled dependencies:";
 			( find extern -mindepth 1 -maxdepth 1 -type d; ) | sed 's|^|- |')"
-	# linguas cleanup
+	# cleanup locales
+	rm_loc() {
+		echo "Remove ${1} locale"
+		echo "${S}/release/datafiles/locale/po/${1}.po"
+		if [[ -f "${S}/release/datafiles/locale/po/${1}.po" ]]; then
+			rm "${S}/release/datafiles/locale/po/${1}.po" || die
+		fi
+	}
+
 	local i
 	if ! use nls; then
 		rm -r "${S}"/release/datafiles/locale || die
 	else
-		if [[ -n "${LINGUAS+x}" ]] ; then
-			cd "${S}"/release/datafiles/locale/po
-			for i in *.po ; do
-				mylang=${i%.po}
-				has ${mylang} ${LINGUAS} || { rm -r ${i} || die ; }
-			done
-		fi
+		l10n_for_each_disabled_locale_do rm_loc
 	fi
 
 	# cleanup addons
@@ -187,8 +183,7 @@ src_prepare() {
 src_configure() {
 	append-flags -funsigned-char -fno-strict-aliasing
 	append-lfs-flags
-	#append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=4
-	append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=5
+	append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=6
 	local MYCMAKEARGS=(-DCMAKE_TOOLCHAIN_FILE="")
 
 	local mycmakeargs=""
@@ -216,7 +211,7 @@ src_configure() {
 			-DWITH_CYCLES_CUDA=ON
 			-DWITH_CYCLES_CUDA_BINARIES=ON
 			-DCUDA_TOOLKIT_ROOT_DIR=/opt/cuda
-			-DCUDA_NVCC_EXECUDABLE=/opt/cuda/bin/nvcc
+			-DCUDA_NVCC_EXECUddDABLE=/opt/cuda/bin/nvcc
 		)
 	fi
 
@@ -225,6 +220,10 @@ src_configure() {
 			-OPTIX_ROOT_DIR=/opt/optix
 			-DOPTIX_INCLUDE_DIR=/opt/optix/include
 			-DWITH_CYCLES_DEVICE_OPTIX=ON
+		)
+	else
+		mycmakeargs+=(
+			-DWITH_CYCLES_DEVICE_OPTIX=OFF
 		)
 	fi
 
@@ -254,8 +253,8 @@ src_configure() {
 		-DWITH_CYCLES_OSL=$(usex osl)
 		-DWITH_CYCLES_STANDALONE=OFF
 		-DWITH_CYCLES_STANDALONE_GUI=OFF
+		-DWITH_CYCLES_DEBUG=$(usex debug)
 		-DWITH_FREESTYLE=$(usex freestyle)
-		-DWITH_X11=$(usex X)
 		-DWITH_GHOST_XDND=$(usex X)
 		-DWITH_IMAGE_CINEON=$(usex dpx)
 		-DWITH_IMAGE_DDS=$(usex dds)
@@ -267,14 +266,11 @@ src_configure() {
 		-DWITH_INSTALL_PORTABLE=$(usex portable)
 		-DWITH_INTERNATIONAL=$(usex nls)
 		-DWITH_JACK=$(usex jack)
-		-DWITH_LEGACY_DEPSGRAPH=OFF
 		-DWITH_LLVM=$(usex osl)
 		-DWITH_LZMA=$(usex lzma)
 		-DWITH_LZO=$(usex lzo)
-		-DWITH_VALGRIND=$(usex valgrind)
 		-DWITH_MOD_FLUID=$(usex fluid)
 		-DWITH_MOD_OCEANSIM=$(usex oceansim)
-		-DWITH_MOD_SMOKE=$(usex smoke)
 		-DWITH_OPENAL=$(usex openal)
 		-DWITH_OPENCOLLADA=$(usex collada)
 		-DWITH_OPENCOLORIO=$(usex opencolorio)
@@ -284,7 +280,6 @@ src_configure() {
 		-DWITH_OPENSUBDIV=$(usex opensubdiv)
 		-DWITH_OPENVDB=$(usex openvdb)
 		-DWITH_OPENVDB_BLOSC=$(usex openvdb)
-		-DWITH_RAYOPTIMIZATION=$(usex sse)
 		-DWITH_SDL=$(usex sdl)
 		-DWITH_STATIC_LIBS=$(usex portable)
 		-DWITH_SYSTEM_BULLET=OFF
@@ -292,12 +287,10 @@ src_configure() {
 		-DWITH_SYSTEM_GLES=$(usex !portable)
 		-DWITH_SYSTEM_GLEW=$(usex !portable)
 		-DWITH_SYSTEM_LZO=$(usex !portable)
-		-DWITH_PLAYER=OFF
-		-DWITH_DEBUG=$(usex debug)
 		-DWITH_GHOST_DEBUG=$(usex debug)
-		-DWITH_WITH_CYCLES_DEBUG=$(usex debug)
 		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
 		-DWITH_OPENIMAGEDENOISE=$(usex oidn)
+		-DWITH_TBB=ON
 	)
 
 	if use oidn; then
