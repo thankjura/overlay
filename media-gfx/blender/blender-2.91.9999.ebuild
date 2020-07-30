@@ -18,7 +18,7 @@ KEYWORDS="~amd64"
 SLOT="0"
 MY_PV="$(ver_cut 1-2)"
 
-IUSE_DESKTOP="-portable +blender +X +nls -ndof -player"
+IUSE_DESKTOP="+blender +X +nls -ndof -player"
 IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
 IUSE_LIBS="+cycles -sdl jack openal freestyle -osl +openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oidn"
 IUSE_CPU="openmp embree +sse"
@@ -71,7 +71,7 @@ RDEPEND="${PYTHON_DEPS}
 		cuda? ( dev-util/nvidia-cuda-toolkit )
 		osl? ( media-libs/osl )
 		embree? ( >=media-libs/embree-3.8[static-libs] )
-		openvdb? ( media-gfx/openvdb[${PYTHON_SINGLE_USEDEP},-abi4-compat]
+		openvdb? ( media-gfx/openvdb[${PYTHON_SINGLE_USEDEP}]
 		dev-cpp/tbb )
 	)
 	optix? ( dev-libs/optix )
@@ -232,9 +232,9 @@ src_configure() {
 		-DPYTHON_VERSION=${EPYTHON/python/}
 		-DPYTHON_LIBRARY=$(python_get_library_path)
 		-DPYTHON_INCLUDE_DIR=$(python_get_includedir)
-		-DWITH_PYTHON_INSTALL=$(usex portable)
-		-DWITH_PYTHON_INSTALL_NUMPY=$(usex portable)
-		-DWITH_PYTHON_INSTALL_REQUESTS=$(usex portable)
+		-DWITH_PYTHON_INSTALL=OFF
+		-DWITH_PYTHON_INSTALL_NUMPY=OFF
+		-DWITH_PYTHON_INSTALL_REQUESTS=OFF
 		-DWITH_PYTHON_MODULE=$(usex !X)
 		-DWITH_HEADLESS=$(usex !X)
 		-DWITH_BLENDER=$(usex blender)
@@ -263,7 +263,7 @@ src_configure() {
 		-DWITH_IMAGE_OPENJPEG=$(usex jpeg2k)
 		-DWITH_IMAGE_TIFF=$(usex tiff)
 		-DWITH_INPUT_NDOF=$(usex ndof)
-		-DWITH_INSTALL_PORTABLE=$(usex portable)
+		-DWITH_INSTALL_PORTABLE=OFF
 		-DWITH_INTERNATIONAL=$(usex nls)
 		-DWITH_JACK=$(usex jack)
 		-DWITH_LLVM=$(usex osl)
@@ -281,12 +281,12 @@ src_configure() {
 		-DWITH_OPENVDB=$(usex openvdb)
 		-DWITH_OPENVDB_BLOSC=$(usex openvdb)
 		-DWITH_SDL=$(usex sdl)
-		-DWITH_STATIC_LIBS=$(usex portable)
+		-DWITH_STATIC_LIBS=OFF
 		-DWITH_SYSTEM_BULLET=OFF
-		-DWITH_SYSTEM_EIGEN3=$(usex !portable)
-		-DWITH_SYSTEM_GLES=$(usex !portable)
-		-DWITH_SYSTEM_GLEW=$(usex !portable)
-		-DWITH_SYSTEM_LZO=$(usex !portable)
+		-DWITH_SYSTEM_EIGEN3=ON
+		-DWITH_SYSTEM_GLES=ON
+		-DWITH_SYSTEM_GLEW=ON
+		-DWITH_SYSTEM_LZO=ON
 		-DWITH_GHOST_DEBUG=$(usex debug)
 		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
 		-DWITH_OPENIMAGEDENOISE=$(usex oidn)
