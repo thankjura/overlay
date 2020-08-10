@@ -11,7 +11,7 @@ SRC_URI="http://download.kde.org/stable/krita/${PV/b/}/krita-${PV}-x86_64.appima
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~amd64"
 IUSE=""
 
 DEPEND="
