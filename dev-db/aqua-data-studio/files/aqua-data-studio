@@ -1,5 +1,0 @@
-#!/bin/bash
-export APP_SKIP_J2SE_TEST=1
-export JAVA_HOME=$(java-config -o)
-
-cd /opt/aqua-data-studio/ && exec bash datastudio.sh $@
