@@ -3,7 +3,6 @@
 
 EAPI=7
 PYTHON_COMPAT=( python3_{7,8} )
-PLOCALES="ab ar ca cs de eo es es_ES eu fa fr ha he hi hr hu id it ja ko ky nl pl pt pt_BR ru sk sr sr@latin sv th tr uk vi zh_CN zh_TW"
 
 inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 l10n xdg
 
@@ -13,96 +12,110 @@ HOMEPAGE="http://www.blender.org/"
 EGIT_REPO_URI="https://git.blender.org/blender.git"
 EGIT_BRANCH="master"
 
+EGIT_OVERRIDE_REPO_BLENDER_ADDONS="https://git.blender.org/blender-addons.git"
+#EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
+EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="26ba60a3f0c8dd229a0ac8f36190490a1ebf5145"
+
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64"
 SLOT="0"
 MY_PV="$(ver_cut 1-2)"
 
-IUSE_DESKTOP="+blender +X +nls -ndof -player"
-IUSE_GPU="+opengl +optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
-IUSE_LIBS="+cycles -sdl jack openal freestyle -osl +openvdb +opensubdiv +opencolorio +openimageio +collada -alembic +fftw +oidn"
-IUSE_CPU="openmp embree +sse"
-IUSE_TEST="-debug -doc"
-IUSE_IMAGE="-dpx -dds +openexr jpeg2k tiff +hdr"
-IUSE_CODEC="avi +ffmpeg -sndfile +quicktime"
-IUSE_COMPRESSION="-lzma +lzo"
-IUSE_MODIFIERS="+fluid +smoke +oceansim"
-IUSE="${IUSE_DESKTOP} ${IUSE_GPU} ${IUSE_LIBS} ${IUSE_CPU} ${IUSE_TEST} ${IUSE_IMAGE} ${IUSE_CODEC} ${IUSE_COMPRESSION} ${IUSE_MODIFIERS}"
-
+IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
+IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
+	abi6-compat +abi7-compat alembic collada +color-management +oidn +cycles \
+	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
+	man ndof nls openal openimageio openmp opensubdiv \
+	+openvdb osl sdl sndfile standalone test tiff valgrind ${IUSE_GPU}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
-	fluid  ( fftw )
-	oceansim ( fftw )
-	smoke ( fftw )
-	tiff ( openimageio )
-	openexr ( openimageio )
-	cuda? ( cycles openimageio )
-	cycles? ( openexr tiff openimageio opencolorio )
-	osl? ( cycles )
-	embree? ( cycles )
-	oidn? ( cycles )"
+	alembic? ( openexr )
+	cuda? ( cycles )
+	cycles? ( openexr tiff openimageio )
+	elbeem? ( tbb )
+	opencl? ( cycles )
+	openvdb? (
+		^^ ( abi6-compat abi7-compat )
+		tbb
+	)
+	osl? ( cycles llvm )
+	oidn? ( cycles )
+	standalone? ( cycles )"
 
 RDEPEND="${PYTHON_DEPS}
-	dev-libs/jemalloc
+	dev-libs/boost:=[nls?,threads(+)]
+	dev-libs/lzo:2=
 	$(python_gen_cond_dep '
-		>=dev-python/numpy-1.10.1[${PYTHON_MULTI_USEDEP}]
-		dev-python/requests[${PYTHON_MULTI_USEDEP}]
+		dev-python/numpy[${PYTHON_USEDEP}]
+		dev-python/requests[${PYTHON_USEDEP}]
 	')
-	sys-libs/zlib
-	smoke? ( sci-libs/fftw:3.0 )
-	media-libs/freetype
-	media-libs/libpng:0=
+	media-libs/freetype:=
+	media-libs/glew:*
+	media-libs/libpng:=
+	media-libs/libsamplerate
+	sys-libs/zlib:=
+	virtual/glu
+	virtual/jpeg
 	virtual/libintl
-	virtual/jpeg:0=
-	dev-libs/boost[nls?,threads(+)]
-	opengl? (
-		virtual/opengl
-		media-libs/glew:*
-		virtual/glu
-	)
-	X? (
-		x11-libs/libXi
+	virtual/opengl
+	alembic? ( >=media-gfx/alembic-1.7.12[boost(+),hdf(+)] )
+	collada? ( >=media-libs/opencollada-1.6.68 )
+	color-management? ( media-libs/opencolorio )
+	cuda? ( dev-util/nvidia-cuda-toolkit:= )
+	optix? ( dev-libs/optix )
+	ffmpeg? ( media-video/ffmpeg:=[x264,mp3,encode,theora,jpeg2k?] )
+	fftw? ( sci-libs/fftw:3.0= )
+	!headless? (
 		x11-libs/libX11
+		x11-libs/libXi
 		x11-libs/libXxf86vm
 	)
-	opencolorio? ( media-libs/opencolorio )
-	cycles? (
-		openimageio? ( >=media-libs/openimageio-1.1.5 )
-		cuda? ( dev-util/nvidia-cuda-toolkit )
-		osl? ( media-libs/osl )
-		embree? ( >=media-libs/embree-3.8[static-libs] )
-		openvdb? ( media-gfx/openvdb[${PYTHON_SINGLE_USEDEP}]
-		dev-cpp/tbb )
-	)
-	optix? ( dev-libs/optix )
-	sdl? ( media-libs/libsdl[sound,joystick] )
-	tiff? ( media-libs/tiff:0 )
-	openexr? ( media-libs/openexr )
-	ffmpeg? ( >=media-video/ffmpeg-2.2[x264,xvid,mp3,encode,jpeg2k?] )
-	jpeg2k? ( media-libs/openjpeg:0 )
-	jack? ( media-sound/jack2 )
-	sndfile? ( media-libs/libsndfile )
-	collada? ( media-libs/opencollada )
+	jack? ( virtual/jack )
+	jemalloc? ( dev-libs/jemalloc:= )
+	jpeg2k? ( media-libs/openjpeg:2= )
+	llvm? ( sys-devel/llvm:= )
 	ndof? (
 		app-misc/spacenavd
 		dev-libs/libspnav
 	)
-	quicktime? ( media-libs/libquicktime )
-	lzma? ( app-arch/lzma )
-	lzo? ( dev-libs/lzo )
-	alembic? ( media-gfx/alembic )
-	opencl? ( app-eselect/eselect-opencl )
-	opensubdiv? ( media-libs/opensubdiv )
 	nls? ( virtual/libiconv )
-	oidn? ( media-libs/oidn )"
+	openal? ( media-libs/openal )
+	opencl? ( virtual/opencl )
+	openimageio? ( media-libs/openimageio )
+	openexr? (
+		media-libs/ilmbase:=
+		media-libs/openexr:=
+	)
+	opensubdiv? ( >=media-libs/opensubdiv-3.4.0[cuda=,opencl=] )
+	openvdb? (
+		~media-gfx/openvdb-7.0.0[abi6-compat(-)?,abi7-compat(-)?]
+		dev-libs/c-blosc:=
+	)
+	osl? ( media-libs/osl )
+	sdl? ( media-libs/libsdl2[sound,joystick] )
+	sndfile? ( media-libs/libsndfile )
+	tbb? ( dev-cpp/tbb )
+	tiff? ( media-libs/tiff )
+	valgrind? ( dev-util/valgrind )
+"
 
 DEPEND="${RDEPEND}
-	dev-cpp/eigen:3
-	nls? ( sys-devel/gettext )
+	dev-cpp/eigen:=
+"
+
+BDEPEND="
+	virtual/pkgconfig
 	doc? (
-		dev-python/sphinx
-		app-doc/doxygen[-nodot(-),dot(+)]
-	)"
+		app-doc/doxygen[dot]
+		dev-python/sphinx[latex]
+		dev-texlive/texlive-bibtexextra
+		dev-texlive/texlive-fontsextra
+		dev-texlive/texlive-fontutils
+		dev-texlive/texlive-latex
+		dev-texlive/texlive-latexextra
+	)
+	nls? ( sys-devel/gettext )
+"
 
 CMAKE_BUILD_TYPE="Release"
 
@@ -124,23 +137,23 @@ pkg_setup() {
 }
 
 src_prepare() {
-	eapply_user
-	eapply "${FILESDIR}"/blender-doxyfile.patch
-
 	cmake-utils_src_prepare
 
-	# remove some bundled deps
-	rm -r \
-		extern/glew \
-		extern/glew-es \
-		extern/Eigen3 \
-		extern/lzma \
-		extern/lzo \
-		extern/gtest \
-		|| die
+	# we don't want static glew, but it's scattered across
+	# multiple files that differ from version to version
+	# !!!CHECK THIS SED ON EVERY VERSION BUMP!!!
+	local file
+	while IFS="" read -d $'\0' -r file ; do
+		sed -i -e '/-DGLEW_STATIC/d' "${file}" || die
+	done < <(find . -type f -name "CMakeLists.txt")
 
-	l10n_find_plocales_changes "${S}/release/datafiles/locale/po" "" '.po'
-	default
+	# Disable MS Windows help generation. The variable doesn't do what it
+	# it sounds like.
+	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" \
+		-i doc/doxygen/Doxyfile || die
+
+	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" \
+		-i doc/doxygen/Doxyfile || die
 
 	# we don't want static glew, but it's scattered across
 	# multiple files that differ from version to version
@@ -155,21 +168,6 @@ src_prepare() {
 	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" -i doc/doxygen/Doxyfile || die
 	ewarn "$(echo "Remaining bundled dependencies:";
 			( find extern -mindepth 1 -maxdepth 1 -type d; ) | sed 's|^|- |')"
-	# cleanup locales
-	rm_loc() {
-		echo "Remove ${1} locale"
-		echo "${S}/release/datafiles/locale/po/${1}.po"
-		if [[ -f "${S}/release/datafiles/locale/po/${1}.po" ]]; then
-			rm "${S}/release/datafiles/locale/po/${1}.po" || die
-		fi
-	}
-
-	local i
-	if ! use nls; then
-		rm -r "${S}"/release/datafiles/locale || die
-	else
-		l10n_for_each_disabled_locale_do rm_loc
-	fi
 
 	# cleanup addons
 	for a in $(ls "${S}"/release/scripts/addons_contrib/); do
@@ -183,8 +181,18 @@ src_prepare() {
 src_configure() {
 	append-flags -funsigned-char -fno-strict-aliasing
 	append-lfs-flags
-	append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=6
-	local MYCMAKEARGS=(-DCMAKE_TOOLCHAIN_FILE="")
+
+	if use openvdb; then
+		local version
+		if use abi6-compat; then
+			version=6;
+		elif use abi7-compat; then
+			version=7;
+		else
+			die "Openvdb abi version not compatible"
+		fi
+		append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=${version}
+	fi
 
 	local mycmakeargs=""
 	#CUDA Kernel Selection
@@ -228,69 +236,57 @@ src_configure() {
 	fi
 
 	mycmakeargs+=(
-		-DCMAKE_INSTALL_PREFIX=/usr
-		-DPYTHON_VERSION=${EPYTHON/python/}
-		-DPYTHON_LIBRARY=$(python_get_library_path)
-		-DPYTHON_INCLUDE_DIR=$(python_get_includedir)
-		-DWITH_PYTHON_INSTALL=OFF
-		-DWITH_PYTHON_INSTALL_NUMPY=OFF
-		-DWITH_PYTHON_INSTALL_REQUESTS=OFF
-		-DWITH_PYTHON_MODULE=$(usex !X)
-		-DWITH_HEADLESS=$(usex !X)
-		-DWITH_BLENDER=$(usex blender)
+		-DBUILD_SHARED_LIBS=OFF
+		-DPYTHON_INCLUDE_DIR="$(python_get_includedir)"
+		-DPYTHON_LIBRARY="$(python_get_library_path)"
+		-DPYTHON_VERSION="${EPYTHON/python/}"
 		-DWITH_ALEMBIC=$(usex alembic)
-		-DWITH_CODEC_AVI=$(usex avi)
+		-DWITH_ASSERT_ABORT=$(usex debug)
+		-DWITH_BOOST=ON
+		-DWITH_BULLET=$(usex bullet)
 		-DWITH_CODEC_FFMPEG=$(usex ffmpeg)
 		-DWITH_CODEC_SNDFILE=$(usex sndfile)
-		-DWITH_FFTW3=$(usex fftw)
-		-DWITH_CPU_SSE=$(usex sse)
+		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
+		-DWITH_CYCLES_DEVICE_CUDA=$(usex cuda TRUE FALSE)
 		-DWITH_CYCLES=$(usex cycles)
-		-DWITH_CYCLES_DEVICE_CUDA=$(usex cuda)
 		-DWITH_CYCLES_DEVICE_OPENCL=$(usex opencl)
-		-DWITH_CYCLES_EMBREE=$(usex embree)
-		-DWITH_CYCLES_NATIVE_ONLY=$(usex cycles)
-		-DWITH_CYCLES_NETWORK=OFF
+		-DWITH_CYCLES_STANDALONE=$(usex standalone)
+		-DWITH_CYCLES_STANDALONE_GUI=$(usex standalone)
 		-DWITH_CYCLES_OSL=$(usex osl)
-		-DWITH_CYCLES_STANDALONE=OFF
-		-DWITH_CYCLES_STANDALONE_GUI=OFF
-		-DWITH_CYCLES_DEBUG=$(usex debug)
-		-DWITH_FREESTYLE=$(usex freestyle)
-		-DWITH_GHOST_XDND=$(usex X)
-		-DWITH_IMAGE_CINEON=$(usex dpx)
+		-DWITH_DOC_MANPAGE=$(usex man)
+		-DWITH_FFTW3=$(usex fftw)
+		-DWITH_GTESTS=$(usex test)
+		-DWITH_HEADLESS=$(usex headless)
+		-DWITH_INSTALL_PORTABLE=OFF
 		-DWITH_IMAGE_DDS=$(usex dds)
-		-DWITH_IMAGE_HDR=$(usex hdr)
 		-DWITH_IMAGE_OPENEXR=$(usex openexr)
 		-DWITH_IMAGE_OPENJPEG=$(usex jpeg2k)
 		-DWITH_IMAGE_TIFF=$(usex tiff)
 		-DWITH_INPUT_NDOF=$(usex ndof)
-		-DWITH_INSTALL_PORTABLE=OFF
 		-DWITH_INTERNATIONAL=$(usex nls)
 		-DWITH_JACK=$(usex jack)
-		-DWITH_LLVM=$(usex osl)
-		-DWITH_LZMA=$(usex lzma)
-		-DWITH_LZO=$(usex lzo)
-		-DWITH_MOD_FLUID=$(usex fluid)
-		-DWITH_MOD_OCEANSIM=$(usex oceansim)
+		-DWITH_LLVM=$(usex llvm)
+		-DWITH_MEM_JEMALLOC=$(usex jemalloc)
+		-DWITH_MEM_VALGRIND=$(usex valgrind)
+		-DWITH_MOD_FLUID=$(usex elbeem)
+		-DWITH_MOD_OCEANSIM=$(usex fftw)
 		-DWITH_OPENAL=$(usex openal)
 		-DWITH_OPENCOLLADA=$(usex collada)
-		-DWITH_OPENCOLORIO=$(usex opencolorio)
-		-DWITH_OPENGL=$(usex opengl)
+		-DWITH_OPENCOLORIO=$(usex color-management)
 		-DWITH_OPENIMAGEIO=$(usex openimageio)
 		-DWITH_OPENMP=$(usex openmp)
 		-DWITH_OPENSUBDIV=$(usex opensubdiv)
 		-DWITH_OPENVDB=$(usex openvdb)
 		-DWITH_OPENVDB_BLOSC=$(usex openvdb)
+		-DWITH_PYTHON_INSTALL=$(usex system-python OFF ON)
+		-DWITH_PYTHON_INSTALL_NUMPY=$(usex system-numpy OFF ON)
 		-DWITH_SDL=$(usex sdl)
 		-DWITH_STATIC_LIBS=OFF
-		-DWITH_SYSTEM_BULLET=OFF
 		-DWITH_SYSTEM_EIGEN3=ON
-		-DWITH_SYSTEM_GLES=ON
 		-DWITH_SYSTEM_GLEW=ON
 		-DWITH_SYSTEM_LZO=ON
-		-DWITH_GHOST_DEBUG=$(usex debug)
-		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
-		-DWITH_OPENIMAGEDENOISE=$(usex oidn)
-		-DWITH_TBB=ON
+		-DWITH_TBB=$(usex tbb)
+		-DWITH_X11=$(usex !headless)
 	)
 
 	if use oidn; then
