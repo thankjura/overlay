@@ -14,7 +14,7 @@ EGIT_BRANCH="master"
 
 EGIT_OVERRIDE_REPO_BLENDER_ADDONS="https://git.blender.org/blender-addons.git"
 #EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
-EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="26ba60a3f0c8dd229a0ac8f36190490a1ebf5145"
+#EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="26ba60a3f0c8dd229a0ac8f36190490a1ebf5145"
 
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64"
@@ -25,7 +25,7 @@ IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
 IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
 	abi6-compat +abi7-compat alembic collada +color-management +oidn +cycles \
 	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
-	man ndof nls openal openimageio openmp opensubdiv \
+	man ndof nls openal openimageio openmp opensubdiv embree \
 	+openvdb osl sdl sndfile standalone test tiff valgrind ${IUSE_GPU}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -40,6 +40,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	)
 	osl? ( cycles llvm )
 	oidn? ( cycles )
+	embree? ( cycles )
 	standalone? ( cycles )"
 
 RDEPEND="${PYTHON_DEPS}
@@ -98,6 +99,7 @@ RDEPEND="${PYTHON_DEPS}
 	tiff? ( media-libs/tiff )
 	valgrind? ( dev-util/valgrind )
 	oidn? ( media-libs/oidn )
+	embree? ( media-libs/embree )
 "
 
 DEPEND="${RDEPEND}
@@ -251,6 +253,7 @@ src_configure() {
 		-DWITH_CYCLES_DEVICE_CUDA=$(usex cuda TRUE FALSE)
 		-DWITH_CYCLES=$(usex cycles)
 		-DWITH_CYCLES_DEVICE_OPENCL=$(usex opencl)
+		-DWITH_CYCLES_EMBREE=$(usex embree)
 		-DWITH_CYCLES_STANDALONE=$(usex standalone)
 		-DWITH_CYCLES_STANDALONE_GUI=$(usex standalone)
 		-DWITH_CYCLES_OSL=$(usex osl)
