@@ -97,6 +97,7 @@ RDEPEND="${PYTHON_DEPS}
 	tbb? ( dev-cpp/tbb )
 	tiff? ( media-libs/tiff )
 	valgrind? ( dev-util/valgrind )
+	oidn? ( media-libs/oidn )
 "
 
 DEPEND="${RDEPEND}
