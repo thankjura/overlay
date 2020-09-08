@@ -11,10 +11,17 @@ HOMEPAGE="http://www.blender.org/"
 
 EGIT_REPO_URI="https://git.blender.org/blender.git"
 EGIT_BRANCH="master"
+EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
+EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
 
-EGIT_OVERRIDE_REPO_BLENDER_ADDONS="https://git.blender.org/blender-addons.git"
-#EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
-#EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="26ba60a3f0c8dd229a0ac8f36190490a1ebf5145"
+EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS_CONTRIB="master"
+EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS_CONTRIB="master"
+
+EGIT_OVERRIDE_BRANCH_BLENDER_TRANSLATIONS="master"
+EGIT_OVERRIDE_COMMIT_BLENDER_TRANSLATIONS="master"
+
+EGIT_OVERRIDE_BRANCH_BLENDER_DEV_TOOLS="master"
+EGIT_OVERRIDE_COMMIT_BLENDER_DEV_TOOLS="master"
 
 LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64"
@@ -26,7 +33,7 @@ IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
 	abi6-compat +abi7-compat alembic collada +color-management +oidn +cycles \
 	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
 	man ndof nls openal openimageio openmp opensubdiv embree \
-	+openvdb osl sdl sndfile standalone test tiff valgrind ${IUSE_GPU}"
+	+openvdb osl sdl sndfile standalone test tiff valgrind wayland ${IUSE_GPU}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	alembic? ( openexr )
@@ -291,6 +298,7 @@ src_configure() {
 		-DWITH_SYSTEM_LZO=ON
 		-DWITH_TBB=$(usex tbb)
 		-DWITH_X11=$(usex !headless)
+		-DWITH_GHOST_WAYLAND=$(usex wayland)
 	)
 
 	if use oidn; then
