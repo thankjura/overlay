@@ -5,7 +5,7 @@ EAPI=7
 
 DESCRIPTION="Framework for achieving optimal ray tracing performance on the GPU"
 HOMEPAGE="https://developer.nvidia.com/optix"
-SRC_URI="NVIDIA-OptiX-SDK-${PV}-linux64.sh"
+SRC_URI="NVIDIA-OptiX-SDK-${PV}-linux64-x86_64.sh"
 RESTRICT="fetch"
 
 LICENSE="NVIDIA"

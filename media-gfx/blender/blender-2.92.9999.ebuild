@@ -28,7 +28,7 @@ KEYWORDS="~amd64"
 SLOT="0"
 MY_PV="$(ver_cut 1-2)"
 
-IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75"
+IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75 -sm_86"
 IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
 	abi6-compat +abi7-compat alembic collada +color-management +oidn +cycles \
 	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
@@ -208,7 +208,7 @@ src_configure() {
 	#CUDA Kernel Selection
 	local CUDA_ARCH=""
 	if use cuda; then
-		for CA in 30 35 50 52 61 70 75; do
+		for CA in 30 35 50 52 61 70 75 86; do
 			if use sm_${CA}; then
 				if [[ -n "${CUDA_ARCH}" ]] ; then
 					CUDA_ARCH="${CUDA_ARCH};sm_${CA}"

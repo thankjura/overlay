@@ -5,7 +5,7 @@ EAPI=6
 
 inherit desktop eutils gnome2-utils java-vm-2 prefix versionator
 
-KEYWORDS="-* amd64 ~arm ~arm64 x86 ~amd64-linux ~x86-linux ~x64-macos ~sparc64-solaris ~x64-solaris"
+KEYWORDS="-* amd64 x86 ~amd64-linux ~x86-linux"
 
 if [[ "$(get_version_component_range 4)" == 0 ]] ; then
 	S_PV="$(get_version_component_range 1-3)"
@@ -22,8 +22,6 @@ ARCH_FILES[arm]="jdk-${MY_PV}-linux-arm32-vfp-hflt.tar.gz"
 ARCH_FILES[arm64]="jdk-${MY_PV}-linux-arm64-vfp-hflt.tar.gz"
 ARCH_FILES[x86]="jdk-${MY_PV}-linux-i586.tar.gz"
 ARCH_FILES[x64-macos]="jdk-${MY_PV}-macosx-x64.dmg"
-ARCH_FILES[sparc64-solaris]="jdk-${MY_PV}-solaris-sparcv9.tar.gz"
-ARCH_FILES[x64-solaris]="jdk-${MY_PV}-solaris-x64.tar.gz"
 
 for keyword in ${KEYWORDS//-\*} ; do
 	case "${keyword#\~}" in
