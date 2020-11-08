@@ -32,7 +32,7 @@ IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75 -s
 IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
 	abi6-compat +abi7-compat alembic collada +color-management +oidn +cycles \
 	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
-	man ndof nls openal openimageio openmp opensubdiv embree \
+	man ndof nls openal openimageio openmp opensubdiv embree freestyle \
 	+openvdb osl sdl sndfile standalone test tiff valgrind wayland ${IUSE_GPU}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -269,6 +269,7 @@ src_configure() {
 		-DWITH_GTESTS=$(usex test)
 		-DWITH_HEADLESS=$(usex headless)
 		-DWITH_INSTALL_PORTABLE=OFF
+		-DWITH_FREESTYLE=$(usex freestyle)
 		-DWITH_IMAGE_DDS=$(usex dds)
 		-DWITH_IMAGE_OPENEXR=$(usex openexr)
 		-DWITH_IMAGE_OPENJPEG=$(usex jpeg2k)
