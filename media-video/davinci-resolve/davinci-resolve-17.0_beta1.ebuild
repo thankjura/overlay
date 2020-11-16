@@ -54,6 +54,8 @@ src_install() {
 	udev_dorules lib/udev/rules.d/75-davincipanel.rules
 	udev_dorules lib/udev/rules.d/75-sdx.rules
 
+	cp -f ${FILESDIR}/resolve.xml opt/resolve/share/resolve.xml
+
 	cp -r opt ${D}/opt
 
 	doicon opt/resolve/graphics/DV_Resolve.png
