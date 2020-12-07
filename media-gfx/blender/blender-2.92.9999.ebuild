@@ -372,11 +372,15 @@ pkg_postinst() {
 	elog "/etc/portage/patches/media-gfx/blender/"
 	elog "or create simlink"
 	elog
-	xdg_pkg_postinst
+	xdg_icon_cache_update
+	xdg_mimeinfo_database_update
+	xdg_desktop_database_update
 }
 
 pkg_postrm() {
-	xdg_pkg_postrm
+	xdg_icon_cache_update
+	xdg_mimeinfo_database_update
+	xdg_desktop_database_update
 
 	ewarn ""
 	ewarn "You may want to remove the following directory."
