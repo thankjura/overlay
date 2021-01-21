@@ -30,6 +30,10 @@ pkg_setup() {
 }
 
 src_configure() {
+	VERSION=$(git describe --tags --dirty 2>/dev/null || sed -re's/v?(.*)/v\1/' "$(dirname "${BASH_SOURCE[0]}")/../VERSION")
+
+	cp version.h.in version.h
+	sed -i 's/"@DO_NOT_CHANGE@"/"'"${VERSION}"'"/g' version.h
 	set_arch_to_kernel
 }
 
