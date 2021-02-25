@@ -6,11 +6,11 @@ EAPI=6
 inherit udev desktop xdg-utils preserve-libs
 
 MY_PV=${PV/_beta/b}
-
+MK_RESOLVE_DEB_VERSION="1.4.5"
 DESCRIPTION="Professional A/V post-production software suite"
 HOMEPAGE="https://www.blackmagicdesign.com/products/davinciresolve/"
 PKG_NAME="DaVinci_Resolve_${MY_PV}_Linux"
-SRC_URI="davinci-resolve_${MY_PV}-mrd1.4.0_amd64.deb"
+SRC_URI="davinci-resolve_${MY_PV}-mrd${MK_RESOLVE_DEB_VERSION}_amd64.deb"
 
 RESTRICT="bindist fetch mirror"
 
@@ -35,10 +35,10 @@ pkg_nofetch() {
 	einfo "Please download"
 	einfo "  - ${PKG_NAME}.zip"
 	einfo "from ${HOMEPAGE} and unzip it;"
-	einfo "Download makeresolvedeb_1.4.0_multi.sh"
+	einfo "Download makeresolvedeb_${MK_RESOLVE_DEB_VERSION}_multi.sh"
 	einfo "from https://www.danieltufvesson.com/makeresolvedeb"
-	einfo "then run ./makeresolvedeb_1.4.0_multi.sh ${PKG_NAME}.run"
-	einfo "and place out davinci-resolve_${MY_PV}-mrd1.4.0_amd64.deb to ${DISTDIR}"
+	einfo "then run ./makeresolvedeb_${MK_RESOLVE_DEB_VERSION}_multi.sh ${PKG_NAME}.run"
+	einfo "and place out davinci-resolve_${MY_PV}-mrd${MK_RESOLVE_DEB_VERSION}_amd64.deb to ${DISTDIR}"
 }
 
 src_unpack(){
