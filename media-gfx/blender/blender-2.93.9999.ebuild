@@ -235,7 +235,7 @@ src_configure() {
 
 	if use optix; then
 		mycmakeargs+=(
-			-OPTIX_ROOT_DIR=/opt/optix
+			-DOPTIX_ROOT_DIR=/opt/optix
 			-DOPTIX_INCLUDE_DIR=/opt/optix/include
 			-DWITH_CYCLES_DEVICE_OPTIX=ON
 		)
