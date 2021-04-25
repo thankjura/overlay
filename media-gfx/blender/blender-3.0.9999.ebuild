@@ -363,15 +363,6 @@ src_install() {
 }
 
 pkg_postinst() {
-	elog
-	elog "Blender compiles from master thunk by default"
-	elog
-	elog "There is some my prefer blender settings as patches"
-	elog "find them in cg/local-patches/blender/"
-	elog "To apply someone copy them in "
-	elog "/etc/portage/patches/media-gfx/blender/"
-	elog "or create simlink"
-	elog
 	xdg_icon_cache_update
 	xdg_mimeinfo_database_update
 	xdg_desktop_database_update
