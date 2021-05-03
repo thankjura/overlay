@@ -55,7 +55,7 @@ RESTRICT="!test? ( test )"
 pkg_pretend() {
 	if use cuda; then
 		[[ $(gcc-major-version) -gt 10 ]] && \
-		eerror "USE=cuda requires gcc < 11. Run gcc-config to switch your default compiler" && \
+		eerror "USE=cuda requires gcc < 10. Run gcc-config to switch your default compiler" && \
 		die "Need gcc version earlier than 10"
 	fi
 	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
