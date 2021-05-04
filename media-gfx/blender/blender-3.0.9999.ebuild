@@ -30,7 +30,7 @@ MY_PV="$(ver_cut 1-2)"
 
 IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75 -sm_86"
 IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
-	abi6-compat +abi7-compat alembic collada +color-management +oidn +cycles \
+	alembic collada +color-management +oidn +cycles \
 	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
 	man ndof nls openal openimageio openmp opensubdiv embree freestyle \
 	+openvdb osl sdl sndfile standalone test tiff valgrind wayland ${IUSE_GPU}"
@@ -41,10 +41,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	cycles? ( openexr tiff openimageio )
 	elbeem? ( tbb )
 	opencl? ( cycles )
-	openvdb? (
-		^^ ( abi6-compat abi7-compat )
-		tbb
-	)
+	openvdb? ( tbb )
 	osl? ( cycles llvm )
 	oidn? ( cycles )
 	embree? ( cycles )
@@ -96,7 +93,7 @@ RDEPEND="${PYTHON_DEPS}
 	)
 	opensubdiv? ( >=media-libs/opensubdiv-3.4.0[cuda=,opencl=] )
 	openvdb? (
-		~media-gfx/openvdb-7.0.0[abi6-compat(-)?,abi7-compat(-)?]
+		>=media-gfx/openvdb-7.0.0
 		dev-libs/c-blosc:=
 	)
 	osl? ( media-libs/osl )
@@ -191,18 +188,6 @@ src_prepare() {
 src_configure() {
 	append-flags -funsigned-char -fno-strict-aliasing
 	append-lfs-flags
-
-	if use openvdb; then
-		local version
-		if use abi6-compat; then
-			version=6;
-		elif use abi7-compat; then
-			version=7;
-		else
-			die "Openvdb abi version not compatible"
-		fi
-		append-cppflags -DOPENVDB_ABI_VERSION_NUMBER=${version}
-	fi
 
 	local mycmakeargs=""
 	#CUDA Kernel Selection
