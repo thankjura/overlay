@@ -4,24 +4,27 @@
 
 EAPI=6
 
-PYTHON_COMPAT=( python2_7 )
-
-inherit cmake-utils git-r3
+inherit cmake-utils git-r3 xdg-utils
 CMAKE_BUILD_TYPE="Release"
 
 DESCRIPTION="A joystick testing and configuration tool for Linux"
-HOMEPAGE="http://http://pingus.seul.org/~grumbel/jstest-gtk/"
+HOMEPAGE="https://gitlab.com/jstest-gtk/jstest-gtk.git"
 
 LICENSE="GPLv3"
 SLOT="0"
 
-EGIT_REPO_URI="https://github.com/Grumbel/jstest-gtk.git"
+EGIT_REPO_URI="https://gitlab.com/jstest-gtk/jstest-gtk.git"
 KEYWORDS="~amd64"
 
 RDEPEND="dev-libs/libsigc++
 	dev-cpp/gtkmm"
 DEPEND="${RDEPEND}
 	dev-util/cmake"
+
+src_prepare() {
+	cp "data/generic.png" "data/${PN}.png"
+	default
+}
 
 src_configure() {
 	cmake-utils_src_configure
@@ -34,6 +37,5 @@ src_install() {
 
 	doicon ${S}/data/generic.png
 
-	make_desktop_entry "${PN}" "${PN}" "generic" "Utility" "Path=/usr/share/${PN}"
-
+	make_desktop_entry ${PN} "Joystick" ${PN} "Utility" "Path=/usr/share/${PN}\nStartupWMClass=${PN}"
 }
