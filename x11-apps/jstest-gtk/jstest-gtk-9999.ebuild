@@ -4,7 +4,7 @@
 
 EAPI=6
 
-inherit cmake-utils git-r3 xdg-utils
+inherit cmake-utils git-r3 xdg-utils wrapper
 CMAKE_BUILD_TYPE="Release"
 
 DESCRIPTION="A joystick testing and configuration tool for Linux"
@@ -31,11 +31,13 @@ src_configure() {
 }
 
 src_install() {
-	dobin "${CMAKE_BUILD_DIR}"/${PN}
+	exeinto /usr/share/${PN}
+	doexe "${CMAKE_BUILD_DIR}"/${PN}
 	insinto /usr/share/${PN}
 	doins -r "${S}"/data
 
 	doicon ${S}/data/generic.png
 
+	make_wrapper ${PN} /usr/share/${PN}/${PN} /usr/share/${PN}
 	make_desktop_entry ${PN} "Joystick" ${PN} "Utility" "Path=/usr/share/${PN}\nStartupWMClass=${PN}"
 }
