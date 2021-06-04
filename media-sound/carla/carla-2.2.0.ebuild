@@ -1,9 +1,9 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-PYTHON_COMPAT=( python3_{6..9} )
+PYTHON_COMPAT=( python3_9 )
 inherit python-single-r1 xdg-utils
 
 DESCRIPTION="Fully-featured audio plugin host, supports many audio drivers and plugin formats"
@@ -43,6 +43,8 @@ RDEPEND="${PYTHON_DEPS}
 	X? ( x11-base/xorg-server )"
 DEPEND=${RDEPEND}
 
+PATCHES=( "${FILESDIR}"/gcc11.patch )
+
 src_prepare() {
 	sed -i -e "s|exec \$PYTHON|exec ${PYTHON}|" \
 		data/carla \
@@ -58,7 +60,6 @@ src_prepare() {
 
 src_compile() {
 	myemakeargs=(
-		LIBDIR="/usr/$(get_libdir)"
 		SKIP_STRIPPING=true
 		HAVE_FFMPEG=false
 		HAVE_ZYN_DEPS=false
