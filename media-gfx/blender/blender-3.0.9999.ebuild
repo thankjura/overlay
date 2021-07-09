@@ -9,8 +9,15 @@ inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 l1
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="http://www.blender.org/"
 
+IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75 -sm_86"
+IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
+	alembic collada +color-management +oidn +cycles cycles-x \
+	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
+	man ndof nls openal openimageio openmp opensubdiv embree freestyle \
+	+openvdb osl sdl sndfile standalone test tiff valgrind wayland ${IUSE_GPU}"
+
 EGIT_REPO_URI="https://git.blender.org/blender.git"
-EGIT_BRANCH="master"
+
 EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
 EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
 
@@ -27,13 +34,6 @@ LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64"
 SLOT="0"
 MY_PV="$(ver_cut 1-2)"
-
-IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75 -sm_86"
-IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
-	alembic collada +color-management +oidn +cycles \
-	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
-	man ndof nls openal openimageio openmp opensubdiv embree freestyle \
-	+openvdb osl sdl sndfile standalone test tiff valgrind wayland ${IUSE_GPU}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	alembic? ( openexr )
@@ -132,6 +132,15 @@ blender_check_requirements() {
 	if use doc; then
 		CHECKREQS_DISK_BUILD="4G" check-reqs_pkg_pretend
 	fi
+}
+
+src_unpack() {
+	if use "cycles-x"; then
+		EGIT_BRANCH="cycles-x"
+	else
+		EGIT_BRANCH="master"
+	fi
+	git-r3_src_unpack
 }
 
 pkg_pretend() {
