@@ -15,33 +15,13 @@ else
 fi
 
 MY_PV="$(get_version_component_range 2)${MY_PV_EXT}"
-
-declare -A ARCH_FILES
-ARCH_FILES[amd64]="jdk-${MY_PV}-linux-x64.tar.gz"
-ARCH_FILES[arm]="jdk-${MY_PV}-linux-arm32-vfp-hflt.tar.gz"
-ARCH_FILES[arm64]="jdk-${MY_PV}-linux-arm64-vfp-hflt.tar.gz"
-ARCH_FILES[x86]="jdk-${MY_PV}-linux-i586.tar.gz"
-ARCH_FILES[x64-macos]="jdk-${MY_PV}-macosx-x64.dmg"
-
-for keyword in ${KEYWORDS//-\*} ; do
-	case "${keyword#\~}" in
-		*-linux) continue ;;
-		x64-macos) demo="jdk-${MY_PV}-macosx-x86_64-demos.zip" ;;
-		*) demo=${ARCH_FILES[${keyword#\~}]/./-demos.} ;;
-	esac
-
-	SRC_URI+="
-		${keyword#\~}? (
-			${ARCH_FILES[${keyword#\~}]}
-			examples? ( ${demo} )
-		)"
-done
+SRC_URI="jdk-${MY_PV}-linux-x64.tar.gz"
 
 DESCRIPTION="Oracle's Java SE Development Kit"
 HOMEPAGE="http://www.oracle.com/technetwork/java/javase/"
-LICENSE="Oracle-BCLA-JavaSE examples? ( BSD )"
+LICENSE="Oracle-BCLA-JavaSE"
 SLOT="1.8"
-IUSE="alsa commercial cups doc examples +fontconfig headless-awt javafx jce nsplugin selinux source visualvm"
+IUSE="alsa commercial cups doc +fontconfig headless-awt javafx jce nsplugin selinux source visualvm"
 REQUIRED_USE="javafx? ( alsa fontconfig )"
 RESTRICT="bindist fetch preserve-libs strip"
 QA_PREBUILT="*"
@@ -53,41 +33,14 @@ QA_PREBUILT="*"
 # * libpng is also dlopened but only by libsplashscreen, which isn't
 #   important, so we can exclude that.
 #
-# * We still need to work out the exact AWT and JavaFX dependencies
-#   under MacOS. It doesn't appear to use many, if any, of the
-#   dependencies below.
-#
-RDEPEND="!x64-macos? (
-		!headless-awt? (
-			x11-libs/libX11
-			x11-libs/libXext
-			x11-libs/libXi
-			x11-libs/libXrender
-			x11-libs/libXtst
-		)
-		javafx? (
-			dev-libs/glib:2
-			dev-libs/libxml2:2
-			dev-libs/libxslt
-			media-libs/freetype:2
-			x11-libs/cairo
-			x11-libs/gtk+:2
-			x11-libs/libX11
-			x11-libs/libXtst
-			x11-libs/libXxf86vm
-			x11-libs/pango
-			virtual/opengl
-		)
-	)
-	alsa? ( media-libs/alsa-lib )
+RDEPEND="alsa? ( media-libs/alsa-lib )
 	cups? ( net-print/cups )
 	doc? ( dev-java/java-sdk-docs:${SLOT} )
 	fontconfig? ( media-libs/fontconfig:1.0 )
 	!prefix? ( sys-libs/glibc:* )
 	selinux? ( sec-policy/selinux-java )"
 
-DEPEND="app-arch/zip
-	examples? ( x64-macos? ( app-arch/unzip ) )"
+DEPEND="app-arch/zip"
 
 S="${WORKDIR}/jdk$(replace_version_separator 3 _  ${S_PV})"
 
@@ -106,24 +59,6 @@ pkg_nofetch() {
 	einfo
 	einfo "  http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html"
 	einfo
-}
-
-src_unpack() {
-	if use x64-macos ; then
-		mkdir -p "${T}"/dmgmount || die
-		hdiutil attach "${DISTDIR}"/jdk-${MY_PV}-macosx-x64.dmg \
-			-mountpoint "${T}"/dmgmount || die
-		local jdkgen=$(get_version_component_range 2)
-		local uver=$(get_version_component_range 4)
-		( cd "${T}" &&
-		  xar -xf "${T}/dmgmount/JDK ${jdkgen} Update ${uver}.pkg" \
-		  jdk${PV//.}.pkg/Payload ) || die
-		zcat "${T}"/jdk${PV//.}.pkg/Payload | cpio -idv || die
-		hdiutil detach "${T}"/dmgmount || die
-		mv Contents/Home "${S}" || die
-	fi
-
-	default
 }
 
 src_prepare() {
@@ -214,10 +149,6 @@ src_install() {
 	dodir "${dest}"
 	cp -pPR bin include jre lib man "${ddest}" || die
 
-	if use examples && [[ ${A} = *-demos.* ]] ; then
-		cp -pPR demo sample "${ddest}" || die
-	fi
-
 	ln -s policy/$(usex jce unlimited limited)/{US_export,local}_policy.jar \
 		"${ddest}"/jre/lib/security/ || die
 
@@ -238,37 +169,10 @@ src_install() {
 
 	# Needs to be done before CDS, bug #215225.
 	java-vm_set-pax-markings "${ddest}"
-
-	# See bug #207282.
-	einfo "Creating the Class Data Sharing archives"
-	case ${ARCH} in
-		arm|ia64)
-			${ddest}/bin/java -client -Xshare:dump || die
-			;;
-		x86)
-			${ddest}/bin/java -client -Xshare:dump || die
-			# limit heap size for large memory on x86 #467518
-			# this is a workaround and shouldn't be needed.
-			${ddest}/bin/java -server -Xms64m -Xmx64m -Xshare:dump || die
-			;;
-		*)
-			${ddest}/bin/java -server -Xshare:dump || die
-			;;
-	esac
+	${ddest}/bin/java -server -Xshare:dump || die
 
 	# Remove empty dirs we might have copied.
 	find "${D}" -type d -empty -exec rmdir -v {} + || die
-
-	if use x64-macos ; then
-		local lib
-		for lib in lib{decora_sse,glass,prism_{common,es2,sw}}.dylib ; do
-			ebegin "Fixing self-reference of ${lib}"
-			install_name_tool \
-				-id "${EPREFIX}${dest}"/jre/lib/${lib} \
-				"${ddest}"/jre/lib/${lib} || die
-			eend $?
-		done
-	fi
 
 	java-vm_install-env "${FILESDIR}"/${PN}.env.sh
 	java-vm_revdep-mask
