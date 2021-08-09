@@ -1,52 +1,58 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
-PYTHON_COMPAT=( python3_{7,8,9} )
 
-inherit check-reqs cmake-utils python-single-r1 pax-utils flag-o-matic git-r3 l10n xdg
+PYTHON_COMPAT=( python3_9 )
+
+inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
-HOMEPAGE="http://www.blender.org/"
+HOMEPAGE="https://www.blender.org"
 
-IUSE_GPU="+optix cuda opencl -sm_30 -sm_35 -sm_50 -sm_52 -sm_61 -sm_70 -sm_75 -sm_86"
-IUSE="+bullet +dds +elbeem +openexr +system-python +system-numpy +tbb \
-	alembic collada +color-management +oidn +cycles cycles-x \
-	debug doc ffmpeg fftw headless jack jemalloc jpeg2k llvm \
-	man ndof nls openal openimageio openmp opensubdiv embree freestyle \
-	+openvdb osl sdl sndfile standalone test tiff valgrind wayland ${IUSE_GPU}"
+if [[ ${PV} = *9999* ]] ; then
+	inherit git-r3
+	EGIT_REPO_URI="https://git.blender.org/blender.git"
+	EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
+	EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
 
-EGIT_REPO_URI="https://git.blender.org/blender.git"
+	EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS_CONTRIB="master"
+	EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS_CONTRIB="master"
 
-EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
-EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
+	EGIT_OVERRIDE_BRANCH_BLENDER_TRANSLATIONS="master"
+	EGIT_OVERRIDE_COMMIT_BLENDER_TRANSLATIONS="master"
 
-EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS_CONTRIB="master"
-EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS_CONTRIB="master"
+	EGIT_OVERRIDE_BRANCH_BLENDER_DEV_TOOLS="master"
+	EGIT_OVERRIDE_COMMIT_BLENDER_DEV_TOOLS="master"
+else
+	SRC_URI="https://download.blender.org/source/${P}.tar.xz"
+	TEST_TARBALL_VERSION=2.93.0
+	SRC_URI+=" test? ( https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${PN}-${TEST_TARBALL_VERSION}-tests.tar.bz2 )"
+fi
 
-EGIT_OVERRIDE_BRANCH_BLENDER_TRANSLATIONS="master"
-EGIT_OVERRIDE_COMMIT_BLENDER_TRANSLATIONS="master"
-
-EGIT_OVERRIDE_BRANCH_BLENDER_DEV_TOOLS="master"
-EGIT_OVERRIDE_COMMIT_BLENDER_DEV_TOOLS="master"
-
-LICENSE="|| ( GPL-2 BL )"
 KEYWORDS="~amd64"
-SLOT="0"
-MY_PV="$(ver_cut 1-2)"
+SLOT="${PV%.*}"
+LICENSE="|| ( GPL-3 BL )"
+IUSE="+bullet +dds +fluid +openexr +system-python +system-numpy +tbb \
+	alembic collada +color-management +cycles cycles-x +optix cuda opencl osl \
+	debug doc +embree +ffmpeg +fftw +gmp headless jack jemalloc jpeg2k \
+	man ndof nls openal +oidn +openimageio +openmp +opensubdiv \
+	+openvdb +pdf +potrace +pugixml pulseaudio sdl +sndfile standalone test +tiff valgrind"
+RESTRICT="!test? ( test )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	alembic? ( openexr )
 	cuda? ( cycles )
 	cycles? ( openexr tiff openimageio )
-	elbeem? ( tbb )
+	fluid? ( tbb )
 	opencl? ( cycles )
 	openvdb? ( tbb )
-	osl? ( cycles llvm )
-	oidn? ( cycles )
-	embree? ( cycles )
-	standalone? ( cycles )"
+	osl? ( cycles )
+	standalone? ( cycles )
+	test? ( color-management )"
 
+# Library versions for official builds can be found in the blender source directory in:
+# build_files/build_environment/install_deps.sh
 RDEPEND="${PYTHON_DEPS}
 	dev-libs/boost:=[nls?,threads(+)]
 	dev-libs/lzo:2=
@@ -65,11 +71,12 @@ RDEPEND="${PYTHON_DEPS}
 	virtual/opengl
 	alembic? ( >=media-gfx/alembic-1.7.12[boost(+),hdf(+)] )
 	collada? ( >=media-libs/opencollada-1.6.68 )
-	color-management? ( media-libs/opencolorio )
+	color-management? ( >=media-libs/opencolorio-2.0.0 )
 	cuda? ( dev-util/nvidia-cuda-toolkit:= )
-	optix? ( dev-libs/optix )
-	ffmpeg? ( media-video/ffmpeg:=[x264,mp3,encode,theora,jpeg2k?] )
+	embree? ( >=media-libs/embree-3.10.0[raymask] )
+	ffmpeg? ( media-video/ffmpeg:=[x264,mp3,encode,theora,jpeg2k,vpx,vorbis,opus,xvid] )
 	fftw? ( sci-libs/fftw:3.0= )
+	gmp? ( dev-libs/gmp )
 	!headless? (
 		x11-libs/libX11
 		x11-libs/libXi
@@ -78,7 +85,6 @@ RDEPEND="${PYTHON_DEPS}
 	jack? ( virtual/jack )
 	jemalloc? ( dev-libs/jemalloc:= )
 	jpeg2k? ( media-libs/openjpeg:2= )
-	llvm? ( sys-devel/llvm:= )
 	ndof? (
 		app-misc/spacenavd
 		dev-libs/libspnav
@@ -86,7 +92,8 @@ RDEPEND="${PYTHON_DEPS}
 	nls? ( virtual/libiconv )
 	openal? ( media-libs/openal )
 	opencl? ( virtual/opencl )
-	openimageio? ( media-libs/openimageio )
+	oidn? ( >=media-libs/oidn-1.3.0 )
+	openimageio? ( >=media-libs/openimageio-2.2.13.1:= )
 	openexr? (
 		media-libs/ilmbase:=
 		media-libs/openexr:=
@@ -96,14 +103,17 @@ RDEPEND="${PYTHON_DEPS}
 		>=media-gfx/openvdb-7.1.0
 		dev-libs/c-blosc:=
 	)
-	osl? ( media-libs/osl )
+	osl? ( >=media-libs/osl-1.11.10.0 )
+	pdf? ( media-libs/libharu )
+	potrace? ( media-gfx/potrace )
+	pugixml? ( dev-libs/pugixml )
+	pulseaudio? ( media-sound/pulseaudio )
 	sdl? ( media-libs/libsdl2[sound,joystick] )
 	sndfile? ( media-libs/libsndfile )
 	tbb? ( dev-cpp/tbb )
+	test? ( dev-vcs/subversion )
 	tiff? ( media-libs/tiff )
 	valgrind? ( dev-util/valgrind )
-	oidn? ( media-libs/oidn )
-	embree? ( media-libs/embree )
 "
 
 DEPEND="${RDEPEND}
@@ -124,8 +134,6 @@ BDEPEND="
 	nls? ( sys-devel/gettext )
 "
 
-CMAKE_BUILD_TYPE="Release"
-
 blender_check_requirements() {
 	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
 
@@ -134,13 +142,16 @@ blender_check_requirements() {
 	fi
 }
 
-src_unpack() {
-	if use "cycles-x"; then
-		EGIT_BRANCH="cycles-x"
+blender_get_version() {
+	# Get blender version from blender itself.
+	BV=$(grep "BLENDER_VERSION " source/blender/blenkernel/BKE_blender_version.h | cut -d " " -f 3; assert)
+	if ((${BV:0:1} < 3)) ; then
+		# Add period (290 -> 2.90).
+		BV=${BV:0:1}.${BV:1}
 	else
-		EGIT_BRANCH="master"
+		# Add period and strip last number (300 -> 3.0)
+		BV=${BV:0:1}.${BV:1:1}
 	fi
-	git-r3_src_unpack
 }
 
 pkg_pretend() {
@@ -152,80 +163,120 @@ pkg_setup() {
 	python-single-r1_pkg_setup
 }
 
-src_prepare() {
-	cmake-utils_src_prepare
-
-	# we don't want static glew, but it's scattered across
-	# multiple files that differ from version to version
-	# !!!CHECK THIS SED ON EVERY VERSION BUMP!!!
-	local file
-	while IFS="" read -d $'\0' -r file ; do
-		sed -i -e '/-DGLEW_STATIC/d' "${file}" || die
-	done < <(find . -type f -name "CMakeLists.txt")
-
-	# Disable MS Windows help generation. The variable doesn't do what it
-	# it sounds like.
-	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" \
-		-i doc/doxygen/Doxyfile || die
-
-	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" \
-		-i doc/doxygen/Doxyfile || die
-
-	# we don't want static glew, but it's scattered across
-	# multiple files that differ from version to version
-	# !!!CHECK THIS SED ON EVERY VERSION BUMP!!!
-	local file
-	while IFS="" read -d $'\0' -r file ; do
-		sed -i -e '/-DGLEW_STATIC/d' "${file}" || die
-	done < <(find . -type f -name "CMakeLists.txt")
-
-	# Disable MS Windows help generation. The variable doesn't do what it
-	# it sounds like.
-	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" -i doc/doxygen/Doxyfile || die
-	ewarn "$(echo "Remaining bundled dependencies:";
-			( find extern -mindepth 1 -maxdepth 1 -type d; ) | sed 's|^|- |')"
-
-	# cleanup addons
-	for a in $(ls "${S}"/release/scripts/addons_contrib/); do
-		if [[ -d "${S}"/release/scripts/addons/${a} || -f "${S}"/release/scripts/addons/${a} ]]; then
-			ewarn "Duplicate ${a}, removing"
-			rm -r "${S}"/release/scripts/addons_contrib/${a}
+src_unpack() {
+	if [[ ${PV} = *9999* ]] ; then
+		if use "cycles-x"; then
+			EGIT_BRANCH="cycles-x"
+		else
+			EGIT_BRANCH="master"
 		fi
-	done
+		git-r3_src_unpack
+	else
+		default
+	fi
+
+	if use test; then
+		mkdir -p lib || die
+		mv "${WORKDIR}"/blender-${TEST_TARBALL_VERSION}-tests/tests lib || die
+	fi
+}
+
+src_prepare() {
+	cmake_src_prepare
+
+	blender_get_version
+
+	# Disable MS Windows help generation. The variable doesn't do what it
+	# it sounds like.
+	sed -e "s|GENERATE_HTMLHELP      = YES|GENERATE_HTMLHELP      = NO|" \
+		-i doc/doxygen/Doxyfile || die
+
+	# Prepare icons and .desktop files for slotting.
+	sed -e "s|blender.svg|blender-${BV}.svg|" -i source/creator/CMakeLists.txt || die
+	sed -e "s|blender-symbolic.svg|blender-${BV}-symbolic.svg|" -i source/creator/CMakeLists.txt || die
+	sed -e "s|blender.desktop|blender-${BV}.desktop|" -i source/creator/CMakeLists.txt || die
+	sed -e "s|blender-thumbnailer.py|blender-${BV}-thumbnailer.py|" -i source/creator/CMakeLists.txt || die
+
+	sed -e "s|Name=Blender|Name=Blender ${PV}|" -i release/freedesktop/blender.desktop || die
+	sed -e "s|Exec=blender|Exec=blender-${BV}|" -i release/freedesktop/blender.desktop || die
+	sed -e "s|Icon=blender|Icon=blender-${BV}|" -i release/freedesktop/blender.desktop || die
+
+	mv release/freedesktop/icons/scalable/apps/blender.svg release/freedesktop/icons/scalable/apps/blender-${BV}.svg || die
+	mv release/freedesktop/icons/symbolic/apps/blender-symbolic.svg release/freedesktop/icons/symbolic/apps/blender-${BV}-symbolic.svg || die
+	mv release/freedesktop/blender.desktop release/freedesktop/blender-${BV}.desktop || die
+	mv release/bin/blender-thumbnailer.py release/bin/blender-${BV}-thumbnailer.py || die
+
+	if use test; then
+		# Without this the tests will try to use /usr/bin/blender and /usr/share/blender/ to run the tests.
+		sed -e "s|string(REPLACE.*|set(TEST_INSTALL_DIR ${ED}/usr/)|g" -i tests/CMakeLists.txt || die
+		sed -e "s|string(REPLACE.*|set(TEST_INSTALL_DIR ${ED}/usr/)|g" -i build_files/cmake/Modules/GTestTesting.cmake || die
+	fi
 }
 
 src_configure() {
-	append-flags -funsigned-char -fno-strict-aliasing
 	append-lfs-flags
 
-	local mycmakeargs=""
-	#CUDA Kernel Selection
-	local CUDA_ARCH=""
-	if use cuda; then
-		for CA in 30 35 50 52 61 70 75 86; do
-			if use sm_${CA}; then
-				if [[ -n "${CUDA_ARCH}" ]] ; then
-					CUDA_ARCH="${CUDA_ARCH};sm_${CA}"
-				else
-					CUDA_ARCH="sm_${CA}"
-				fi
-			fi
-		done
-
-		#If a kernel isn't selected then all of them are built by default
-		if [ -n "${CUDA_ARCH}" ] ; then
-			mycmakeargs+=(
-				-DCYCLES_CUDA_BINARIES_ARCH=${CUDA_ARCH}
-			)
-		fi
-
-		mycmakeargs+=(
-			-DWITH_CYCLES_CUDA=ON
-			-DWITH_CYCLES_CUDA_BINARIES=ON
-			-DCUDA_TOOLKIT_ROOT_DIR=/opt/cuda
-			-DCUDA_NVCC_EXECUddDABLE=/opt/cuda/bin/nvcc
-		)
-	fi
+	local mycmakeargs=(
+		-DBUILD_SHARED_LIBS=OFF
+		-DPYTHON_INCLUDE_DIR="$(python_get_includedir)"
+		-DPYTHON_LIBRARY="$(python_get_library_path)"
+		-DPYTHON_VERSION="${EPYTHON/python/}"
+		-DWITH_ALEMBIC=$(usex alembic)
+		-DWITH_ASSERT_ABORT=$(usex debug)
+		-DWITH_BOOST=ON
+		-DWITH_BULLET=$(usex bullet)
+		-DWITH_CODEC_FFMPEG=$(usex ffmpeg)
+		-DWITH_CODEC_SNDFILE=$(usex sndfile)
+		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
+		-DWITH_CYCLES=$(usex cycles)
+		-DWITH_CYCLES_DEVICE_CUDA=$(usex cuda TRUE FALSE)
+		-DWITH_CYCLES_DEVICE_OPENCL=$(usex opencl)
+		-DWITH_CYCLES_EMBREE=$(usex embree)
+		-DWITH_CYCLES_OSL=$(usex osl)
+		-DWITH_CYCLES_STANDALONE=$(usex standalone)
+		-DWITH_CYCLES_STANDALONE_GUI=$(usex standalone)
+		-DWITH_DOC_MANPAGE=$(usex man)
+		-DWITH_FFTW3=$(usex fftw)
+		-DWITH_GMP=$(usex gmp)
+		-DWITH_GTESTS=$(usex test)
+		-DWITH_HARU=$(usex pdf)
+		-DWITH_HEADLESS=$(usex headless)
+		-DWITH_INSTALL_PORTABLE=OFF
+		-DWITH_IMAGE_DDS=$(usex dds)
+		-DWITH_IMAGE_OPENEXR=$(usex openexr)
+		-DWITH_IMAGE_OPENJPEG=$(usex jpeg2k)
+		-DWITH_IMAGE_TIFF=$(usex tiff)
+		-DWITH_INPUT_NDOF=$(usex ndof)
+		-DWITH_INTERNATIONAL=$(usex nls)
+		-DWITH_JACK=$(usex jack)
+		-DWITH_MEM_JEMALLOC=$(usex jemalloc)
+		-DWITH_MEM_VALGRIND=$(usex valgrind)
+		-DWITH_MOD_FLUID=$(usex fluid)
+		-DWITH_MOD_OCEANSIM=$(usex fftw)
+		-DWITH_NANOVDB=OFF
+		-DWITH_OPENAL=$(usex openal)
+		-DWITH_OPENCOLLADA=$(usex collada)
+		-DWITH_OPENCOLORIO=$(usex color-management)
+		-DWITH_OPENIMAGEDENOISE=$(usex oidn)
+		-DWITH_OPENIMAGEIO=$(usex openimageio)
+		-DWITH_OPENMP=$(usex openmp)
+		-DWITH_OPENSUBDIV=$(usex opensubdiv)
+		-DWITH_OPENVDB=$(usex openvdb)
+		-DWITH_OPENVDB_BLOSC=$(usex openvdb)
+		-DWITH_POTRACE=$(usex potrace)
+		-DWITH_PUGIXML=$(usex pugixml)
+		-DWITH_PULSEAUDIO=$(usex pulseaudio)
+		-DWITH_PYTHON_INSTALL=$(usex system-python OFF ON)
+		-DWITH_PYTHON_INSTALL_NUMPY=$(usex system-numpy OFF ON)
+		-DWITH_SDL=$(usex sdl)
+		-DWITH_STATIC_LIBS=OFF
+		-DWITH_SYSTEM_EIGEN3=ON
+		-DWITH_SYSTEM_GLEW=ON
+		-DWITH_SYSTEM_LZO=ON
+		-DWITH_TBB=$(usex tbb)
+		-DWITH_USD=OFF
+		-DWITH_XR_OPENXR=OFF
+	)
 
 	if use optix; then
 		mycmakeargs+=(
@@ -239,103 +290,63 @@ src_configure() {
 		)
 	fi
 
-	mycmakeargs+=(
-		-DBUILD_SHARED_LIBS=OFF
-		-DPYTHON_INCLUDE_DIR="$(python_get_includedir)"
-		-DPYTHON_LIBRARY="$(python_get_library_path)"
-		-DPYTHON_VERSION="${EPYTHON/python/}"
-		-DWITH_ALEMBIC=$(usex alembic)
-		-DWITH_ASSERT_ABORT=$(usex debug)
-		-DWITH_BOOST=ON
-		-DWITH_BULLET=$(usex bullet)
-		-DWITH_CODEC_FFMPEG=$(usex ffmpeg)
-		-DWITH_CODEC_SNDFILE=$(usex sndfile)
-		-DWITH_CXX_GUARDEDALLOC=$(usex debug)
-		-DWITH_CYCLES_DEVICE_CUDA=$(usex cuda TRUE FALSE)
-		-DWITH_CYCLES=$(usex cycles)
-		-DWITH_CYCLES_DEVICE_OPENCL=$(usex opencl)
-		-DWITH_CYCLES_EMBREE=$(usex embree)
-		-DWITH_CYCLES_STANDALONE=$(usex standalone)
-		-DWITH_CYCLES_STANDALONE_GUI=$(usex standalone)
-		-DWITH_CYCLES_OSL=$(usex osl)
-		-DWITH_DOC_MANPAGE=$(usex man)
-		-DWITH_FFTW3=$(usex fftw)
-		-DWITH_GTESTS=$(usex test)
-		-DWITH_HEADLESS=$(usex headless)
-		-DWITH_INSTALL_PORTABLE=OFF
-		-DWITH_FREESTYLE=$(usex freestyle)
-		-DWITH_IMAGE_DDS=$(usex dds)
-		-DWITH_IMAGE_OPENEXR=$(usex openexr)
-		-DWITH_IMAGE_OPENJPEG=$(usex jpeg2k)
-		-DWITH_IMAGE_TIFF=$(usex tiff)
-		-DWITH_INPUT_NDOF=$(usex ndof)
-		-DWITH_INTERNATIONAL=$(usex nls)
-		-DWITH_JACK=$(usex jack)
-		-DWITH_LLVM=$(usex llvm)
-		-DWITH_MEM_JEMALLOC=$(usex jemalloc)
-		-DWITH_MEM_VALGRIND=$(usex valgrind)
-		-DWITH_MOD_FLUID=$(usex elbeem)
-		-DWITH_MOD_OCEANSIM=$(usex fftw)
-		-DWITH_OPENAL=$(usex openal)
-		-DWITH_OPENCOLLADA=$(usex collada)
-		-DWITH_OPENCOLORIO=$(usex color-management)
-		-DWITH_OPENIMAGEIO=$(usex openimageio)
-		-DWITH_OPENMP=$(usex openmp)
-		-DWITH_OPENSUBDIV=$(usex opensubdiv)
-		-DWITH_OPENVDB=$(usex openvdb)
-		-DWITH_OPENVDB_BLOSC=$(usex openvdb)
-		-DWITH_PYTHON_INSTALL=$(usex system-python OFF ON)
-		-DWITH_PYTHON_INSTALL_NUMPY=$(usex system-numpy OFF ON)
-		-DWITH_SDL=$(usex sdl)
-		-DWITH_STATIC_LIBS=OFF
-		-DWITH_SYSTEM_EIGEN3=ON
-		-DWITH_SYSTEM_GLEW=ON
-		-DWITH_SYSTEM_LZO=ON
-		-DWITH_TBB=$(usex tbb)
-		-DWITH_X11=$(usex !headless)
-		-DWITH_GHOST_WAYLAND=$(usex wayland)
-	)
-
-	if use oidn; then
-		mycmakeargs+=(
-			-DOPENIMAGEDENOISE_COMMON_LIBRARY=/usr/lib64/
-			-DOPENIMAGEDENOISE_MKLDNN_LIBRARY=/usr/lib64/
-		)
+	if ! use debug ; then
+		append-flags  -DNDEBUG
+	else
+		append-flags  -DDEBUG
 	fi
-
-	cmake-utils_src_configure
-}
-
-cmake-utils_src_configure() {
-	_cmake_check_build_dir || die
-	pushd "${BUILD_DIR}" > /dev/null || die
-	"${CMAKE_BINARY}" -G "$(_cmake_generator_to_use)" -DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr" "${mycmakeargs[@]}" "${CMAKE_USE_DIR}" || die "cmake failed"
-	popd > /dev/null || die
+	cmake_src_configure
 }
 
 src_compile() {
-	cmake-utils_src_compile
+	cmake_src_compile
 
 	if use doc; then
+		# Workaround for binary drivers.
+		addpredict /dev/ati
+		addpredict /dev/dri
+		addpredict /dev/nvidiactl
+
 		einfo "Generating Blender C/C++ API docs ..."
 		cd "${CMAKE_USE_DIR}"/doc/doxygen || die
-		doxygen -u Doxyfile
+		doxygen -u Doxyfile || die
 		doxygen || die "doxygen failed to build API docs."
 
 		cd "${CMAKE_USE_DIR}" || die
 		einfo "Generating (BPY) Blender Python API docs ..."
-		"${BUILD_DIR}"/bin/blender --background --python doc/python_api/sphinx_doc_gen.py -noaudio || die "blender failed."
+		"${BUILD_DIR}"/bin/blender --background --python doc/python_api/sphinx_doc_gen.py -noaudio || die "sphinx failed."
 
 		cd "${CMAKE_USE_DIR}"/doc/python_api || die
 		sphinx-build sphinx-in BPY_API || die "sphinx failed."
 	fi
 }
 
-src_test() { :; }
+src_test() {
+	# A lot of tests needs to have access to the installed data files.
+	# So install them into the image directory now.
+	cmake_src_install
+
+	blender_get_version
+	# Define custom blender data/script file paths not be able to find them otherwise during testing.
+	# (Because the data is in the image directory and it will default to look in /usr/share)
+	export BLENDER_SYSTEM_SCRIPTS=${ED}/usr/share/blender/${BV}/scripts
+	export BLENDER_SYSTEM_DATAFILES=${ED}/usr/share/blender/${BV}/datafiles
+
+	cmake_src_test
+
+	# Clean up the image directory for src_install
+	rm -fr ${ED}/* || die
+}
 
 src_install() {
+	blender_get_version
+
 	# Pax mark blender for hardened support.
-	pax-mark m "${CMAKE_BUILD_DIR}"/bin/blender
+	pax-mark m "${BUILD_DIR}"/bin/blender
+
+	if use standalone; then
+		dobin "${BUILD_DIR}"/bin/cycles
+	fi
 
 	if use doc; then
 		docinto "html/API/python"
@@ -345,18 +356,51 @@ src_install() {
 		dodoc -r "${CMAKE_USE_DIR}"/doc/doxygen/html/.
 	fi
 
-	cmake-utils_src_install
+	cmake_src_install
 
-	# fix doc installdir
-	docinto "html"
+	if use man; then
+		# Slot the man page
+		mv "${ED}/usr/share/man/man1/blender.1" "${ED}/usr/share/man/man1/blender-${BV}.1" || die
+	fi
+
+	# Fix doc installdir
+	docinto html
 	dodoc "${CMAKE_USE_DIR}"/release/text/readme.html
-	rm -r "${ED%/}"/usr/share/doc/blender || die
+	rm -r "${ED}"/usr/share/doc/blender || die
 
-	python_fix_shebang "${ED%/}/usr/bin/blender-thumbnailer.py"
-	python_optimize "${ED%/}/usr/share/blender/${MY_PV}/scripts"
+	python_fix_shebang "${ED}/usr/bin/blender-${BV}-thumbnailer.py"
+	python_optimize "${ED}/usr/share/blender/${BV}/scripts"
+
+	mv "${ED}/usr/bin/blender" "${ED}/usr/bin/blender-${BV}" || die
 }
 
 pkg_postinst() {
+	elog
+	elog "Blender uses python integration. As such, may have some"
+	elog "inherent risks with running unknown python scripts."
+	elog
+	elog "It is recommended to change your blender temp directory"
+	elog "from /tmp to /home/user/tmp or another tmp file under your"
+	elog "home directory. This can be done by starting blender, then"
+	elog "changing the 'Temporary Files' directory in Blender preferences."
+	elog
+	ewarn
+	ewarn "This ebuild does not unbundle the massive amount of 3rd party"
+	ewarn "libraries which are shipped with blender. Note that"
+	ewarn "these have caused security issues in the past."
+	ewarn "If you are concerned about security, file a bug upstream:"
+	ewarn "  https://developer.blender.org/"
+	ewarn
+
+	if ! use python_single_target_python3_9; then
+		elog "You are building Blender with a newer python version than"
+		elog "supported by this version upstream."
+		elog "If you experience breakages with e.g. plugins, please switch to"
+		elog "python_single_target_python3_9 instead."
+		elog "Bug: https://bugs.gentoo.org/737388"
+		elog
+	fi
+
 	xdg_icon_cache_update
 	xdg_mimeinfo_database_update
 	xdg_desktop_database_update
@@ -369,7 +413,7 @@ pkg_postrm() {
 
 	ewarn ""
 	ewarn "You may want to remove the following directory."
-	ewarn "~/.config/${PN}/${MY_PV}/cache/"
+	ewarn "~/.config/${PN}/${SLOT}/cache/"
 	ewarn "It may contain extra render kernels not tracked by portage"
 	ewarn ""
 }
