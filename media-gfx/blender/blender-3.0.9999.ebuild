@@ -103,6 +103,9 @@ RDEPEND="${PYTHON_DEPS}
 		>=media-gfx/openvdb-7.1.0
 		dev-libs/c-blosc:=
 	)
+	optix? (
+		dev-libs/optix
+	)
 	osl? ( >=media-libs/osl-1.11.10.0 )
 	pdf? ( media-libs/libharu )
 	potrace? ( media-gfx/potrace )
