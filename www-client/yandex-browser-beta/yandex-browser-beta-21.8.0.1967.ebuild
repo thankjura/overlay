@@ -5,17 +5,18 @@ EAPI=7
 CHROMIUM_LANGS="cs de en-US es fr it ja pt-BR pt-PT ru tr uk zh-CN zh-TW"
 inherit chromium-2 unpacker pax-utils xdg-utils desktop wrapper
 
-RESTRICT="bindist mirror strip"
+RESTRICT="bindist strip"
 
 MY_PV="${PV/_p/-}"
+CHROMIUM_PV="92.0.4515.159"
 
 DESCRIPTION="The web browser from Yandex"
 HOMEPAGE="https://browser.yandex.ru/beta/"
 LICENSE="Yandex-EULA"
 SLOT="0"
 SRC_URI="
-	amd64? ( https://repo.yandex.ru/yandex-browser/deb/pool/main/y/yandex-browser-beta/yandex-browser-beta_${MY_PV}-1_amd64.deb -> ${P}.deb )
-	amd64? ( http://gpo.ws54.tk/gentoo-distfiles/${P}.deb -> ${P}.deb )
+	https://repo.yandex.ru/yandex-browser/deb/pool/main/y/yandex-browser-beta/yandex-browser-beta_${MY_PV}-1_amd64.deb -> ${P}.deb
+	https://mirror.yandex.ru/ubuntu/pool/universe/c/chromium-browser/chromium-codecs-ffmpeg-extra_${CHROMIUM_PV}-0ubuntu0.18.04.1_amd64.deb
 "
 KEYWORDS="~amd64"
 
@@ -63,7 +64,10 @@ pkg_setup() {
 }
 
 src_unpack() {
-	unpack_deb ${A}
+	for a in ${A}; do
+		echo "$a"
+		unpack_deb ${a}
+	done
 }
 
 src_prepare() {
@@ -97,6 +101,8 @@ src_prepare() {
 }
 
 src_install() {
+	strip usr/lib/chromium-browser/libffmpeg.so
+	mv usr/lib/chromium-browser/libffmpeg.so ${YANDEX_HOME}
 	mv * "${D}" || die
 	dodir "/usr/$(get_libdir)/${PN}/lib"
 	make_wrapper "${PN}" "./${PN}" "${EPREFIX}/${YANDEX_HOME}" "${EPREFIX}/usr/$(get_libdir)/${PN}/lib"
