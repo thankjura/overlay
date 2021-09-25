@@ -56,10 +56,6 @@ DEPEND="${RDEPEND}
 
 S="${WORKDIR}/${MY_PN}-version_${MY_PV}"
 
-#PATCHES=(
-#	"${FILESDIR}/${PN}-2.3.0-miniz-zip-header.patch"
-#)
-
 src_configure() {
 	use gui && setup-wxwidgets
 
