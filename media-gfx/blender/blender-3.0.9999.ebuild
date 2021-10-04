@@ -13,6 +13,9 @@ HOMEPAGE="https://www.blender.org"
 if [[ ${PV} = *9999* ]] ; then
 	inherit git-r3
 	EGIT_REPO_URI="https://git.blender.org/blender.git"
+	
+	EGIT_BRANCH="master"
+	
 	EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
 	EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
 
@@ -34,7 +37,7 @@ KEYWORDS="~amd64"
 SLOT="${PV%.*}"
 LICENSE="|| ( GPL-3 BL )"
 IUSE="+bullet +dds +fluid +openexr +system-python +system-numpy +tbb \
-	alembic collada +color-management +cycles cycles-x +optix cuda opencl osl \
+	alembic collada +color-management +cycles +optix cuda opencl osl \
 	debug doc +embree +ffmpeg +fftw +gmp headless jack jemalloc jpeg2k \
 	man ndof nls openal +oidn +openimageio +openmp +opensubdiv \
 	+openvdb +pdf +potrace +pugixml pulseaudio sdl +sndfile standalone test +tiff valgrind"
@@ -168,11 +171,6 @@ pkg_setup() {
 
 src_unpack() {
 	if [[ ${PV} = *9999* ]] ; then
-		if use "cycles-x"; then
-			EGIT_BRANCH="cycles-x"
-		else
-			EGIT_BRANCH="master"
-		fi
 		git-r3_src_unpack
 	else
 		default
