@@ -1,0 +1,102 @@
+diff -ru SuperSlicer-2.3.57.0.old/src/libslic3r/AppConfig.hpp SuperSlicer-2.3.57.0/src/libslic3r/AppConfig.hpp
+--- SuperSlicer-2.3.57.0.old/src/libslic3r/AppConfig.hpp	2021-09-06 19:21:41.000000000 +0300
++++ SuperSlicer-2.3.57.0/src/libslic3r/AppConfig.hpp	2021-10-01 13:50:50.070171411 +0300
+@@ -6,6 +6,7 @@
+ #include <string>
+ 
+ #include <boost/algorithm/string/trim_all.hpp>
++#include <boost/locale/generator.hpp>
+ 
+ #include "libslic3r/Config.hpp"
+ #include "libslic3r/Semver.hpp"
+diff -ru SuperSlicer-2.3.57.0.old/src/libslic3r/CMakeLists.txt SuperSlicer-2.3.57.0/src/libslic3r/CMakeLists.txt
+--- SuperSlicer-2.3.57.0.old/src/libslic3r/CMakeLists.txt	2021-10-01 02:13:17.006557980 +0300
++++ SuperSlicer-2.3.57.0/src/libslic3r/CMakeLists.txt	2021-10-01 00:23:33.369790992 +0300
+@@ -91,8 +91,8 @@
+     Format/SL1.cpp
+     Format/SLAArchive.hpp
+     Format/SLAArchive.cpp
+-    Format/CWS.hpp
+-    Format/CWS.cpp
++#    Format/CWS.hpp
++#    Format/CWS.cpp
+     GCode/ThumbnailData.cpp
+     GCode/ThumbnailData.hpp
+     GCode/CoolingBuffer.cpp
+diff -ru SuperSlicer-2.3.57.0.old/src/libslic3r/GCode.hpp SuperSlicer-2.3.57.0/src/libslic3r/GCode.hpp
+--- SuperSlicer-2.3.57.0.old/src/libslic3r/GCode.hpp	2021-09-06 19:21:41.000000000 +0300
++++ SuperSlicer-2.3.57.0/src/libslic3r/GCode.hpp	2021-10-01 02:13:36.388229279 +0300
+@@ -24,6 +24,7 @@
+ #include <map>
+ #include <string>
+ #include <chrono>
++#include <unordered_set>
+ 
+ #ifdef HAS_PRESSURE_EQUALIZER
+ #include "GCode/PressureEqualizer.hpp"
+diff -ru SuperSlicer-2.3.57.0.old/src/libslic3r/GCodeWriter.hpp SuperSlicer-2.3.57.0/src/libslic3r/GCodeWriter.hpp
+--- SuperSlicer-2.3.57.0.old/src/libslic3r/GCodeWriter.hpp	2021-09-06 19:21:41.000000000 +0300
++++ SuperSlicer-2.3.57.0/src/libslic3r/GCodeWriter.hpp	2021-10-01 13:34:26.436687532 +0300
+@@ -7,6 +7,7 @@
+ #include "Point.hpp"
+ #include "PrintConfig.hpp"
+ #include "GCode/CoolingBuffer.hpp"
++#include <boost/lexical_cast.hpp>
+ 
+ namespace Slic3r {
+ 
+diff -ru SuperSlicer-2.3.57.0.old/src/libslic3r/MedialAxis.hpp SuperSlicer-2.3.57.0/src/libslic3r/MedialAxis.hpp
+--- SuperSlicer-2.3.57.0.old/src/libslic3r/MedialAxis.hpp	2021-09-06 19:21:41.000000000 +0300
++++ SuperSlicer-2.3.57.0/src/libslic3r/MedialAxis.hpp	2021-10-01 13:45:53.176101024 +0300
+@@ -11,6 +11,7 @@
+ 
+ #define BOOST_VORONOI_USE_GMP 1
+ #include "boost/polygon/voronoi.hpp"
++#include <boost/log/trivial.hpp>
+ using boost::polygon::voronoi_builder;
+ using boost::polygon::voronoi_diagram;
+ 
+diff -ru SuperSlicer-2.3.57.0.old/src/libslic3r/PrintBase.hpp SuperSlicer-2.3.57.0/src/libslic3r/PrintBase.hpp
+--- SuperSlicer-2.3.57.0.old/src/libslic3r/PrintBase.hpp	2021-09-06 19:21:41.000000000 +0300
++++ SuperSlicer-2.3.57.0/src/libslic3r/PrintBase.hpp	2021-10-01 14:02:30.904804944 +0300
+@@ -6,6 +6,7 @@
+ #include <vector>
+ #include <string>
+ #include <functional>
++#include <regex>
+ 
+ // tbb/mutex.h includes Windows, which in turn defines min/max macros. Convince Windows.h to not define these min/max macros.
+ #ifndef NOMINMAX
+diff -ru SuperSlicer-2.3.57.0.old/src/libslic3r/PrintObject.cpp SuperSlicer-2.3.57.0/src/libslic3r/PrintObject.cpp
+--- SuperSlicer-2.3.57.0.old/src/libslic3r/PrintObject.cpp	2021-09-06 19:21:41.000000000 +0300
++++ SuperSlicer-2.3.57.0/src/libslic3r/PrintObject.cpp	2021-10-01 13:56:56.060120637 +0300
+@@ -17,6 +17,7 @@
+ #include <utility>
+ #include <boost/log/trivial.hpp>
+ #include <float.h>
++#include <chrono>
+ 
+ #include <tbb/parallel_for.h>
+ #include <tbb/atomic.h>
+diff -ru SuperSlicer-2.3.57.0.old/src/slic3r/GUI/CalibrationAbstractDialog.hpp SuperSlicer-2.3.57.0/src/slic3r/GUI/CalibrationAbstractDialog.hpp
+--- SuperSlicer-2.3.57.0.old/src/slic3r/GUI/CalibrationAbstractDialog.hpp	2021-09-06 19:21:41.000000000 +0300
++++ SuperSlicer-2.3.57.0/src/slic3r/GUI/CalibrationAbstractDialog.hpp	2021-10-01 14:36:30.696942296 +0300
+@@ -4,6 +4,7 @@
+ #include <wx/wx.h>
+ #include <map>
+ #include <vector>
++#include <boost/filesystem/operations.hpp>
+ 
+ #include "Jobs/ProgressIndicator.hpp"
+ #include "GUI_App.hpp"
+diff -ru SuperSlicer-2.3.57.0.old/src/slic3r/GUI/Preferences.hpp SuperSlicer-2.3.57.0/src/slic3r/GUI/Preferences.hpp
+--- SuperSlicer-2.3.57.0.old/src/slic3r/GUI/Preferences.hpp	2021-09-06 19:21:41.000000000 +0300
++++ SuperSlicer-2.3.57.0/src/slic3r/GUI/Preferences.hpp	2021-10-01 18:08:04.118753272 +0300
+@@ -6,6 +6,7 @@
+ 
+ #include <wx/dialog.h>
+ #include <map>
++#include <boost/filesystem/directory.hpp>
+ 
+ class wxRadioBox;
+ 
