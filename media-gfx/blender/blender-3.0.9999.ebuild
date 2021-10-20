@@ -39,7 +39,7 @@ LICENSE="|| ( GPL-3 BL )"
 IUSE="+bullet +dds +fluid +openexr +system-python +system-numpy +tbb \
 	alembic collada +color-management +cycles +optix cuda opencl osl \
 	debug doc +embree +ffmpeg +fftw +gmp headless jack jemalloc jpeg2k \
-	man ndof nls openal +oidn +openimageio +openmp +opensubdiv \
+	man ndof nls openal +oidn +openimageio +openmp +opensubdiv +thumbnailer \
 	+openvdb +pdf +potrace +pugixml pulseaudio sdl +sndfile standalone test +tiff valgrind"
 RESTRICT="!test? ( test )"
 
@@ -196,7 +196,6 @@ src_prepare() {
 	sed -e "s|blender.svg|blender-${BV}.svg|" -i source/creator/CMakeLists.txt || die
 	sed -e "s|blender-symbolic.svg|blender-${BV}-symbolic.svg|" -i source/creator/CMakeLists.txt || die
 	sed -e "s|blender.desktop|blender-${BV}.desktop|" -i source/creator/CMakeLists.txt || die
-	#sed -e "s|blender-thumbnailer.py|blender-${BV}-thumbnailer.py|" -i source/creator/CMakeLists.txt || die
 
 	sed -e "s|Name=Blender|Name=Blender ${PV}|" -i release/freedesktop/blender.desktop || die
 	sed -e "s|Exec=blender|Exec=blender-${BV}|" -i release/freedesktop/blender.desktop || die
@@ -205,7 +204,6 @@ src_prepare() {
 	mv release/freedesktop/icons/scalable/apps/blender.svg release/freedesktop/icons/scalable/apps/blender-${BV}.svg || die
 	mv release/freedesktop/icons/symbolic/apps/blender-symbolic.svg release/freedesktop/icons/symbolic/apps/blender-${BV}-symbolic.svg || die
 	mv release/freedesktop/blender.desktop release/freedesktop/blender-${BV}.desktop || die
-	#mv release/bin/blender-thumbnailer.py release/bin/blender-${BV}-thumbnailer.py || die
 
 	if use test; then
 		# Without this the tests will try to use /usr/bin/blender and /usr/share/blender/ to run the tests.
@@ -277,6 +275,7 @@ src_configure() {
 		-DWITH_TBB=$(usex tbb)
 		-DWITH_USD=OFF
 		-DWITH_XR_OPENXR=OFF
+		-DWITH_BLENDER_THUMBNAILER=$(usex thumbnailer)
 	)
 
 	if use optix; then
@@ -369,7 +368,6 @@ src_install() {
 	dodoc "${CMAKE_USE_DIR}"/release/text/readme.html
 	rm -r "${ED}"/usr/share/doc/blender || die
 
-	#python_fix_shebang "${ED}/usr/bin/blender-${BV}-thumbnailer.py"
 	python_optimize "${ED}/usr/share/blender/${BV}/scripts"
 
 	mv "${ED}/usr/bin/blender" "${ED}/usr/bin/blender-${BV}" || die
