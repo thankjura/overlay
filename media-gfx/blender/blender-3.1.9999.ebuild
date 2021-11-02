@@ -96,7 +96,10 @@ RDEPEND="${PYTHON_DEPS}
 	openal? ( media-libs/openal )
 	opencl? ( virtual/opencl )
 	oidn? ( >=media-libs/oidn-1.3.0 )
-	openimageio? ( >=media-libs/openimageio-2.2.13.1:= )
+	openimageio? (
+		>=media-libs/openimageio-2.2.13.1:=
+		<media-libs/openimageio-2.3
+	)
 	openexr? (
 		media-libs/ilmbase:=
 		media-libs/openexr:=
@@ -104,6 +107,7 @@ RDEPEND="${PYTHON_DEPS}
 	opensubdiv? ( >=media-libs/opensubdiv-3.4.0[cuda=,opencl=] )
 	openvdb? (
 		>=media-gfx/openvdb-7.1.0
+		<media-gfx/openvdb-9
 		dev-libs/c-blosc:=
 	)
 	optix? (
@@ -150,14 +154,15 @@ blender_check_requirements() {
 
 blender_get_version() {
 	# Get blender version from blender itself.
-	BV=$(grep "BLENDER_VERSION " source/blender/blenkernel/BKE_blender_version.h | cut -d " " -f 3; assert)
-	if ((${BV:0:1} < 3)) ; then
+	#BV=$(grep "BLENDER_VERSION " source/blender/blenkernel/BKE_blender_version.h | cut -d " " -f 3; assert)
+	#if ((${BV:0:1} < 3)) ; then
 		# Add period (290 -> 2.90).
-		BV=${BV:0:1}.${BV:1}
-	else
+	#	BV=${BV:0:1}.${BV:1}
+	#else
 		# Add period and strip last number (300 -> 3.0)
-		BV=${BV:0:1}.${BV:1:1}
-	fi
+	#	BV=${BV:0:1}.${BV:1:1}
+	#fi
+	BV=${SLOT}
 }
 
 pkg_pretend() {
@@ -276,6 +281,7 @@ src_configure() {
 		-DWITH_USD=OFF
 		-DWITH_XR_OPENXR=OFF
 		-DWITH_BLENDER_THUMBNAILER=$(usex thumbnailer)
+		-DCMAKE_CXX_STANDARD=17
 	)
 
 	if use optix; then
