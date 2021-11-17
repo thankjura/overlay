@@ -8,7 +8,7 @@ inherit chromium-2 unpacker pax-utils xdg-utils desktop wrapper
 RESTRICT="bindist strip"
 
 MY_PV="${PV/_p/-}"
-CHROMIUM_PV="92.0.4515.159"
+CHROMIUM_PV="95.0.4638.69"
 
 DESCRIPTION="The web browser from Yandex"
 HOMEPAGE="https://browser.yandex.ru/beta/"
