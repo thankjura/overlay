@@ -12,7 +12,7 @@ MY_PN="idea"
 # As the exact bundled versions ( jre 11 build 159.30 and jre 8 build 1483.39 ) aren't
 # available separately
 JRE11_BASE="11_0_12"
-JRE11_VER="1504.27"
+JRE11_VER="1649.1"
 
 # distinguish settings for official stable releases and EAP-version releases
 if [[ "$(ver_cut 7)"x = "prex" ]]
