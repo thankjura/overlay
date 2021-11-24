@@ -107,7 +107,6 @@ RDEPEND="${PYTHON_DEPS}
 	opensubdiv? ( >=media-libs/opensubdiv-3.4.0[cuda=,opencl=] )
 	openvdb? (
 		>=media-gfx/openvdb-7.1.0
-		<media-gfx/openvdb-9
 		dev-libs/c-blosc:=
 	)
 	optix? (
@@ -120,7 +119,7 @@ RDEPEND="${PYTHON_DEPS}
 	pulseaudio? ( media-sound/pulseaudio )
 	sdl? ( media-libs/libsdl2[sound,joystick] )
 	sndfile? ( media-libs/libsndfile )
-	tbb? ( dev-cpp/tbb )
+	tbb? ( <dev-cpp/tbb-2021.4.0:= )
 	test? ( dev-vcs/subversion )
 	tiff? ( media-libs/tiff )
 	valgrind? ( dev-util/valgrind )
@@ -376,7 +375,7 @@ src_install() {
 
 	python_optimize "${ED}/usr/share/blender/${BV}/scripts"
 
-	mv "${ED}/usr/bin/blender" "${ED}/usr/bin/blender-${BV}" || die
+	# mv "${ED}/usr/bin/blender" "${ED}/usr/bin/blender-${BV}" || die
 }
 
 pkg_postinst() {
