@@ -1,0 +1,15 @@
+diff -ru PrusaSlicer-version_2.4.0-beta2.old/src/libslic3r/CMakeLists.txt PrusaSlicer-version_2.4.0-beta2/src/libslic3r/CMakeLists.txt
+--- PrusaSlicer-version_2.4.0-beta2.old/src/libslic3r/CMakeLists.txt	2021-11-28 00:38:05.033350999 +0300
++++ PrusaSlicer-version_2.4.0-beta2/src/libslic3r/CMakeLists.txt	2021-11-28 01:06:30.183528745 +0300
+@@ -288,7 +288,10 @@
+ 
+ cmake_policy(PUSH)
+ cmake_policy(SET CMP0011 NEW)
+-find_package(CGAL 4.13 REQUIRED)
++find_package(CGAL 5.0)
++if ( NOT ${CGAL_FOUND} )
++    find_package(CGAL 4.13 REQUIRED)
++endif ()
+ cmake_policy(POP)
+ 
+ add_library(libslic3r_cgal STATIC MeshBoolean.cpp MeshBoolean.hpp  TryCatchSignal.hpp

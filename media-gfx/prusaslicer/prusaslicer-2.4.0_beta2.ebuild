@@ -54,6 +54,11 @@ DEPEND="${RDEPEND}
 	media-libs/qhull[static-libs]
 "
 
+PATCHES="
+	$FILESDIR/fix_cgal_deps.patch
+	$FILESDIR/fix_includes.patch
+"
+
 S="${WORKDIR}/${MY_PN}-version_${MY_PV}"
 
 src_configure() {
