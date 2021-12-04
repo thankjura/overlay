@@ -6,7 +6,7 @@ EAPI=6
 inherit udev desktop xdg-utils preserve-libs
 
 MY_PV=${PV/_beta/b}
-MK_RESOLVE_DEB_VERSION="1.4.6"
+MK_RESOLVE_DEB_VERSION="1.5.1"
 DESCRIPTION="Professional A/V post-production software suite"
 HOMEPAGE="https://www.blackmagicdesign.com/products/davinciresolve/"
 PKG_NAME="DaVinci_Resolve_${MY_PV}_Linux"
