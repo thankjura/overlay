@@ -54,8 +54,8 @@ DEPEND="${RDEPEND}
 	media-libs/qhull[static-libs]
 "
 
+#	$FILESDIR/fix_cgal_deps.patch
 PATCHES="
-	$FILESDIR/fix_cgal_deps.patch
 	$FILESDIR/fix_includes.patch
 "
 
