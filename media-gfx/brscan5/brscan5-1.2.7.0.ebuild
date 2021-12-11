@@ -36,9 +36,9 @@ src_install() {
 		dosym $l.so.1.0.0 /usr/${lib}/$l.so
 	done
 
-	dolib.so libLxBsScanCoreApi.so.3.0.0
-	dosym libLxBsScanCoreApi.so.3.0.0 /usr/${lib}/libLxBsScanCoreApi.so.3
-	dosym libLxBsScanCoreApi.so.3.0.0 /usr/${lib}/libLxBsScanCoreApi.so
+	dolib.so libLxBsScanCoreApi.so.3.2.0
+	dosym libLxBsScanCoreApi.so.3.2.0 /usr/${lib}/libLxBsScanCoreApi.so.3
+	dosym libLxBsScanCoreApi.so.3.2.0 /usr/${lib}/libLxBsScanCoreApi.so
 
 	insinto /usr/${lib}/sane
 	doins libsane-brother5.so.1.0.7
