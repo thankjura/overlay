@@ -103,6 +103,7 @@ RDEPEND="${PYTHON_DEPS}
 	opensubdiv? ( >=media-libs/opensubdiv-3.4.0[cuda=] )
 	openvdb? (
 		>=media-gfx/openvdb-7.1.0
+		<media-gfx/openvdb-9
 		dev-libs/c-blosc:=
 	)
 	optix? (
@@ -136,10 +137,6 @@ BDEPEND="
 		dev-texlive/texlive-latexextra
 	)
 	nls? ( sys-devel/gettext )
-"
-
-PATCHES="
-	${FILESDIR}/blender-3.1-intern-ghost-fix-typo-in-finding-XF86VMODE.patch
 "
 
 blender_check_requirements() {
