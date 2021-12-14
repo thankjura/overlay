@@ -56,8 +56,6 @@ DEPEND="${RDEPEND}
 
 PATCHES="
 	$FILESDIR/fix_includes.patch
-	$FILESDIR/fix_find_tbb.patch
-	$FILESDIR/fix_tbb.patch
 "
 
 S="${WORKDIR}/${MY_PN}-version_${MY_PV}"
