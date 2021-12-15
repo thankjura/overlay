@@ -116,7 +116,7 @@ RDEPEND="${PYTHON_DEPS}
 	pulseaudio? ( media-sound/pulseaudio )
 	sdl? ( media-libs/libsdl2[sound,joystick] )
 	sndfile? ( media-libs/libsndfile )
-	tbb? ( <dev-cpp/tbb-2021.4.0:= )
+	tbb? ( dev-cpp/tbb )
 	tiff? ( media-libs/tiff )
 	valgrind? ( dev-util/valgrind )
 "
@@ -196,17 +196,17 @@ src_prepare() {
 		-i doc/doxygen/Doxyfile || die
 
 	# Prepare icons and .desktop files for slotting.
-	sed -e "s|blender.svg|blender-${BV}.svg|" -i source/creator/CMakeLists.txt || die
-	sed -e "s|blender-symbolic.svg|blender-${BV}-symbolic.svg|" -i source/creator/CMakeLists.txt || die
-	sed -e "s|blender.desktop|blender-${BV}.desktop|" -i source/creator/CMakeLists.txt || die
+	#sed -e "s|blender.svg|blender-${BV}.svg|" -i source/creator/CMakeLists.txt || die
+	#sed -e "s|blender-symbolic.svg|blender-${BV}-symbolic.svg|" -i source/creator/CMakeLists.txt || die
+	#sed -e "s|blender.desktop|blender-${BV}.desktop|" -i source/creator/CMakeLists.txt || die
 
-	sed -e "s|Name=Blender|Name=Blender ${PV}|" -i release/freedesktop/blender.desktop || die
-	sed -e "s|Exec=blender|Exec=blender-${BV}|" -i release/freedesktop/blender.desktop || die
-	sed -e "s|Icon=blender|Icon=blender-${BV}|" -i release/freedesktop/blender.desktop || die
+	#sed -e "s|Name=Blender|Name=Blender ${PV}|" -i release/freedesktop/blender.desktop || die
+	#sed -e "s|Exec=blender|Exec=blender-${BV}|" -i release/freedesktop/blender.desktop || die
+	#sed -e "s|Icon=blender|Icon=blender-${BV}|" -i release/freedesktop/blender.desktop || die
 
-	mv release/freedesktop/icons/scalable/apps/blender.svg release/freedesktop/icons/scalable/apps/blender-${BV}.svg || die
-	mv release/freedesktop/icons/symbolic/apps/blender-symbolic.svg release/freedesktop/icons/symbolic/apps/blender-${BV}-symbolic.svg || die
-	mv release/freedesktop/blender.desktop release/freedesktop/blender-${BV}.desktop || die
+	#mv release/freedesktop/icons/scalable/apps/blender.svg release/freedesktop/icons/scalable/apps/blender-${BV}.svg || die
+	#mv release/freedesktop/icons/symbolic/apps/blender-symbolic.svg release/freedesktop/icons/symbolic/apps/blender-${BV}-symbolic.svg || die
+	#mv release/freedesktop/blender.desktop release/freedesktop/blender-${BV}.desktop || die
 
 	if use test; then
 		# Without this the tests will try to use /usr/bin/blender and /usr/share/blender/ to run the tests.
@@ -305,29 +305,6 @@ src_configure() {
 
 	cmake_src_configure
 }
-
-#src_compile() {
-#	cmake_src_compile
-#
-#	if use doc; then
-#		# Workaround for binary drivers.
-#		addpredict /dev/ati
-#		addpredict /dev/dri
-#		addpredict /dev/nvidiactl
-#
-#		einfo "Generating Blender C/C++ API docs ..."
-#		cd "${CMAKE_USE_DIR}"/doc/doxygen || die
-#		doxygen -u Doxyfile || die
-#		doxygen || die "doxygen failed to build API docs."
-#
-#		cd "${CMAKE_USE_DIR}" || die
-#		einfo "Generating (BPY) Blender Python API docs ..."
-#		"${BUILD_DIR}"/bin/blender --background --python doc/python_api/sphinx_doc_gen.py -noaudio || die "sphinx failed."
-#
-#		cd "${CMAKE_USE_DIR}"/doc/python_api || die
-#		sphinx-build sphinx-in BPY_API || die "sphinx failed."
-#	fi
-#}
 
 src_test() {
 	# A lot of tests needs to have access to the installed data files.

@@ -56,6 +56,7 @@ DEPEND="${RDEPEND}
 
 PATCHES="
 	$FILESDIR/fix_includes.patch
+	$FILESDIR/fix_fonts.patch
 "
 
 S="${WORKDIR}/${MY_PN}-version_${MY_PV}"

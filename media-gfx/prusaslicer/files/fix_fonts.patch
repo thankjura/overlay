@@ -1,0 +1,43 @@
+From 14cb4a131462fe38ba0d3b4f4d8912816daca8b0 Mon Sep 17 00:00:00 2001
+From: YuSanka <yusanka@gmail.com>
+Date: Wed, 15 Dec 2021 09:50:19 +0100
+Subject: [PATCH] Initialize fonts before first UI action
+
+---
+ src/slic3r/GUI/GUI_App.cpp | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/slic3r/GUI/GUI_App.cpp b/src/slic3r/GUI/GUI_App.cpp
+index 33efbb991b..54807b35d5 100644
+--- a/src/slic3r/GUI/GUI_App.cpp
++++ b/src/slic3r/GUI/GUI_App.cpp
+@@ -1106,13 +1106,17 @@ bool GUI_App::on_init_inner()
+         }
+     }
+ 
+-    // Set language and color mode before check_older_app_config() call
++    // !!! Initialization of UI settings as a language, application color mode, fonts... have to be done before first UI action.
++    // Like here, before the show InfoDialog in check_older_app_config()
+ 
+     // If load_language() fails, the application closes.
+     load_language(wxString(), true);
+ #ifdef _MSW_DARK_MODE
+     NppDarkMode::InitDarkMode(app_config->get("dark_color_mode") == "1", app_config->get("sys_menu_enabled") == "1");
+ #endif
++    // initialize label colors and fonts
++    init_label_colours();
++    init_fonts();
+ 
+     if (m_last_config_version) {
+         if (*m_last_config_version < *Semver::parse(SLIC3R_VERSION))
+@@ -1204,10 +1208,6 @@ bool GUI_App::on_init_inner()
+ #endif // __WXMSW__
+     }
+ 
+-    // initialize label colors and fonts
+-    init_label_colours();
+-    init_fonts();
+-
+     // Suppress the '- default -' presets.
+     preset_bundle->set_default_suppressed(app_config->get("no_defaults") == "1");
+     try {
