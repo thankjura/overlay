@@ -8,7 +8,7 @@ inherit chromium-2 unpacker pax-utils xdg-utils desktop wrapper
 RESTRICT="bindist strip"
 
 MY_PV="${PV/_p/-}"
-CHROMIUM_PV="95.0.4638.69"
+CHROMIUM_PV="97.0.4692.71"
 
 DESCRIPTION="The web browser from Yandex"
 HOMEPAGE="https://browser.yandex.ru/beta/"
@@ -125,8 +125,10 @@ src_install() {
 
 pkg_postinst() {
 	xdg_desktop_database_update
+	xdg_icon_cache_update
 }
 
 pkg_postrm() {
 	xdg_desktop_database_update
+	xdg_icon_cache_update
 }
