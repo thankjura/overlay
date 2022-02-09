@@ -23,7 +23,7 @@ DEPEND="${PYTHON_DEPS}
 	>=dev-libs/gobject-introspection-1.54:=
 	>=x11-libs/gtk+-3.24.7:3[introspection]
 	$(python_gen_cond_dep '
-		>=dev-python/pygobject-3.29.1:3[${PYTHON_MULTI_USEDEP}]
+		>=dev-python/pygobject-3.29.1:3[${PYTHON_USEDEP}]
 	')
 "
 
