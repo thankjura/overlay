@@ -5,33 +5,24 @@ EAPI=7
 
 PYTHON_COMPAT=( python3_{9,10} )
 
-inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils
+inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils git-r3
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="https://www.blender.org"
+EGIT_REPO_URI="https://git.blender.org/blender.git"
+EGIT_COMMIT="d3b1cce4000b4b530d3ac8e2aa6b86b79b94cca0"
+EGIT_BRANCH="master"
+#EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
+#EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
 
-if [[ ${PV} = *9999* ]] ; then
-	inherit git-r3
-	EGIT_REPO_URI="https://git.blender.org/blender.git"
-	
-	EGIT_BRANCH="master"
-	
-	EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
-	EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
+#EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS_CONTRIB="master"
+#EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS_CONTRIB="master"
 
-	EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS_CONTRIB="master"
-	EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS_CONTRIB="master"
+#EGIT_OVERRIDE_BRANCH_BLENDER_TRANSLATIONS="master"
+#EGIT_OVERRIDE_COMMIT_BLENDER_TRANSLATIONS="master"
 
-	EGIT_OVERRIDE_BRANCH_BLENDER_TRANSLATIONS="master"
-	EGIT_OVERRIDE_COMMIT_BLENDER_TRANSLATIONS="master"
-
-	EGIT_OVERRIDE_BRANCH_BLENDER_DEV_TOOLS="master"
-	EGIT_OVERRIDE_COMMIT_BLENDER_DEV_TOOLS="master"
-else
-	SRC_URI="https://download.blender.org/source/${P}.tar.xz"
-	TEST_TARBALL_VERSION=2.93.0
-	SRC_URI+=" test? ( https://dev.gentoo.org/~sam/distfiles/${CATEGORY}/${PN}/${PN}-${TEST_TARBALL_VERSION}-tests.tar.bz2 )"
-fi
+#EGIT_OVERRIDE_BRANCH_BLENDER_DEV_TOOLS="master"
+#EGIT_OVERRIDE_COMMIT_BLENDER_DEV_TOOLS="master"
 
 KEYWORDS="~amd64"
 SLOT="${PV%.*}"
@@ -97,13 +88,11 @@ RDEPEND="${PYTHON_DEPS}
 	oidn? ( >=media-libs/oidn-1.4.1 )
 	openimageio? ( >=media-libs/openimageio-2.2.13.1:= )
 	openexr? (
-		media-libs/ilmbase:=
 		media-libs/openexr:=
 	)
 	opensubdiv? ( >=media-libs/opensubdiv-3.4.0[cuda=] )
 	openvdb? (
 		>=media-gfx/openvdb-7.1.0
-		<media-gfx/openvdb-9
 		dev-libs/c-blosc:=
 	)
 	optix? (
@@ -139,6 +128,11 @@ BDEPEND="
 	nls? ( sys-devel/gettext )
 "
 
+PATCHES="
+	${FILESDIR}/blender-3.2.0-openexr.patch
+	${FILESDIR}/blender-3.2.0-openimageio-2.3.patch
+"
+
 blender_check_requirements() {
 	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
 
@@ -169,19 +163,10 @@ pkg_setup() {
 }
 
 src_unpack() {
-	if [[ ${PV} = *9999* ]] ; then
-		git-r3_src_unpack
-		if use test; then
-			TESTS_SVN_URL=https://svn.blender.org/svnroot/bf-blender/trunk/lib/tests
-			subversion_fetch ${TESTS_SVN_URL} ../lib/tests
-		fi
-	else
-		default
-		if use test; then
-			#The tests are downloaded from: https://svn.blender.org/svnroot/bf-blender/tags/blender-${SLOT}-release/lib/tests
-			mkdir -p lib || die
-			mv "${WORKDIR}"/blender-${TEST_TARBALL_VERSION}-tests/tests lib || die
-		fi
+	git-r3_src_unpack
+	if use test; then
+		TESTS_SVN_URL=https://svn.blender.org/svnroot/bf-blender/trunk/lib/tests
+		subversion_fetch ${TESTS_SVN_URL} ../lib/tests
 	fi
 }
 
@@ -244,6 +229,7 @@ src_configure() {
 		-DWITH_HEADLESS=$(usex headless)
 		-DWITH_INSTALL_PORTABLE=OFF
 		-DWITH_IMAGE_DDS=$(usex dds)
+		-DOPENEXR_ROOT_DIR="${ESYSROOT}/usr/$(get_libdir)/OpenEXR-3"
 		-DWITH_IMAGE_OPENEXR=$(usex openexr)
 		-DWITH_IMAGE_OPENJPEG=$(usex jpeg2k)
 		-DWITH_IMAGE_TIFF=$(usex tiff)
