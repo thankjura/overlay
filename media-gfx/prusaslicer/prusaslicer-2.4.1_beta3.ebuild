@@ -25,7 +25,7 @@ RDEPEND="
 	dev-cpp/eigen:3
 	>=dev-cpp/tbb-2021.4.0:=
 	>=dev-libs/boost-1.73.0:=[nls,threads(+)]
-	<dev-libs/cereal-1.3.1
+	dev-libs/cereal
 	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/gmp:=
@@ -49,6 +49,8 @@ RDEPEND="
 DEPEND="${RDEPEND}
 	media-libs/qhull[static-libs]
 "
+
+PATCHES="${FILESDIR}/2.4.0-fix-build-with-cereal-1.3.1.patch"
 
 S="${WORKDIR}/${MY_PN}-version_${MY_PV}"
 
