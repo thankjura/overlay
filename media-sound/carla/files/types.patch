@@ -1,0 +1,13 @@
+diff --git a/source/modules/water/text/CharacterFunctions.h b/source/modules/water/text/CharacterFunctions.h
+index d9dfe8a..64d3824 100644
+--- a/source/modules/water/text/CharacterFunctions.h
++++ b/source/modules/water/text/CharacterFunctions.h
+@@ -30,6 +30,7 @@
+ 
+ #include <algorithm>
+ #include <limits>
++#include <sys/types.h>
+ 
+ namespace water {
+ 
+
