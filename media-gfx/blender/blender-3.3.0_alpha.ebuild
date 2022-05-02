@@ -10,7 +10,7 @@ inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="https://www.blender.org"
 EGIT_REPO_URI="https://git.blender.org/blender.git"
-EGIT_COMMIT="d3b1cce4000b4b530d3ac8e2aa6b86b79b94cca0"
+EGIT_COMMIT="b1e0be0d2553742fcceda9cfe29ebb70f26b06a1"
 EGIT_BRANCH="master"
 #EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
 #EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
@@ -126,11 +126,6 @@ BDEPEND="
 		dev-texlive/texlive-latexextra
 	)
 	nls? ( sys-devel/gettext )
-"
-
-PATCHES="
-	${FILESDIR}/blender-3.2.0-openexr.patch
-	${FILESDIR}/blender-3.2.0-openimageio-2.3.patch
 "
 
 blender_check_requirements() {
