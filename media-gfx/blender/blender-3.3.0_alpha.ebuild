@@ -28,7 +28,7 @@ KEYWORDS="~amd64"
 SLOT="${PV%.*}"
 LICENSE="|| ( GPL-3 BL )"
 IUSE="+bullet +dds +fluid +openexr +system-python +system-numpy +tbb \
-	alembic collada +color-management cuda +cycles +optix \
+	alembic collada +color-management cuda +cycles +optix openxr \
 	debug doc +embree +ffmpeg +fftw +gmp headless jack jemalloc jpeg2k \
 	man ndof nls openal +oidn +openimageio +openmp +opensubdiv \
 	+openvdb +osl +pdf +potrace +pugixml pulseaudio sdl +sndfile standalone test +tiff valgrind"
@@ -108,6 +108,7 @@ RDEPEND="${PYTHON_DEPS}
 	tbb? ( dev-cpp/tbb )
 	tiff? ( media-libs/tiff )
 	valgrind? ( dev-util/valgrind )
+	openxr? ( media-libs/openxr-loader )
 "
 
 DEPEND="${RDEPEND}
@@ -127,6 +128,10 @@ BDEPEND="
 	)
 	nls? ( sys-devel/gettext )
 "
+
+PATCHES=(
+	"${FILESDIR}/D13576-fix-openxr.diff"
+)
 
 blender_check_requirements() {
 	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
@@ -257,7 +262,7 @@ src_configure() {
 		-DWITH_SYSTEM_LZO=ON
 		-DWITH_TBB=$(usex tbb)
 		-DWITH_USD=OFF
-		-DWITH_XR_OPENXR=OFF
+		-DWITH_XR_OPENXR=$(usex openxr)
 	)
 
 	append-flags $(usex debug '-DDEBUG' '-DNDEBUG')

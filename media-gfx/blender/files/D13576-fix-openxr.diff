@@ -1,0 +1,187 @@
+diff --git a/intern/ghost/intern/GHOST_IXrGraphicsBinding.h b/intern/ghost/intern/GHOST_IXrGraphicsBinding.h
+--- a/intern/ghost/intern/GHOST_IXrGraphicsBinding.h
++++ b/intern/ghost/intern/GHOST_IXrGraphicsBinding.h
+@@ -68,6 +68,19 @@
+                                       const GHOST_XrDrawViewInfo &draw_info) = 0;
+   virtual bool needsUpsideDownDrawing(GHOST_Context &ghost_ctx) const = 0;
+ 
++  /**
++   * SteamVR workaround, see #USE_STEAMVR_GLX_CONTEXT_RESTORE_HACK.
++   */
++  virtual void storeCurrentContextHack()
++  {
++  }
++  /**
++   * SteamVR workaround, see #USE_STEAMVR_GLX_CONTEXT_RESTORE_HACK.
++   */
++  virtual void restoreContextHack()
++  {
++  }
++
+  protected:
+   /* Use GHOST_XrGraphicsBindingCreateFromType! */
+   GHOST_IXrGraphicsBinding() = default;
+diff --git a/intern/ghost/intern/GHOST_XrGraphicsBinding.cpp b/intern/ghost/intern/GHOST_XrGraphicsBinding.cpp
+--- a/intern/ghost/intern/GHOST_XrGraphicsBinding.cpp
++++ b/intern/ghost/intern/GHOST_XrGraphicsBinding.cpp
+@@ -20,6 +20,7 @@
+ 
+ #include <algorithm>
+ #include <list>
++#include <optional>
+ #include <sstream>
+ 
+ #if defined(WITH_GL_EGL)
+@@ -43,6 +44,19 @@
+ 
+ #include "GHOST_IXrGraphicsBinding.h"
+ 
++/**
++ * SteamVR changes with the active GLX context in OpenXR calls. This enables a workaround that
++ * restores the context after the OpenXR calls doing this. See:
++ * - T92723
++ * - https://github.com/ValveSoftware/SteamVR-for-Linux/issues/421
++ * - https://github.com/ChristophHaag/gl_context_fix_layer
++ *
++ * TODO only use for SteamVR, not other runtimes.
++ */
++#if defined(WITH_GHOST_X11) && !defined(WITH_GL_EGL)
++#  define USE_STEAMVR_GLX_CONTEXT_RESTORE_HACK
++#endif
++
+ static std::optional<int64_t> choose_swapchain_format_from_candidates(
+     const std::vector<int64_t> &gpu_binding_formats, const std::vector<int64_t> &runtime_formats)
+ {
+@@ -248,9 +262,39 @@
+     return ghost_ctx.isUpsideDown();
+   }
+ 
++#ifdef USE_STEAMVR_GLX_CONTEXT_RESTORE_HACK
++  virtual void storeCurrentContextHack() override
++  {
++    m_glx_context_store = {
++        glXGetCurrentDisplay(),
++        glXGetCurrentDrawable(),
++        glXGetCurrentContext(),
++    };
++  }
++
++  virtual void restoreContextHack() override
++  {
++    if (m_glx_context_store) {
++      glXMakeCurrent(m_glx_context_store->display,
++                     m_glx_context_store->drawable,
++                     m_glx_context_store->context);
++    }
++    m_glx_context_store = std::nullopt;
++  }
++#endif
++
+  private:
+   std::list<std::vector<XrSwapchainImageOpenGLKHR>> m_image_cache;
+   GLuint m_fbo = 0;
++
++#ifdef USE_STEAMVR_GLX_CONTEXT_RESTORE_HACK
++  struct glxContextStore {
++    Display *display;
++    GLXDrawable drawable;
++    GLXContext context;
++  };
++  std::optional<glxContextStore> m_glx_context_store{};
++#endif
+ };
+ 
+ #ifdef WIN32
+diff --git a/intern/ghost/intern/GHOST_XrSession.cpp b/intern/ghost/intern/GHOST_XrSession.cpp
+--- a/intern/ghost/intern/GHOST_XrSession.cpp
++++ b/intern/ghost/intern/GHOST_XrSession.cpp
+@@ -252,11 +252,13 @@
+   create_info.systemId = m_oxr->system_id;
+   create_info.next = &m_gpu_binding->oxr_binding;
+ 
++  m_gpu_binding->storeCurrentContextHack();
+   CHECK_XR(xrCreateSession(m_context->getInstance(), &create_info, &m_oxr->session),
+            "Failed to create VR session. The OpenXR runtime may have additional requirements for "
+            "the graphics driver that are not met. Other causes are possible too however.\nTip: "
+            "The --debug-xr command line option for Blender might allow the runtime to output "
+            "detailed error information to the command line.");
++  m_gpu_binding->restoreContextHack();
+ 
+   prepareDrawing();
+   create_reference_spaces(*m_oxr, begin_info->base_pose, m_context->isDebugMode());
+@@ -447,7 +449,9 @@
+   end_info.layerCount = layers.size();
+   end_info.layers = layers.data();
+ 
++  m_gpu_binding->storeCurrentContextHack();
+   CHECK_XR(xrEndFrame(m_oxr->session, &end_info), "Failed to submit rendered frame.");
++  m_gpu_binding->restoreContextHack();
+ 
+   if (m_context->isDebugTimeMode()) {
+     print_debug_timings(*m_draw_info);
+diff --git a/intern/ghost/intern/GHOST_XrSwapchain.h b/intern/ghost/intern/GHOST_XrSwapchain.h
+--- a/intern/ghost/intern/GHOST_XrSwapchain.h
++++ b/intern/ghost/intern/GHOST_XrSwapchain.h
+@@ -42,6 +42,7 @@
+ 
+  private:
+   std::unique_ptr<OpenXRSwapchainData> m_oxr; /* Could use stack, but PImpl is preferable. */
++  GHOST_IXrGraphicsBinding &m_gpu_binding;
+   int32_t m_image_width, m_image_height;
+   GHOST_TXrSwapchainFormat m_format;
+   bool m_is_srgb_buffer = false;
+diff --git a/intern/ghost/intern/GHOST_XrSwapchain.cpp b/intern/ghost/intern/GHOST_XrSwapchain.cpp
+--- a/intern/ghost/intern/GHOST_XrSwapchain.cpp
++++ b/intern/ghost/intern/GHOST_XrSwapchain.cpp
+@@ -54,7 +54,7 @@
+ GHOST_XrSwapchain::GHOST_XrSwapchain(GHOST_IXrGraphicsBinding &gpu_binding,
+                                      const XrSession &session,
+                                      const XrViewConfigurationView &view_config)
+-    : m_oxr(std::make_unique<OpenXRSwapchainData>())
++    : m_oxr(std::make_unique<OpenXRSwapchainData>()), m_gpu_binding(gpu_binding)
+ {
+   XrSwapchainCreateInfo create_info = {XR_TYPE_SWAPCHAIN_CREATE_INFO};
+   uint32_t format_count = 0;
+@@ -84,8 +84,10 @@
+   create_info.arraySize = 1;
+   create_info.mipCount = 1;
+ 
++  gpu_binding.storeCurrentContextHack();
+   CHECK_XR(xrCreateSwapchain(session, &create_info, &m_oxr->swapchain),
+            "Failed to create OpenXR swapchain.");
++  gpu_binding.restoreContextHack();
+ 
+   m_image_width = create_info.width;
+   m_image_height = create_info.height;
+@@ -95,6 +97,7 @@
+ 
+ GHOST_XrSwapchain::GHOST_XrSwapchain(GHOST_XrSwapchain &&other)
+     : m_oxr(std::move(other.m_oxr)),
++      m_gpu_binding(other.m_gpu_binding),
+       m_image_width(other.m_image_width),
+       m_image_height(other.m_image_height),
+       m_format(other.m_format),
+@@ -119,11 +122,13 @@
+   XrSwapchainImageWaitInfo wait_info = {XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO};
+   uint32_t image_idx;
+ 
++  m_gpu_binding.storeCurrentContextHack();
+   CHECK_XR(xrAcquireSwapchainImage(m_oxr->swapchain, &acquire_info, &image_idx),
+            "Failed to acquire swapchain image for the VR session.");
+   wait_info.timeout = XR_INFINITE_DURATION;
+   CHECK_XR(xrWaitSwapchainImage(m_oxr->swapchain, &wait_info),
+            "Failed to acquire swapchain image for the VR session.");
++  m_gpu_binding.restoreContextHack();
+ 
+   return m_oxr->swapchain_images[image_idx];
+ }
+@@ -149,6 +154,8 @@
+ {
+   XrSwapchainImageReleaseInfo release_info = {XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO};
+ 
++  m_gpu_binding.storeCurrentContextHack();
+   CHECK_XR(xrReleaseSwapchainImage(m_oxr->swapchain, &release_info),
+            "Failed to release swapchain image used to submit VR session frame.");
++  m_gpu_binding.restoreContextHack();
+ }
+
