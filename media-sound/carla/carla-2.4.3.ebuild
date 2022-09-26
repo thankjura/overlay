@@ -35,7 +35,8 @@ RDEPEND="
 			x11-libs/libXcursor
 			x11-libs/libXext
 		)
-		x11-base/xorg-server
+		x11-base/xorg-proto
+		x11-libs/libX11
 	)
 	alsa? ( media-libs/alsa-lib )
 	gtk2? ( x11-libs/gtk+:2 )
@@ -54,7 +55,7 @@ RDEPEND="
 "
 DEPEND="${RDEPEND}"
 
-PATCHES=( "${FILESDIR}/types.patch" )
+PATCHES=( "${FILESDIR}/clang-fno-gnu-unique.patch" )
 
 src_prepare() {
 	sed -i -e "3s|=.*|=${PYTHON}|; 4,7d" \

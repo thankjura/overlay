@@ -18,7 +18,7 @@ DEPEND="
 	app-text/a2ps
 	net-print/cups
 	scan? (
-		media-gfx/brscan5
+		media-gfx/brscan4
 	)
 "
 RDEPEND="${DEPEND}"

@@ -8,14 +8,14 @@ inherit chromium-2 unpacker pax-utils xdg-utils desktop wrapper
 RESTRICT="bindist strip"
 
 MY_PV="${PV/_p/-}"
-CHROMIUM_PV="97.0.4692.71"
+CHROMIUM_PV="103.0.5060.134"
 
 DESCRIPTION="The web browser from Yandex"
 HOMEPAGE="https://browser.yandex.ru/beta/"
 LICENSE="Yandex-EULA"
 SLOT="0"
 SRC_URI="
-	https://repo.yandex.ru/yandex-browser/deb/pool/main/y/yandex-browser-beta/yandex-browser-beta_${MY_PV}-1_amd64.deb -> ${P}.deb
+	https://repo.yandex.ru/yandex-browser/deb/pool/main/y/yandex-browser-beta/yandex-browser-stable_${MY_PV}-1_amd64.deb -> ${P}.deb
 	https://mirror.yandex.ru/ubuntu/pool/universe/c/chromium-browser/chromium-codecs-ffmpeg-extra_${CHROMIUM_PV}-0ubuntu0.18.04.1_amd64.deb
 "
 KEYWORDS="~amd64"
@@ -53,11 +53,12 @@ RDEPEND="
 "
 DEPEND="
 	>=dev-util/patchelf-0.9
+	!!www-client/yandex-browser-beta
 "
 
 QA_PREBUILT="*"
 S=${WORKDIR}
-YANDEX_HOME="opt/${PN/-//}"
+YANDEX_HOME="opt/yandex/browser"
 
 pkg_setup() {
 	chromium_suid_sandbox_check_kernel_config
@@ -76,6 +77,7 @@ src_prepare() {
 	rm -r etc || die
 
 	rm -r "${YANDEX_HOME}/cron" || die
+	rm -r usr/share/man/man1/yandex-browser.1.gz
 
 	gunzip usr/share/doc/${PN}/changelog.gz || die
 	gunzip usr/share/man/man1/${PN}.1.gz || die
@@ -92,7 +94,7 @@ src_prepare() {
 		-e 's|\[(NewWindow)|\[X-\1|g' \
 		-e 's|\[(NewIncognito)|\[X-\1|g' \
 		-e 's|^TargetEnvironment|X-&|g' \
-		-i usr/share/applications/${PN}.desktop || die
+		-i usr/share/applications/yandex-browser.desktop || die
 
 	patchelf --remove-rpath "${S}/${YANDEX_HOME}/yandex_browser-sandbox" || die "Failed to fix library rpath (yandex_browser-sandbox)"
 	patchelf --remove-rpath "${S}/${YANDEX_HOME}/yandex_browser" || die "Failed to fix library rpath (yandex_browser)"
@@ -105,7 +107,7 @@ src_install() {
 	mv usr/lib/chromium-browser/libffmpeg.so ${YANDEX_HOME}
 	mv * "${D}" || die
 	dodir "/usr/$(get_libdir)/${PN}/lib"
-	make_wrapper "${PN}" "./${PN}" "${EPREFIX}/${YANDEX_HOME}" "${EPREFIX}/usr/$(get_libdir)/${PN}/lib"
+	make_wrapper "${PN}" "./yandex-browser" "${EPREFIX}/${YANDEX_HOME}" "${EPREFIX}/usr/$(get_libdir)/${PN}/lib"
 
 	# yandex_browser binary loads libudev.so.0 at runtime
 	dosym "${EPREFIX}/usr/$(get_libdir)/libudev.so.0" "${EPREFIX}/usr/$(get_libdir)/${PN}/lib/libudev.so.0"

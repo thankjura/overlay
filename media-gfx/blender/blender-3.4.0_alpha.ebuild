@@ -10,7 +10,7 @@ inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="https://www.blender.org"
 EGIT_REPO_URI="https://git.blender.org/blender.git"
-EGIT_COMMIT="b1e0be0d2553742fcceda9cfe29ebb70f26b06a1"
+#EGIT_COMMIT="b1e0be0d2553742fcceda9cfe29ebb70f26b06a1"
 EGIT_BRANCH="master"
 #EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
 #EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
@@ -54,7 +54,7 @@ RDEPEND="${PYTHON_DEPS}
 		dev-python/requests[${PYTHON_USEDEP}]
 		dev-python/zstandard[${PYTHON_USEDEP}]
 	')
-	media-libs/freetype:=
+	media-libs/freetype:=[brotli]
 	media-libs/glew:*
 	media-libs/libpng:=
 	media-libs/libsamplerate

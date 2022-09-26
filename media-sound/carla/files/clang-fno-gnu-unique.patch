@@ -1,0 +1,16 @@
+diff --git a/source/Makefile.mk b/source/Makefile.mk
+index 9727b673c..8e49a0ffc 100644
+--- a/source/Makefile.mk
++++ b/source/Makefile.mk
+@@ -86,9 +86,11 @@ endif
+ 
+ ifneq ($(MACOS),true)
+ ifneq ($(WIN32),true)
++ifneq ($(CLANG),true)
+ BASE_FLAGS += -fno-gnu-unique
+ endif
+ endif
++endif
+ 
+ ifeq ($(WITH_LTO),true)
+ BASE_FLAGS += -fno-strict-aliasing -flto
