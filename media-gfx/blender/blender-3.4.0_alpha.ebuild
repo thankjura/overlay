@@ -3,7 +3,7 @@
 
 EAPI=7
 
-PYTHON_COMPAT=( python3_{9,10} )
+PYTHON_COMPAT=( python3_10 )
 
 inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils git-r3
 
@@ -52,7 +52,7 @@ RDEPEND="${PYTHON_DEPS}
 	$(python_gen_cond_dep '
 		dev-python/numpy[${PYTHON_USEDEP}]
 		dev-python/requests[${PYTHON_USEDEP}]
-		dev-python/zstandard[${PYTHON_USEDEP}]
+		dev-python/python-zstandard[${PYTHON_USEDEP}]
 	')
 	media-libs/freetype:=[brotli]
 	media-libs/glew:*
@@ -63,6 +63,7 @@ RDEPEND="${PYTHON_DEPS}
 	virtual/jpeg
 	virtual/libintl
 	virtual/opengl
+	gui-libs/libdecor
 	alembic? ( >=media-gfx/alembic-1.7.12[boost(+),hdf(+)] )
 	collada? ( >=media-libs/opencollada-1.6.68 )
 	color-management? ( >=media-libs/opencolorio-2.0.0 )
