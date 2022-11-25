@@ -8,15 +8,15 @@ inherit chromium-2 unpacker pax-utils xdg-utils desktop wrapper
 RESTRICT="bindist strip"
 
 MY_PV="${PV/_p/-}"
-CHROMIUM_PV="103.0.5060.134"
+CHROMIUM_PV="107.0.5304.87"
 
 DESCRIPTION="The web browser from Yandex"
 HOMEPAGE="https://browser.yandex.ru/beta/"
 LICENSE="Yandex-EULA"
 SLOT="0"
 SRC_URI="
-	https://repo.yandex.ru/yandex-browser/deb/pool/main/y/yandex-browser-beta/yandex-browser-stable_${MY_PV}-1_amd64.deb -> ${P}.deb
-	https://mirror.yandex.ru/ubuntu/pool/universe/c/chromium-browser/chromium-codecs-ffmpeg-extra_${CHROMIUM_PV}-0ubuntu0.18.04.1_amd64.deb
+	https://repo.yandex.ru/yandex-browser/deb/pool/main/y/yandex-browser-stable/yandex-browser-stable_${MY_PV}-1_amd64.deb -> ${P}.deb
+	https://mirror.yandex.ru/ubuntu/pool/universe/c/chromium-browser/chromium-codecs-ffmpeg-extra_${CHROMIUM_PV}-0ubuntu11.18.04.1_amd64.deb
 "
 KEYWORDS="~amd64"
 
