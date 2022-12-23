@@ -15,7 +15,7 @@ IUSE=""
 MAVEN_VERSION="3.5.4"
 
 DEPEND="
-	>=dev-java/oracle-jdk-bin-1.8
+	virtual/jdk:11
 "
 RDEPEND="${DEPEND}"
 
