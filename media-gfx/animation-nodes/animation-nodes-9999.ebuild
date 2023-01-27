@@ -6,6 +6,7 @@ EAPI=7
 DISTUTILS_SINGLE_IMPL=1
 DISTUTILS_USE_SETUPTOOLS=no
 PYTHON_COMPAT=( python3_{9..11} )
+BLENDER_VER="3.5"
 
 inherit distutils-r1 git-r3
 
@@ -24,11 +25,8 @@ DEPEND="
 		dev-python/numpy[${PYTHON_USEDEP}]
 	')
 "
-RDEPEND="${DEPEND}"
-BDEPEND=""
 
 src_install() {
-	BLENDER_VER=$(blender --version | grep -Po 'Blender \K[0-9]\...')
 	echo "{\"Copy Target\" : \"${D}/usr/share/blender/${BLENDER_VER}/scripts/addons\"}" > conf.json
 	mkdir -p ${D%/}/usr/share/blender/${BLENDER_VER}/scripts/addons
 	esetup.py build --copy --noversioncheck
