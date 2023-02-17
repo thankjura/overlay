@@ -7,19 +7,19 @@ PYTHON_COMPAT=( python3_{10,11} )
 
 inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils git-r3
 
-EGIT_REPO_URI="https://git.blender.org/blender.git"
+EGIT_REPO_URI="https://projects.blender.org/blender/blender.git"
 #EGIT_COMMIT="b1e0be0d2553742fcceda9cfe29ebb70f26b06a1"
-EGIT_BRANCH="master"
-#EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="master"
-#EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS="master"
+EGIT_BRANCH="blender-v3.5-release"
+EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="blender-v3.5-release"
+#GIT_OVERRIDE_COMMIT_BLENDER_ADDONS="blender-v3.5-release"
 
-#EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS_CONTRIB="master"
+EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS_CONTRIB="blender-v3.5-release"
 #EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS_CONTRIB="master"
 
-#EGIT_OVERRIDE_BRANCH_BLENDER_TRANSLATIONS="master"
+EGIT_OVERRIDE_BRANCH_BLENDER_TRANSLATIONS="blender-v3.5-release"
 #EGIT_OVERRIDE_COMMIT_BLENDER_TRANSLATIONS="master"
 
-#EGIT_OVERRIDE_BRANCH_BLENDER_DEV_TOOLS="master"
+EGIT_OVERRIDE_BRANCH_BLENDER_DEV_TOOLS="blender-v3.5-release"
 #EGIT_OVERRIDE_COMMIT_BLENDER_DEV_TOOLS="master"
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
@@ -35,7 +35,7 @@ IUSE="+bullet +dds +fluid +openexr +tbb \
 	debug doc +embree +ffmpeg +fftw +gmp jack jemalloc jpeg2k \
 	man +nanovdb ndof nls openal +oidn +openimageio +openmp +opensubdiv \
 	+openvdb optix +osl +pdf +potrace +pugixml pulseaudio sdl +sndfile \
-	test +tiff valgrind wayland X"
+	test +tiff valgrind wayland X openxr"
 RESTRICT="!test? ( test )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -79,6 +79,7 @@ RDEPEND="${PYTHON_DEPS}
 	jack? ( virtual/jack )
 	jemalloc? ( dev-libs/jemalloc:= )
 	jpeg2k? ( media-libs/openjpeg:2= )
+	openxr? ( media-libs/openxr-loader )
 	ndof? (
 		app-misc/spacenavd
 		dev-libs/libspnav
@@ -113,6 +114,7 @@ RDEPEND="${PYTHON_DEPS}
 		>=x11-libs/libxkbcommon-0.2.0
 		media-libs/mesa[wayland]
 		sys-apps/dbus
+		gui-libs/libdecor
 	)
 	X? (
 		x11-libs/libX11
@@ -234,7 +236,7 @@ src_configure() {
 		-DWITH_GHOST_WAYLAND_APP_ID=blender-${BV}
 		-DWITH_GHOST_WAYLAND_DBUS=$(usex wayland)
 		-DWITH_GHOST_WAYLAND_DYNLOAD=OFF
-		-DWITH_GHOST_WAYLAND_LIBDECOR=OFF
+		-DWITH_GHOST_WAYLAND_LIBDECOR=$(usex wayland)
 		-DWITH_GHOST_X11=$(usex X)
 		-DWITH_GMP=$(usex gmp)
 		-DWITH_GTESTS=$(usex test)
@@ -273,7 +275,7 @@ src_configure() {
 		-DWITH_SYSTEM_LZO=ON
 		-DWITH_TBB=$(usex tbb)
 		-DWITH_USD=OFF
-		-DWITH_XR_OPENXR=OFF
+		-DWITH_XR_OPENXR=$(usex openxr)
 	)
 
 	if use optix; then
