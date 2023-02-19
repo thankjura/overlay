@@ -37,16 +37,11 @@ BDEPEND="
 	examples? ( dev-libs/wayland-protocols )
 "
 
-PATCHES=(
-	"${FILESDIR}/libdecor-0.1.0_opengl_link.patch"
-	"${FILESDIR}/libdecor-0.1.0_demo_install.patch"
-)
-
 src_configure() {
 	local emesonargs=(
 		$(meson_feature dbus)
 		$(meson_use examples demo)
-		-Dinstall_demo=true
+		-Dinstall_demo=false
 	)
 
 	meson_src_configure
