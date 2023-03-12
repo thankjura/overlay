@@ -8,19 +8,11 @@ PYTHON_COMPAT=( python3_{10,11} )
 inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils git-r3
 
 EGIT_REPO_URI="https://projects.blender.org/blender/blender.git"
-#EGIT_COMMIT="b1e0be0d2553742fcceda9cfe29ebb70f26b06a1"
+EGIT_REPO_URI_SUBMODULES=(
+	"https://projects.blender.org/blender/blender-addons.git;scripts/addons"
+	"https://projects.blender.org/blender/blender-addons-contrib.git;scripts/addons_contrib"
+)
 EGIT_BRANCH="blender-v3.5-release"
-EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS="blender-v3.5-release"
-#GIT_OVERRIDE_COMMIT_BLENDER_ADDONS="blender-v3.5-release"
-
-EGIT_OVERRIDE_BRANCH_BLENDER_ADDONS_CONTRIB="blender-v3.5-release"
-#EGIT_OVERRIDE_COMMIT_BLENDER_ADDONS_CONTRIB="master"
-
-EGIT_OVERRIDE_BRANCH_BLENDER_TRANSLATIONS="blender-v3.5-release"
-#EGIT_OVERRIDE_COMMIT_BLENDER_TRANSLATIONS="master"
-
-EGIT_OVERRIDE_BRANCH_BLENDER_DEV_TOOLS="blender-v3.5-release"
-#EGIT_OVERRIDE_COMMIT_BLENDER_DEV_TOOLS="master"
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="https://www.blender.org"
@@ -175,6 +167,17 @@ pkg_pretend() {
 pkg_setup() {
 	blender_check_requirements
 	python-single-r1_pkg_setup
+}
+
+src_unpack() {
+	git-r3_src_unpack
+
+	for repo in "${EGIT_REPO_URI_SUBMODULES[@]}"; do
+		parts=(${repo//;/ })
+		EGIT_REPO_URI="${parts[0]}"
+		EGIT_CHECKOUT_DIR=${WORKDIR}/${P}/${parts[1]}
+		git-r3_src_unpack
+	done
 }
 
 src_prepare() {
