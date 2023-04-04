@@ -3,10 +3,10 @@
 
 EAPI=7
 
-inherit cmake autotools eutils desktop wrapper xdg
+inherit cmake desktop wrapper xdg
 
 DESCRIPTION="Advanced rhythm game. Designed for both home and arcade use"
-SHA="675c752e9e2eb5848c7fdb87bf516da02b39fab0"
+SHA="d55acb1ba26f1c5b5e3048d6d6c0bd116625216f"
 HOMEPAGE="http://www.stepmania.com/"
 SRC_URI="https://github.com/${PN}/${PN}/archive/${SHA}.tar.gz -> ${P}.tar.gz"
 
@@ -14,7 +14,7 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~ppc ~ppc64 ~x86"
 IUSE="+alsa +crash-handler debug +gles2 +gpl +gtk +jpeg +mp3 +networking +ogg
-	+wav +xinerama +sdl +xrandr +X +bundled-songs +bundled-courses lto minimaid
+	+wav +xinerama +sdl +xrandr +X +bundled-songs +bundled-courses minimaid
 	parallel-port profiling pulseaudio jack"
 
 DEPEND="X? ( x11-libs/libX11 )
@@ -23,7 +23,7 @@ DEPEND="X? ( x11-libs/libX11 )
 	jpeg? ( media-libs/libjpeg-turbo )
 	mp3? ( media-libs/libmad )
 	ogg? ( media-libs/libogg media-libs/libvorbis )
-	pulseaudio? ( media-sound/pulseaudio )
+	pulseaudio? ( media-libs/libpulse )
 	sdl? ( media-libs/libsdl2 )
 	xinerama? ( x11-libs/libXinerama )
 	xrandr? ( x11-libs/libXrandr )
@@ -32,12 +32,11 @@ DEPEND="X? ( x11-libs/libX11 )
 	dev-libs/libtommath
 	media-libs/glew
 	media-libs/glu
-	media-libs/libglvnd
+	media-libs/libglvnd[X?]
 	media-libs/libjpeg-turbo
 	media-libs/libpng
 	media-video/ffmpeg
 	sys-libs/zlib
-	virtual/opengl
 	virtual/udev
 	x11-libs/gdk-pixbuf
 	x11-libs/gtk+:2
@@ -99,7 +98,6 @@ src_configure() {
 		-DWITH_SYSTEM_PCRE=yes
 		-DWITH_SYSTEM_OGG=yes
 		-DWITH_NETWORKING=$(usex networking)
-		-DWITH_LTO=$(usex lto)
 		-DWITH_XRANDR=$(usex xrandr)
 		-DWITH_JACK=$(usex jack)
 		-DWITH_X11=$(usex X)
