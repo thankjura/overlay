@@ -43,7 +43,10 @@ DEPEND="X? ( x11-libs/libX11 )
 	x11-libs/libXext
 	x11-libs/libXtst"
 
-PATCHES=( "${FILESDIR}/${PN}-add-ppc64-detection.patch" )
+PATCHES=(
+	"${FILESDIR}/${PN}-add-ppc64-detection.patch"
+	"${FILESDIR}/2230.patch"
+)
 
 S="${WORKDIR}/${PN}-${SHA}"
 CMAKE_MAKEFILE_GENERATOR=ninja
