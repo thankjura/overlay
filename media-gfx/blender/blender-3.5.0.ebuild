@@ -5,9 +5,14 @@ EAPI=8
 
 PYTHON_COMPAT=( python3_{10,11} )
 
-inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils
+inherit check-reqs cmake flag-o-matic pax-utils python-single-r1 toolchain-funcs xdg-utils git-r3
 
-SRC_URI="https://download.blender.org/source/${P}.tar.xz"
+EGIT_REPO_URI="https://projects.blender.org/blender/blender.git"
+EGIT_REPO_URI_SUBMODULES=(
+	"https://projects.blender.org/blender/blender-addons.git;scripts/addons"
+	"https://projects.blender.org/blender/blender-addons-contrib.git;scripts/addons_contrib"
+)
+EGIT_BRANCH="blender-v3.5-release"
 
 DESCRIPTION="3D Creation/Animation/Publishing System"
 HOMEPAGE="https://www.blender.org"
@@ -162,6 +167,17 @@ pkg_pretend() {
 pkg_setup() {
 	blender_check_requirements
 	python-single-r1_pkg_setup
+}
+
+src_unpack() {
+	git-r3_src_unpack
+
+	for repo in "${EGIT_REPO_URI_SUBMODULES[@]}"; do
+		parts=(${repo//;/ })
+		EGIT_REPO_URI="${parts[0]}"
+		EGIT_CHECKOUT_DIR=${WORKDIR}/${P}/${parts[1]}
+		git-r3_src_unpack
+	done
 }
 
 src_prepare() {
