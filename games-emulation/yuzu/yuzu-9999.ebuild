@@ -39,6 +39,7 @@ RDEPEND="
 		>=dev-qt/qtmultimedia-5.15:5
 		>=dev-qt/qtwidgets-5.15:5
 	)
+	webengine? ( dev-qt/qtwebengine )
 	sdl? (
 		>=media-libs/libsdl2-2.0.18
 	)
