@@ -33,6 +33,7 @@ RDEPEND="
 	sys-libs/zlib
 	virtual/libusb:1
 	cubeb? ( media-libs/cubeb )
+	dev-util/spirv-headers
 	qt5? (
 		>=dev-qt/qtcore-5.15:5
 		>=dev-qt/qtgui-5.15:5
