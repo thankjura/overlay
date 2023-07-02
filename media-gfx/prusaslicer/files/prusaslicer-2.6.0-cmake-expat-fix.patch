@@ -1,0 +1,17 @@
+--- a/CMakeLists.txt	2023-06-19 05:07:14.000000000 -0700
++++ a/CMakeLists.txt	2023-06-23 14:23:13.447118721 -0700
+@@ -446,14 +446,6 @@
+ # no matter what.
+ find_package(EXPAT REQUIRED)
+ 
+-add_library(libexpat INTERFACE)
+-
+-if (TARGET EXPAT::EXPAT )
+-    target_link_libraries(libexpat INTERFACE EXPAT::EXPAT)
+-elseif(TARGET expat::expat)
+-    target_link_libraries(libexpat INTERFACE expat::expat)
+-endif ()
+-
+ find_package(PNG REQUIRED)
+ 
+ set(OpenGL_GL_PREFERENCE "LEGACY")
