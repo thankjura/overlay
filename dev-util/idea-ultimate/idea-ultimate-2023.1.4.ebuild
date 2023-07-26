@@ -19,7 +19,6 @@ RESTRICT="bindist mirror splitdebug"
 IUSE=""
 QA_PREBUILT="opt/${P}/*"
 RDEPEND="
-	app-accessibility/at-spi2-atk
 	dev-libs/libdbusmenu
 	dev-util/lldb
 	media-libs/mesa[X(+)]
@@ -29,8 +28,8 @@ RDEPEND="
 	x11-libs/libXdamage
 	x11-libs/libXext
 	x11-libs/libXfixes
-	>=x11-libs/libXi-1.3
-	>=x11-libs/libXrandr-1.5
+	x11-libs/libXi
+	x11-libs/libXrandr
 "
 
 SIMPLE_NAME="Idea Ultimate"
@@ -39,7 +38,7 @@ SRC_URI_PATH="idea"
 SRC_URI_PN="ideaIU"
 SRC_URI="https://download.jetbrains.com/${SRC_URI_PATH}/${SRC_URI_PN}-${PV}.tar.gz -> ${P}.tar.gz"
 
-BUILD_NUMBER="223.8836.41"
+BUILD_NUMBER="231.9225.16"
 S="${WORKDIR}/idea-IU-${BUILD_NUMBER}"
 
 src_prepare() {
@@ -59,7 +58,7 @@ src_install() {
 	fperms 755 "${dir}"/bin/{"${MY_PN}",format,inspect,ltedit,remote-dev-server}.sh
 	fperms 755 "${dir}"/bin/fsnotifier
 
-	fperms 755 "${dir}"/jbr/bin/{java,javac,jcmd,jdb,jfr,jinfo,jmap,jps,jrunscript,jstack,jstat,keytool,rmiregistry,serialver}
+	fperms 755 "${dir}"/jbr/bin/{java,javac,javadoc,jcmd,jdb,jfr,jhsdb,jinfo,jmap,jps,jrunscript,jstack,jstat,keytool,rmiregistry,serialver}
 	fperms 755 "${dir}"/jbr/lib/{chrome-sandbox,jcef_helper,jexec,jspawnhelper}
 
 	make_wrapper "${PN}" "${dir}"/bin/"${MY_PN}".sh
