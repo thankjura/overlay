@@ -9,12 +9,12 @@ if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://gitlab.gnome.org/jadahl/libdecor.git"
 else
-	SRC_URI="https://gitlab.gnome.org/jadahl/libdecor/-/archive/${PV}/${P}.tar.gz"
+	SRC_URI="https://gitlab.freedesktop.org/libdecor/libdecor/-/archive/${PV}/${P}.tar.gz"
 	KEYWORDS="~amd64"
 fi
 
 DESCRIPTION="A client-side decorations library for Wayland clients"
-HOMEPAGE="https://gitlab.gnome.org/jadahl/libdecor"
+HOMEPAGE="https://gitlab.freedesktop.org/libdecor/libdecor"
 LICENSE="MIT"
 SLOT="0"
 IUSE="+dbus examples"
@@ -41,7 +41,7 @@ src_configure() {
 	local emesonargs=(
 		$(meson_feature dbus)
 		$(meson_use examples demo)
-		-Dinstall_demo=false
+		#-Dinstall_demo=false
 	)
 
 	meson_src_configure
