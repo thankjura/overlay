@@ -22,7 +22,6 @@ KEYWORDS="~amd64 ~x86"
 IUSE="udev"
 
 DEPEND="
-dev-util/cmake
 dev-libs/hidapi
 udev? ( virtual/udev )
 "
