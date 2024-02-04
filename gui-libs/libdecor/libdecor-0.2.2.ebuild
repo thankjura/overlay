@@ -33,7 +33,7 @@ DEPEND="
 "
 RDEPEND="${DEPEND}"
 BDEPEND="
-	>=dev-util/meson-0.47
+	>=dev-build/meson-0.47
 	examples? ( dev-libs/wayland-protocols )
 "
 
