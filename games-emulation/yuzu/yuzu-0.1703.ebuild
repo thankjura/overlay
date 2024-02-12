@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-inherit cmake xdg
+inherit cmake flag-o-matic xdg
 
 DESCRIPTION="Nintendo Switch emulator."
 HOMEPAGE="https://yuzu-emu.org/ https://github.com/yuzu-emu/yuzu-mainline"
@@ -44,6 +44,7 @@ DEPEND=">=app-arch/zstd-1.5.0:=
 	dev-libs/libzip
 	dev-libs/openssl:=
 	dev-libs/vulkan-memory-allocator:=
+	dev-util/vulkan-utility-libraries
 	dev-util/glslang
 	dev-qt/qtcore:5
 	dev-qt/qtdbus:5
@@ -64,7 +65,7 @@ BDEPEND="app-arch/unzip
 	dev-cpp/cpp-jwt
 	dev-cpp/nlohmann_json
 	dev-cpp/robin-map
-	>=dev-util/vulkan-headers-1.3.261
+	>=dev-util/vulkan-headers-1.3.275
 	dev-util/spirv-headers"
 
 S="${WORKDIR}/${PN}-mainline-${MY_PV}"
@@ -87,9 +88,10 @@ src_prepare() {
 	mv "${WORKDIR}/mbedtls-${MBEDTLS_SHA}" "${S}/externals/mbedtls" || die
 	mv "${WORKDIR}/simpleini-${SIMPLEINI_SHA}" "${S}/externals/simpleini" || die
 	mv "${WORKDIR}/xbyak-${XBYAK_SHA}" "${S}/externals/xbyak" || die
-	mkdir -p "${S}_build/externals/nx_tzdb" || die
+	mkdir -p "${S}_build/externals/nx_tzdb/nx_tzdb" || die
 	cp "${DISTDIR}/${PN}-nx_tzdb-${NX_TZDB_VERSION}.zip" \
 		"${S}_build/externals/nx_tzdb/${NX_TZDB_VERSION}.zip" || die
+	mv "${WORKDIR}/zoneinfo" "${S}_build/externals/nx_tzdb/nx_tzdb/" || die
 	sed -e 's/find_package(Boost .*/find_package(Boost 1.71 COMPONENTS context REQUIRED)/' \
 		-i src/common/CMakeLists.txt || die
 	sed -e '/enable_testing.*/d' \
@@ -108,11 +110,13 @@ src_prepare() {
 	fi
 	mv -f "${T}/compatibility_list.json" \
 		"${BUILD_DIR}/dist/compatibility_list/compatibility_list.json" || die
-	sed -re '/.*case VkResult::VK_ERROR_INVALID_VIDEO_STD_PARAMETERS_KHR.*/d' -i \
-		src/video_core/vulkan_common/vulkan_wrapper.cpp || die
 }
 
 src_configure() {
+	# This is so I do not have to keep patching the VkResult:: constants in the error handler
+	# switch/case statement in vulkan_wrapper.cpp. Oddly enough this works despite -Werror=all
+	# coming after.
+	append-cxxflags -Wno-switch
 	local mycmakeargs=(
 		-DBUILD_FULLNAME="${MY_PV}"
 		-DBUILD_SHARED_LIBS=OFF
@@ -129,6 +133,7 @@ src_configure() {
 		-DYUZU_TESTS=OFF
 		-DYUZU_USE_EXTERNAL_SDL2=ON
 		-DYUZU_USE_EXTERNAL_VULKAN_HEADERS=OFF
+		-DYUZU_USE_EXTERNAL_VULKAN_UTILITY_LIBRARIES=OFF
 		-DYUZU_USE_QT_MULTIMEDIA=ON
 		"-DYUZU_USE_QT_WEB_ENGINE=$(usex webengine)"
 		-DYUZU_USE_FASTER_LD=OFF
