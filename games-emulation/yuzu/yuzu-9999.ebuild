@@ -7,7 +7,7 @@ inherit cmake git-r3 toolchain-funcs xdg
 
 DESCRIPTION="An emulator for Nintendo Switch"
 HOMEPAGE="https://yuzu-emu.org"
-EGIT_REPO_URI="https://github.com/yuzu-emu/yuzu"
+EGIT_REPO_URI="https://codeberg.org/yuzu-emu/yuzu"
 EGIT_SUBMODULES=( '-*' 'dynarmic' 'simpleini' 'sirit' 'tzdb_to_nx' 'externals/nx_tzdb/tzdb_to_nx/externals/tz/tz' 'VulkanMemoryAllocator' 'xbyak' )
 # Dynarmic is not intended to be generic, it is tweaked to fit emulated processor
 # TODO wait 'xbyak' waiting version bump. see #860816
@@ -38,7 +38,6 @@ RDEPEND="
 		>=dev-qt/qtgui-5.15:5
 		>=dev-qt/qtmultimedia-5.15:5
 		>=dev-qt/qtwidgets-5.15:5
-		>=dev-qt/qtwebengine-5.15:5
 	)
 	qt6? (
 		>=dev-qt/qtbase-6.6.0:6[gui,widgets]
@@ -87,7 +86,7 @@ src_unpack() {
 
 	git-r3_src_unpack
 	# Do not fetch via sources because this file always changes
-	use compatibility-list && curl https://api.yuzu-emu.org/gamedb/ > "${S}"/compatibility_list.json
+	#use compatibility-list && curl https://api.yuzu-emu.org/gamedb/ > "${S}"/compatibility_list.json
 }
 
 src_prepare() {
@@ -146,8 +145,8 @@ src_configure() {
 		-DENABLE_COMPATIBILITY_LIST_DOWNLOAD=$(usex compatibility-list)
 		-DENABLE_CUBEB=$(usex cubeb)
 		-DENABLE_LIBUSB=ON
-		-DENABLE_QT=$(usex qt5)
-		-DENABLE_QT_TRANSLATION=$(usex qt5)
+		-DENABLE_QT=$(usev qt5 ON || usev qt6 ON || echo OFF )
+		-DENABLE_QT_TRANSLATION=$(usev qt5 ON || usev qt6 ON || echo OFF )
 		-DENABLE_QT6=$(usex qt6)
 		-DENABLE_SDL2=$(usex sdl)
 		-DENABLE_WEB_SERVICE=$(usex webservice)
@@ -164,6 +163,7 @@ src_configure() {
 
 	# This would be better in src_unpack but it would be unlinked
 	if use compatibility-list; then
-		mv "${S}"/compatibility_list.json "${BUILD_DIR}"/dist/compatibility_list/ || die
+		#mv "${S}"/compatibility_list.json "${BUILD_DIR}"/dist/compatibility_list/ || die
+		xz --decompress --stdout "${FILESDIR}/gamedb.xz" > "${BUILD_DIR}"/dist/compatibility_list/compatibility_list.json || die
 	fi
 }
