@@ -38,6 +38,7 @@ RDEPEND="
 		>=dev-qt/qtgui-5.15:5
 		>=dev-qt/qtmultimedia-5.15:5
 		>=dev-qt/qtwidgets-5.15:5
+		>=dev-qt/qtwebengine-5.15:5
 	)
 	qt6? (
 		>=dev-qt/qtbase-6.6.0:6[gui,widgets]
