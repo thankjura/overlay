@@ -1,0 +1,400 @@
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/CMakeLists.txt OrcaSlicer-2.2.0-beta2/CMakeLists.txt
+--- /tmp/OrcaSlicer-2.2.0-beta2/CMakeLists.txt	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/CMakeLists.txt	2024-09-30 05:37:53.299797894 +0300
+@@ -19,7 +19,7 @@
+ 
+ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+   message(STATUS "No build type selected, default to Release")
+-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type (default Release)" FORCE)
++#_cmake_modify_IGNORE   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type (default Release)" FORCE)
+ endif()
+ 
+ if(DEFINED ENV{SLIC3R_STATIC})
+@@ -412,7 +412,7 @@
+ # set(Boost_COMPILER "-mgw81")
+ # boost::process was introduced first in version 1.64.0,
+ # boost::beast::detail::base64 was introduced first in version 1.66.0
+-find_package(Boost 1.66 REQUIRED COMPONENTS system filesystem thread log locale regex chrono atomic date_time iostreams program_options)
++find_package(Boost 1.66 REQUIRED COMPONENTS system filesystem thread log log_setup locale regex chrono atomic date_time iostreams program_options)
+ 
+ add_library(boost_libs INTERFACE)
+ add_library(boost_headeronly INTERFACE)
+@@ -808,3 +808,14 @@
+ set(CPACK_WIX_UPGRADE_GUID "058245e8-20e0-4a95-9ab7-1acfe17ad511")
+ set(CPACK_GENERATOR NSIS)
+ include(CPack)
++
++message(STATUS "<<< Gentoo configuration >>>
++Build type      ${CMAKE_BUILD_TYPE}
++Install path    ${CMAKE_INSTALL_PREFIX}
++Compiler flags:
++C               ${CMAKE_C_FLAGS}
++C++             ${CMAKE_CXX_FLAGS}
++Linker flags:
++Executable      ${CMAKE_EXE_LINKER_FLAGS}
++Module          ${CMAKE_MODULE_LINKER_FLAGS}
++Shared          ${CMAKE_SHARED_LINKER_FLAGS}\n")
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/deps/CMakeLists.txt OrcaSlicer-2.2.0-beta2/deps/CMakeLists.txt
+--- /tmp/OrcaSlicer-2.2.0-beta2/deps/CMakeLists.txt	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/deps/CMakeLists.txt	2024-09-30 05:37:53.262796295 +0300
+@@ -97,7 +97,7 @@
+ set(PATCH_CMD ${GIT_EXECUTABLE} apply --verbose --ignore-space-change --whitespace=fix)
+ 
+ if (NOT _is_multi AND NOT CMAKE_BUILD_TYPE)
+-    set(CMAKE_BUILD_TYPE Release)
++#_cmake_modify_IGNORE     set(CMAKE_BUILD_TYPE Release)
+     message(STATUS "Forcing CMAKE_BUILD_TYPE to Release as it was not specified.")
+ endif ()
+ 
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/libslic3r/CMakeLists.txt OrcaSlicer-2.2.0-beta2/src/libslic3r/CMakeLists.txt
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/libslic3r/CMakeLists.txt	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/libslic3r/CMakeLists.txt	2024-09-30 05:37:53.256796036 +0300
+@@ -484,7 +484,7 @@
+ cmake_policy(PUSH)
+ cmake_policy(SET CMP0011 NEW)
+ find_package(CGAL REQUIRED)
+-find_package(OpenCV REQUIRED core)
++find_package(OpenCV REQUIRED core imgproc)
+ cmake_policy(POP)
+ 
+ add_library(libslic3r_cgal STATIC 
+@@ -512,7 +512,7 @@
+     target_compile_options(libslic3r_cgal PRIVATE "${_opts_bad}")
+ endif()
+ 
+-target_link_libraries(libslic3r_cgal PRIVATE ${_cgal_tgt} libigl mcut)
++target_link_libraries(libslic3r_cgal PRIVATE ${_cgal_tgt} libigl mcut boost_libs)
+ 
+ if (MSVC AND "${CMAKE_SIZEOF_VOID_P}" STREQUAL "4") # 32 bit MSVC workaround
+     target_compile_definitions(libslic3r_cgal PRIVATE CGAL_DO_NOT_USE_MPZF)
+@@ -523,6 +523,7 @@
+ target_compile_definitions(libslic3r PUBLIC -DUSE_TBB -DTBB_USE_CAPTURED_EXCEPTION=0)
+ target_include_directories(libslic3r PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+ target_include_directories(libslic3r PUBLIC ${EXPAT_INCLUDE_DIRS})
++target_include_directories(libslic3r PUBLIC ${OpenCV_INCLUDE_DIRS})
+ 
+ # Find the OCCT and related libraries
+ set(OpenCASCADE_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/occt")
+@@ -532,11 +533,8 @@
+ find_package(JPEG REQUIRED)
+ 
+ set(OCCT_LIBS
+-    TKXDESTEP
+-    TKSTEP
+-    TKSTEP209
+-    TKSTEPAttr
+-    TKSTEPBase
++    TKDESTEP
++    TKDESTL
+     TKXCAF
+     TKXSBase
+     TKVCAF
+@@ -585,7 +583,7 @@
+     mcut
+     JPEG::JPEG
+     qoi
+-    opencv_world
++    ${OpenCV_LIBS}
+     )
+ 
+ if(NOT SLIC3R_STATIC)
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/libslic3r/CutSurface.cpp OrcaSlicer-2.2.0-beta2/src/libslic3r/CutSurface.cpp
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/libslic3r/CutSurface.cpp	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/libslic3r/CutSurface.cpp	2024-09-30 05:37:53.200793615 +0300
+@@ -1,5 +1,13 @@
+ #include "CutSurface.hpp"
+ 
++template <typename T>
++    auto access_pmap(std::optional<T> opt) -> T {
++    return opt.value();
++}
++
++template <typename Pair>
++auto access_pmap(Pair pair) { return pair.first; }
++
+ /// models_input.obj - Check transormation of model to each others
+ /// projection_center.obj - circle representing center of projection with correct distance
+ /// {M} .. model index
+@@ -29,6 +37,7 @@
+ #include <CGAL/Exact_integer.h>
+ #include <CGAL/Surface_mesh.h>
+ #include <CGAL/Cartesian_converter.h>
++#include <CGAL/AABB_traits.h>
+ #include <tbb/parallel_for.h>
+ 
+ // libslic3r
+@@ -993,8 +1002,8 @@
+     if (shapes.empty()) return {};
+         
+     CutMesh result;
+-    EdgeShapeMap edge_shape_map = result.add_property_map<EI, IntersectingElement>(edge_shape_map_name).first;
+-    FaceShapeMap face_shape_map = result.add_property_map<FI, IntersectingElement>(face_shape_map_name).first;
++    EdgeShapeMap edge_shape_map  = access_pmap((result.add_property_map<EI, IntersectingElement>(edge_shape_map_name)));
++    FaceShapeMap face_shape_map  = access_pmap((result.add_property_map<FI, IntersectingElement>(face_shape_map_name)));
+ 
+     std::vector<VI> indices;
+     auto insert_contour = [&projection, &indices, &result, 
+@@ -1404,17 +1413,17 @@
+                                    const ExPolygonsIndices &s2i)
+ {
+     // pointer to edge or face shape_map
+-    VertexShapeMap vert_shape_map = cgal_model.add_property_map<VI, const IntersectingElement*>(vert_shape_map_name, nullptr).first;
++    VertexShapeMap vert_shape_map  = access_pmap((cgal_model.add_property_map<VI, const IntersectingElement*>(vert_shape_map_name, nullptr)));
+     
+     // detect anomalities in visitor.
+     bool is_valid = true;
+     // NOTE: map are created when convert shapes to cgal model
+-    const EdgeShapeMap& edge_shape_map = cgal_shape.property_map<EI, IntersectingElement>(edge_shape_map_name).first;
+-    const FaceShapeMap& face_shape_map = cgal_shape.property_map<FI, IntersectingElement>(face_shape_map_name).first;
++    const EdgeShapeMap& edge_shape_map  = access_pmap((cgal_shape.property_map<EI, IntersectingElement>(edge_shape_map_name)));
++    const FaceShapeMap& face_shape_map  = access_pmap((cgal_shape.property_map<FI, IntersectingElement>(face_shape_map_name)));
+     Visitor visitor{cgal_model, cgal_shape, edge_shape_map, face_shape_map, vert_shape_map, &is_valid};
+ 
+     // a property map containing the constrained-or-not status of each edge
+-    EdgeBoolMap ecm = cgal_model.add_property_map<EI, bool>(is_constrained_edge_name, false).first;
++    EdgeBoolMap ecm  = access_pmap((cgal_model.add_property_map<EI, bool>(is_constrained_edge_name, false)));
+     const auto &p = CGAL::parameters::visitor(visitor)
+                         .edge_is_constrained_map(ecm)
+                         .throw_on_self_intersection(false);
+@@ -1423,7 +1432,7 @@
+ 
+     if (!is_valid) return {};
+ 
+-    FaceTypeMap face_type_map = cgal_model.add_property_map<FI, FaceType>(face_type_map_name, FaceType::not_constrained).first;
++    FaceTypeMap face_type_map  = access_pmap((cgal_model.add_property_map<FI, FaceType>(face_type_map_name, FaceType::not_constrained)));
+ 
+     // Select inside and outside face in model
+     set_face_type(face_type_map, cgal_model, vert_shape_map, ecm, cgal_shape, s2i);
+@@ -1559,8 +1568,8 @@
+ 
+ void priv::create_reduce_map(ReductionMap &reduction_map, const CutMesh &mesh)
+ {
+-    const VertexShapeMap &vert_shape_map = mesh.property_map<VI, const IntersectingElement*>(vert_shape_map_name).first;
+-    const EdgeBoolMap &ecm = mesh.property_map<EI, bool>(is_constrained_edge_name).first;
++    const VertexShapeMap &vert_shape_map  = access_pmap((mesh.property_map<VI, const IntersectingElement*>(vert_shape_map_name)));
++    const EdgeBoolMap &ecm  = access_pmap((mesh.property_map<EI, bool>(is_constrained_edge_name)));
+ 
+     // check if vertex was made by edge_2 which is diagonal of quad
+     auto is_reducible_vertex = [&vert_shape_map](VI reduction_from) -> bool {
+@@ -1745,10 +1754,10 @@
+     for (const SurfacePatch &patch : patches) {
+         // map is created during intersection by corefine visitor
+         const VertexShapeMap &vert_shape_map = 
+-            models[patch.model_id].property_map<VI, const IntersectingElement *>(vert_shape_map_name).first;
++            access_pmap((models[patch.model_id].property_map<VI, const IntersectingElement *>(vert_shape_map_name)));
+         uint32_t patch_index = &patch - &patches.front();
+         // map is created during patch creation / dividing
+-        const CvtVI2VI& cvt = patch.mesh.property_map<VI, VI>(patch_source_name).first;
++        const CvtVI2VI& cvt  = access_pmap((patch.mesh.property_map<VI, VI>(patch_source_name)));
+         // for each point on outline
+         for (const Loop &loop : patch.loops) 
+         for (const VI &vi_patch : loop) {
+@@ -2636,7 +2645,7 @@
+                                               /* const */ CutMesh   &mesh,
+                                               const ReductionMap    *rmap)
+ {
+-    auto is_counted = mesh.add_property_map<VI, bool>("v:is_counted").first;
++    auto is_counted  = access_pmap((mesh.add_property_map<VI, bool>("v:is_counted")));
+     uint32_t count_vertices = 0;
+     if (rmap == nullptr) {
+         for (FI fi : fis) 
+@@ -2666,7 +2675,7 @@
+     cm.reserve(count_vertices, count_edges, count_faces);
+ 
+     // vertex conversion function from mesh VI to result VI
+-    CvtVI2VI mesh2result = mesh.add_property_map<VI,VI>("v:mesh2result").first;
++    CvtVI2VI mesh2result  = access_pmap((mesh.add_property_map<VI,VI>("v:mesh2result")));
+ 
+     if (rmap == nullptr) {
+         for (FI fi : fis) {
+@@ -2718,7 +2727,7 @@
+     assert(count_edges >= cm.edges().size());
+     
+     // convert VI from this patch to source VI, when exist
+-    CvtVI2VI cvt = cm.add_property_map<VI, VI>(patch_source_name).first;
++    CvtVI2VI cvt  = access_pmap((cm.add_property_map<VI, VI>(patch_source_name)));
+     // vi_s .. VertexIndex into mesh (source)
+     // vi_d .. new VertexIndex in cm (destination)
+     for (VI vi_s : mesh.vertices()) { 
+@@ -2909,7 +2918,7 @@
+ uint32_t priv::get_shape_point_index(const CutAOI &cut, const CutMesh &model)
+ {
+     // map is created during intersection by corefine visitor
+-    const VertexShapeMap &vert_shape_map = model.property_map<VI, const IntersectingElement *>(vert_shape_map_name).first;
++    const VertexShapeMap &vert_shape_map  = access_pmap((model.property_map<VI, const IntersectingElement *>(vert_shape_map_name)));
+     // for each half edge of outline
+     for (HI hi : cut.second) {
+         VI vi = model.source(hi);
+@@ -2934,7 +2943,7 @@
+     patch_new.model_id     = patch.model_id;
+     patch_new.shape_id     = patch.shape_id;
+     // fix cvt
+-    CvtVI2VI cvt = patch_new.mesh.property_map<VI, VI>(patch_source_name).first;
++    CvtVI2VI cvt  = access_pmap((patch_new.mesh.property_map<VI, VI>(patch_source_name)));
+     for (VI &vi : cvt) {
+         if (!vi.is_valid()) continue;
+         vi = cvt_from[vi];
+@@ -2952,9 +2961,9 @@
+     CutMesh& cm = patch.mesh;
+     assert(!cm.faces().empty());
+     std::string patch_number_name = "f:patch_number";
+-    CutMesh::Property_map<FI,bool> is_processed = cm.add_property_map<FI, bool>(patch_number_name, false).first;
++    CutMesh::Property_map<FI,bool> is_processed  = access_pmap((cm.add_property_map<FI, bool>(patch_number_name, false)));
+     
+-    const CvtVI2VI& cvt_from = patch.mesh.property_map<VI, VI>(patch_source_name).first;
++    const CvtVI2VI& cvt_from  = access_pmap((patch.mesh.property_map<VI, VI>(patch_source_name)));
+ 
+     std::vector<FI> fis;
+     fis.reserve(cm.faces().size());
+@@ -3055,7 +3064,7 @@
+         CutAOIs &model_cuts = cuts[model_index];
+         CutMesh &cut_model_ = cut_models[model_index];
+         const CutMesh &cut_model = cut_model_;
+-        ReductionMap vertex_reduction_map = cut_model_.add_property_map<VI, VI>(vertex_reduction_map_name).first;
++        ReductionMap vertex_reduction_map  = access_pmap((cut_model_.add_property_map<VI, VI>(vertex_reduction_map_name)));
+         create_reduce_map(vertex_reduction_map, cut_model);
+ 
+         for (size_t cut_index = 0; cut_index < model_cuts.size(); ++cut_index, ++index) {
+@@ -3141,7 +3150,7 @@
+                                 const CutMesh   &mesh)
+ {
+     // NonInterupted contour is without other point and contain all from shape    
+-    const VertexShapeMap &vert_shape_map = mesh.property_map<VI, const IntersectingElement*>(vert_shape_map_name).first;
++    const VertexShapeMap &vert_shape_map  = access_pmap((mesh.property_map<VI, const IntersectingElement*>(vert_shape_map_name)));
+     for (HI hi : cutAOI.second) { 
+         const IntersectingElement *ie_s = vert_shape_map[mesh.source(hi)];
+         const IntersectingElement *ie_t = vert_shape_map[mesh.target(hi)];
+@@ -3678,7 +3687,7 @@
+     }
+ 
+     CutMesh &mesh_ = const_cast<CutMesh &>(mesh);
+-    auto face_colors = mesh_.add_property_map<priv::FI, CGAL::Color>("f:color").first;    
++    auto face_colors  = access_pmap((mesh_.add_property_map<priv::FI, CGAL::Color>("f:color")));    
+     for (FI fi : mesh.faces()) { 
+         auto &color = face_colors[fi];
+         switch (face_type_map[fi]) {
+@@ -3704,7 +3713,7 @@
+     std::string off_file = dir + "model" + std::to_string(reduction_order++) + ".off";
+ 
+     CutMesh &mesh_ = const_cast<CutMesh &>(mesh);
+-    auto vertex_colors = mesh_.add_property_map<priv::VI, CGAL::Color>("v:color").first;    
++    auto vertex_colors  = access_pmap((mesh_.add_property_map<priv::VI, CGAL::Color>("v:color")));    
+     // initialize to gray color
+     for (VI vi: mesh.vertices())
+         vertex_colors[vi] = CGAL::Color{127, 127, 127};
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/libslic3r/PrintBase.cpp OrcaSlicer-2.2.0-beta2/src/libslic3r/PrintBase.cpp
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/libslic3r/PrintBase.cpp	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/libslic3r/PrintBase.cpp	2024-09-30 05:37:53.200793615 +0300
+@@ -79,7 +79,7 @@
+ 			cfg.opt_string("input_filename_base") + default_ext :
+ 			this->placeholder_parser().process(format, 0, &cfg);
+         if (filename.extension().empty())
+-            filename = boost::filesystem::change_extension(filename, default_ext);
++            filename.replace_extension(default_ext);
+         return filename.string();
+     } catch (std::runtime_error &err) {
+         throw Slic3r::PlaceholderParserError(L("Failed processing of the filename_format template.") + "\n" + err.what());
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/mcut/CMakeLists.txt OrcaSlicer-2.2.0-beta2/src/mcut/CMakeLists.txt
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/mcut/CMakeLists.txt	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/mcut/CMakeLists.txt	2024-09-30 05:37:53.260796208 +0300
+@@ -49,7 +49,7 @@
+ 
+ if (NOT WIN32 AND NOT CMAKE_BUILD_TYPE)
+ 	message(STATUS "No build type selected, default to Release")
+-	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
++#_cmake_modify_IGNORE 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+ endif()
+ 
+ set (CMAKE_DEBUG_POSTFIX "d")
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/CMakeLists.txt OrcaSlicer-2.2.0-beta2/src/slic3r/CMakeLists.txt
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/CMakeLists.txt	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/slic3r/CMakeLists.txt	2024-09-30 05:37:53.259796165 +0300
+@@ -656,17 +656,11 @@
+ # link these libraries.
+ if (UNIX AND NOT APPLE)
+     find_package(GTK${SLIC3R_GTK} REQUIRED)
+-    if (FLATPAK)
+-        # I don't know why this is needed, but for whatever reason slic3r isn't
+-        # linking to X11 and webkit2gtk. force it.
+-        find_package(X11 REQUIRED)
+-        find_package(PkgConfig REQUIRED)
+-        pkg_check_modules(webkit2gtk REQUIRED webkit2gtk-4.1)
+-        target_link_libraries (libslic3r_gui ${X11_LIBRARIES} ${webkit2gtk_LIBRARIES})
+-    endif()
++    find_package(X11 REQUIRED)
++    find_package(PkgConfig REQUIRED)
++    pkg_check_modules(webkit2gtk REQUIRED webkit2gtk-4.1)
+     target_include_directories(libslic3r_gui PRIVATE ${GTK${SLIC3R_GTK}_INCLUDE_DIRS})
+-    target_link_libraries(libslic3r_gui ${GTK${SLIC3R_GTK}_LIBRARIES} fontconfig)
+-
++    target_link_libraries(libslic3r_gui ${GTK${SLIC3R_GTK}_LIBRARIES} ${X11_LIBRARIES} ${webkit2gtk_LIBRARIES} fontconfig)
+ 
+     # We add GStreamer for bambu:/// support.
+     pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/Config/Version.cpp OrcaSlicer-2.2.0-beta2/src/slic3r/Config/Version.cpp
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/Config/Version.cpp	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/slic3r/Config/Version.cpp	2024-09-30 05:49:32.756505305 +0300
+@@ -3,6 +3,7 @@
+ #include <cctype>
+ 
+ #include <boost/filesystem/operations.hpp>
++#include <boost/filesystem/directory.hpp>
+ #include <boost/nowide/fstream.hpp>
+ 
+ #include "libslic3r/libslic3r.h"
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/AuxiliaryDataViewModel.cpp OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/AuxiliaryDataViewModel.cpp
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/AuxiliaryDataViewModel.cpp	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/AuxiliaryDataViewModel.cpp	2024-09-30 05:37:53.201793658 +0300
+@@ -337,7 +337,7 @@
+         dir_path += "\\" + src_bfs_path.filename().generic_wstring();
+ 
+         boost::system::error_code ec;
+-        if (!fs::copy_file(src_bfs_path, fs::path(dir_path.ToStdWstring()), fs::copy_option::overwrite_if_exists, ec))
++        if (!fs::copy_file(src_bfs_path, fs::path(dir_path.ToStdWstring()), fs::copy_options::overwrite_existing, ec))
+             continue;
+ 
+         // Update model data
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/PhysicalPrinterDialog.cpp OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/PhysicalPrinterDialog.cpp
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/PhysicalPrinterDialog.cpp	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/PhysicalPrinterDialog.cpp	2024-09-30 05:37:53.201793658 +0300
+@@ -374,7 +374,7 @@
+     // Always fill in the "printhost_port" combo box from the config and select it.
+     {
+         Choice* choice = dynamic_cast<Choice*>(m_optgroup->get_field("printhost_port"));
+-        choice->set_values({ m_config->opt_string("printhost_port") });
++        choice->set_values(std::vector<std::string>({ m_config->opt_string("printhost_port") }));
+         choice->set_selection();
+     }
+ 
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/Plater.cpp OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/Plater.cpp
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/Plater.cpp	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/Plater.cpp	2024-09-30 05:37:53.202793701 +0300
+@@ -10261,7 +10261,7 @@
+                             std::replace(name.begin(), name.end(), '\\', '/');
+                             // rename if file exists
+                             std::string filename = path.filename().string();
+-                            std::string extension = boost::filesystem::extension(path);
++                            std::string extension = path.extension().string();
+                             std::string just_filename = filename.substr(0, filename.size() - extension.size());
+                             std::string final_filename = just_filename;
+ 
+diff -ru /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/RemovableDriveManager.cpp OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/RemovableDriveManager.cpp
+--- /tmp/OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/RemovableDriveManager.cpp	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/RemovableDriveManager.cpp	2024-09-30 05:37:53.202793701 +0300
+@@ -22,7 +22,6 @@
+ #include <pwd.h>
+ #include <boost/filesystem.hpp>
+ #include <boost/system/error_code.hpp>
+-#include <boost/filesystem/convenience.hpp>
+ #include <boost/process.hpp>
+ #endif
+ 
+@@ -202,7 +201,7 @@
+ 				stat(path.c_str(), &buf);
+ 				uid_t uid = buf.st_uid;
+ 				if (getuid() == uid)
+-					out.emplace_back(DriveData{ boost::filesystem::basename(boost::filesystem::path(path)), path });
++                    out.emplace_back(DriveData{ boost::filesystem::path(path).stem().string(), path });
+ 			}
+ 		}
+ 	}

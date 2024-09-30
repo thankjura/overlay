@@ -1,0 +1,12 @@
+diff -ru OrcaSlicer-2.2.0-beta2.old/src/slic3r/GUI/Widgets/StateColor.cpp OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/Widgets/StateColor.cpp
+--- OrcaSlicer-2.2.0-beta2.old/src/slic3r/GUI/Widgets/StateColor.cpp	2024-09-25 14:58:26.000000000 +0300
++++ OrcaSlicer-2.2.0-beta2/src/slic3r/GUI/Widgets/StateColor.cpp	2024-09-30 13:47:38.439643312 +0300
+@@ -186,7 +186,7 @@
+     if (!gDarkMode)
+         return color;
+     auto iter = gDarkColors.find(color);
+-    wxASSERT(iter != gDarkColors.end());
++    //wxASSERT(iter != gDarkColors.end());
+     if (iter != gDarkColors.end()) return iter->second;
+     return color;
+ }
