@@ -1,0 +1,57 @@
+diff -ru OrcaSlicer-2.2.0-beta2.old/deps/CMakeLists.txt OrcaSlicer-2.2.0-beta2/deps/CMakeLists.txt
+--- OrcaSlicer-2.2.0-beta2.old/deps/CMakeLists.txt	2024-10-06 02:06:48.899976464 +0300
++++ OrcaSlicer-2.2.0-beta2/deps/CMakeLists.txt	2024-10-06 02:10:21.480749432 +0300
+@@ -343,33 +343,33 @@
+ include(OpenCV/OpenCV.cmake)
+ 
+ set(_dep_list
+-    dep_Boost
+-    dep_TBB
+-    ${OPENSSL_PKG}
+-    ${CURL_PKG}
++    #dep_Boost
++    #dep_TBB
++    #${OPENSSL_PKG}
++    #${CURL_PKG}
+     ${WXWIDGETS_PKG}
+-    dep_Cereal
+-    dep_NLopt
+-    dep_OpenVDB
+-    dep_OpenCSG
+-    dep_OpenCV
+-    dep_CGAL
+-    dep_GLFW
+-    dep_OCCT
+-    ${FREETYPE_PKG}
+-    ${PNG_PKG}
+-    ${ZLIB_PKG}
+-    ${EXPAT_PKG}
++    #dep_Cereal
++    #dep_NLopt
++    #dep_OpenVDB
++    #dep_OpenCSG
++    #dep_OpenCV
++    #dep_CGAL
++    #dep_GLFW
++    #dep_OCCT
++    #${FREETYPE_PKG}
++    #${PNG_PKG}
++    #${ZLIB_PKG}
++    #${EXPAT_PKG}
+     )
+ 
+-if (MSVC)
++    #if (MSVC)
+     # Experimental
+     #list(APPEND _dep_list "dep_qhull")
+-else()
+-    list(APPEND _dep_list "dep_Qhull")
++    #else()
++    #list(APPEND _dep_list "dep_Qhull")
+     # Not working, static build has different Eigen
+     #list(APPEND _dep_list "dep_libigl")
+-endif()
++    #endif()
+ 
+ add_custom_target(deps ALL DEPENDS ${_dep_list})
+ 
