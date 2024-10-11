@@ -1,0 +1,22 @@
+From c5144d39fe376f350a77d75cd61c62986c857176 Mon Sep 17 00:00:00 2001
+From: Robert Schiele <rschiele@gmail.com>
+Date: Wed, 9 Oct 2024 12:57:15 +0200
+Subject: [PATCH] include oneapi/tbb/spin_mutex.h
+
+We need to include oneapi/tbb/spin_mutex.h to use tbb::spin_mutex.
+---
+ src/libslic3r/PrintObject.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/libslic3r/PrintObject.cpp b/src/libslic3r/PrintObject.cpp
+index 528a72e708..ffe86f1122 100644
+--- a/src/libslic3r/PrintObject.cpp
++++ b/src/libslic3r/PrintObject.cpp
+@@ -25,6 +25,7 @@
+ #include <oneapi/tbb/blocked_range.h>
+ #include <oneapi/tbb/concurrent_vector.h>
+ #include <oneapi/tbb/parallel_for.h>
++#include <oneapi/tbb/spin_mutex.h>
+ #include <string_view>
+ #include <utility>
+ 
