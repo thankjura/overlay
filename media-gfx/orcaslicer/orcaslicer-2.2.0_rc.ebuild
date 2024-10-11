@@ -20,6 +20,7 @@ LICENSE="AGPL-3 Boost-1.0"
 SLOT="0"
 
 RDEPEND="
+	media-libs/glfw
 	dev-cpp/eigen:3
 	dev-cpp/tbb:=
 	dev-libs/boost:=[nls]
